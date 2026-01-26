@@ -31,4 +31,9 @@ export class AdminController {
   stats() {
     return this.service.getStats();
   }
+
+  @Get('dashboard')
+  dashboard() {
+    return this.service.getDashboardStats();
+  }
 }
