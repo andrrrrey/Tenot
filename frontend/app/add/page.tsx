@@ -1,42 +1,76 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useStore } from "@/lib/store";
-import { categories } from "@/lib/categories";
+import { useRequireRole } from "@/hooks/useRequireRole";
+import { createListing } from "@/services/listings";
+import { getCategories, type Category } from "@/services/categories";
 
 export default function AddPage() {
   const router = useRouter();
-  const { user, addItem } = useStore();
+  const { user, loading: authLoading } = useRequireRole(["SUPPLIER", "ADMIN"]);
 
-  const [category, setCategory] = useState<string>(categories[0]?.id ?? "auto");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryId, setCategoryId] = useState<string>("");
   const [title, setTitle] = useState("");
+  const [article, setArticle] = useState("");
   const [price, setPrice] = useState("");
-  const [city, setCity] = useState(user?.city ?? "");
-  const [condition, setCondition] = useState<"new" | "used">("used");
   const [description, setDescription] = useState("");
-  const [photos, setPhotos] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Загрузка категорий
+  useEffect(() => {
+    getCategories()
+      .then((cats) => {
+        setCategories(cats);
+        if (cats.length > 0 && !categoryId) {
+          setCategoryId(String(cats[0].id));
+        }
+      })
+      .catch(() => setCategories([]));
+  }, []);
 
   const canPublish = useMemo(() => {
     return (
-      title.trim().length >= 6 &&
+      title.trim().length >= 3 &&
+      article.trim().length >= 1 &&
       Number(price) > 0 &&
-      city.trim().length >= 2 &&
-      description.trim().length >= 10
+      description.trim().length >= 10 &&
+      categoryId
     );
-  }, [title, price, city, description]);
+  }, [title, article, price, description, categoryId]);
+
+  const handleSubmit = async () => {
+    if (!canPublish) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      await createListing({
+        title: title.trim(),
+        article: article.trim(),
+        description: description.trim(),
+        price: Number(price),
+        categoryId: Number(categoryId),
+      });
+
+      router.push("/me/items");
+    } catch (e: any) {
+      setError(e.message || "Ошибка при создании объявления");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (authLoading) {
+    return <div className="card">Загрузка...</div>;
+  }
 
   if (!user) {
-    return (
-      <div className="card">
-        <p>
-          Для публикации нужен вход.{" "}
-          <a href="/login" style={{ color: "var(--brand)", fontWeight: 700 }}>
-            Войти
-          </a>
-        </p>
-      </div>
-    );
+    return null; // useRequireRole redirects to login
   }
 
   return (
@@ -44,6 +78,12 @@ export default function AddPage() {
       <section style={{ gridColumn: "span 8" }}>
         <div className="card">
           <div className="h2">Разместить объявление</div>
+
+          {error && (
+            <div style={{ marginTop: 12, color: "red", padding: 10, background: "#fee" }}>
+              {error}
+            </div>
+          )}
 
           <div
             style={{
@@ -59,11 +99,12 @@ export default function AddPage() {
                 Категория
               </div>
               <select
-                value={category}
+                value={categoryId}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                  setCategory(e.target.value)
+                  setCategoryId(e.target.value)
                 }
               >
+                <option value="">Выберите категорию</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -80,45 +121,34 @@ export default function AddPage() {
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например: iPhone 13, отличное состояние"
+                placeholder="Например: iPhone 13 Pro, 256GB"
+              />
+            </label>
+
+            {/* Артикул */}
+            <label>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Артикул / SKU
+              </div>
+              <input
+                value={article}
+                onChange={(e) => setArticle(e.target.value)}
+                placeholder="Например: IP13P-256-BLK"
               />
             </label>
 
             {/* Цена */}
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Цена
+                Цена (₽)
               </div>
               <input
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="₽"
+                placeholder="0"
+                min="0"
               />
-            </label>
-
-            {/* Город */}
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Город
-              </div>
-              <input value={city} onChange={(e) => setCity(e.target.value)} />
-            </label>
-
-            {/* Состояние */}
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Состояние
-              </div>
-              <select
-                value={condition}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                  setCondition(e.target.value as "new" | "used")
-                }
-              >
-                <option value="new">Новое</option>
-                <option value="used">Б/у</option>
-              </select>
             </label>
 
             {/* Описание */}
@@ -130,42 +160,33 @@ export default function AddPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
+                placeholder="Подробное описание товара..."
               />
-            </label>
-
-            {/* Фото */}
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Фото (URL через запятую)
-              </div>
-              <input value={photos} onChange={(e) => setPhotos(e.target.value)} />
             </label>
 
             {/* Кнопка */}
             <button
-              disabled={!canPublish}
-              onClick={() => {
-                addItem({
-                  title,
-                  price: Number(price),
-                  city,
-                  category,
-                  condition,
-                  description,
-                  photos: photos
-                    .split(",")
-                    .map((p) => p.trim())
-                    .filter(Boolean),
-                });
-
-                router.push("/");
-              }}
+              className="btn primary"
+              disabled={!canPublish || submitting}
+              onClick={handleSubmit}
             >
-              Опубликовать
+              {submitting ? "Публикация..." : "Опубликовать"}
             </button>
           </div>
         </div>
       </section>
+
+      <aside style={{ gridColumn: "span 4" }}>
+        <div className="card" style={{ background: "var(--soft)" }}>
+          <div className="h2">Подсказки</div>
+          <ul style={{ marginTop: 10, paddingLeft: 20, fontSize: 14 }}>
+            <li>Заголовок должен быть не менее 3 символов</li>
+            <li>Укажите артикул для удобства поиска</li>
+            <li>Описание должно быть не менее 10 символов</li>
+            <li>Цена указывается в рублях</li>
+          </ul>
+        </div>
+      </aside>
     </div>
   );
 }

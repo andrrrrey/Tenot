@@ -1,12 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMe } from "@/hooks/useMe";
 import { useStore } from "@/lib/store";
 
 export default function MeHome() {
-  const { user, logout } = useStore();
+  const router = useRouter();
+  const { user, loading } = useMe();
+  const storeUser = useStore((s) => s.user);
+  const logout = useStore((s) => s.logout);
 
-  if (!user) {
+  // Объединяем данные из API и store
+  const displayUser = user || storeUser;
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  if (loading) {
+    return <div className="card">Загрузка...</div>;
+  }
+
+  if (!displayUser) {
     return (
       <div className="card">
         Нужен вход.{" "}
@@ -17,7 +34,16 @@ export default function MeHome() {
     );
   }
 
-  const info = [user.name, user.city, user.phone].filter(Boolean).join(" • ");
+  const role = (user?.role || storeUser?.role) as string | undefined;
+  const isBuyer = role === "BUYER";
+  const isSupplier = role === "SUPPLIER";
+  const isAdmin = role === "ADMIN";
+
+  const roleLabel = {
+    BUYER: "Покупатель",
+    SUPPLIER: "Поставщик",
+    ADMIN: "Администратор",
+  }[role || ""] || "Пользователь";
 
   return (
     <div className="grid">
@@ -25,22 +51,40 @@ export default function MeHome() {
         <div className="card">
           <div className="h2">Личный кабинет</div>
 
-          <p className="muted" style={{ marginTop: 8 }}>
-            {info || "Профиль"}
-          </p>
+          <div style={{ marginTop: 8 }}>
+            <span className="muted">Роль: </span>
+            <strong>{roleLabel}</strong>
+          </div>
 
-          <div className="row" style={{ flexWrap: "wrap", marginTop: 12 }}>
-            <Link className="btn primary" href="/me/items">
-              Мои объявления
-            </Link>
-            <Link className="btn" href="/me/fav">
-              Избранное
-            </Link>
+          <div className="row" style={{ flexWrap: "wrap", marginTop: 16, gap: 10 }}>
+            {/* Для поставщиков и админов */}
+            {(isSupplier || isAdmin) && (
+              <>
+                <Link className="btn primary" href="/me/items">
+                  Мои объявления
+                </Link>
+                <Link className="btn primary" href="/add">
+                  Разместить объявление
+                </Link>
+              </>
+            )}
+
+            {/* Для покупателей */}
+            {isBuyer && (
+              <Link className="btn primary" href="/me/fav">
+                Избранное
+              </Link>
+            )}
+
+            {/* Общие для всех */}
             <Link className="btn" href="/me/settings">
               Настройки
             </Link>
+            <Link className="btn" href="/chat">
+              Мои чаты
+            </Link>
 
-            <button className="btn" type="button" onClick={() => logout()}>
+            <button className="btn" type="button" onClick={handleLogout}>
               Выйти
             </button>
           </div>
@@ -49,7 +93,7 @@ export default function MeHome() {
 
       <aside style={{ gridColumn: "span 4" }}>
         <div className="card" style={{ background: "var(--soft)" }}>
-          <div className="h2">Быстро</div>
+          <div className="h2">Быстрые действия</div>
           <div
             style={{
               marginTop: 10,
@@ -58,15 +102,21 @@ export default function MeHome() {
               gap: 10,
             }}
           >
-            <Link className="btn primary" href="/add">
-              Разместить
-            </Link>
             <Link className="btn" href="/search">
-              Поиск
+              Поиск объявлений
             </Link>
-            <Link className="btn" href="/admin">
-              Админка (MVP)
-            </Link>
+
+            {isAdmin && (
+              <Link className="btn" href="/admin">
+                Панель администратора
+              </Link>
+            )}
+
+            {isSupplier && (
+              <Link className="btn" href="/supplier">
+                Кабинет поставщика
+              </Link>
+            )}
           </div>
         </div>
       </aside>
