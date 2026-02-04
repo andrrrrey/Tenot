@@ -30,9 +30,9 @@ export function FreshList() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Загрузка избранного для покупателя
+  // Загрузка избранного для авторизованного пользователя
   useEffect(() => {
-    if (user?.role === "BUYER") {
+    if (user) {
       getFavorites()
         .then((favs) => setFavoriteIds(new Set(favs.map((f) => f.listingId))))
         .catch(() => {});

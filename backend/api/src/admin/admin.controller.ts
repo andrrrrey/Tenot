@@ -13,7 +13,7 @@ export class AdminController {
   }
 
   @Patch('users/:id/role')
-  setRole(@Param('id') id: string, @Body('role') role: 'BUYER' | 'SUPPLIER' | 'ADMIN') {
+  setRole(@Param('id') id: string, @Body('role') role: 'USER' | 'ADMIN') {
     return this.service.setUserRole(+id, role);
   }
 

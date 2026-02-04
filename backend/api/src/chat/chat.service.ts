@@ -7,38 +7,34 @@ export class ChatService {
   constructor(private prisma: PrismaService) {}
 
   async sendMessage(sender: { userId: number; role: string }, dto: CreateMessageDto) {
-    const listing = await this.prisma.listing.findUnique({ where: { id: dto.listingId }, include: { supplier: true } });
+    const listing = await this.prisma.listing.findUnique({ where: { id: dto.listingId } });
     if (!listing) throw new NotFoundException('Listing not found');
 
-    // Resolve buyer/supplier ids based on sender role
+    // Determine buyer (inquirer) and supplier (listing owner) based on listing ownership
     let buyerId: number;
-    let supplierUserId: number;
+    let supplierId: number;
 
-    if (sender.role === 'BUYER') {
-      buyerId = sender.userId;
-      supplierUserId = dto.receiverId;
-      // sanity check receiver is listing owner
-      if (listing.supplier.userId !== supplierUserId) {
-        throw new BadRequestException('Receiver must be listing supplier');
-      }
-    } else if (sender.role === 'SUPPLIER') {
-      supplierUserId = sender.userId;
+    if (sender.userId === listing.userId) {
+      // Sender is the listing owner (supplier side)
+      supplierId = sender.userId;
       buyerId = dto.receiverId;
-      // sanity check sender owns listing
-      if (listing.supplier.userId !== supplierUserId) {
-        throw new BadRequestException('You are not the supplier of this listing');
-      }
     } else {
-      throw new BadRequestException('Admins do not use chat');
+      // Sender is the inquirer (buyer side)
+      buyerId = sender.userId;
+      supplierId = dto.receiverId;
+      // Verify receiver is the listing owner
+      if (listing.userId !== supplierId) {
+        throw new BadRequestException('Receiver must be the listing owner');
+      }
     }
 
     let chat = await this.prisma.chat.findFirst({
-      where: { listingId: dto.listingId, buyerId, supplierId: supplierUserId },
+      where: { listingId: dto.listingId, buyerId, supplierId },
     });
 
     if (!chat) {
       chat = await this.prisma.chat.create({
-        data: { listingId: dto.listingId, buyerId, supplierId: supplierUserId },
+        data: { listingId: dto.listingId, buyerId, supplierId },
       });
     }
 

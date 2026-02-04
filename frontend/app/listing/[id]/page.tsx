@@ -18,7 +18,7 @@ export default function ListingPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!user || user.role !== 'BUYER' || !listing) return;
+    if (!user || !listing) return;
     getFavorites()
       .then((items) => setFav(items.some((f) => f.listingId === listing.id)))
       .catch(() => {});
@@ -26,14 +26,13 @@ export default function ListingPage() {
 
   if (!listing) return <div>Загрузка...</div>;
 
-  const supplierUserId = (listing.supplier as any).userId ?? listing.supplier.user?.id;
+  const listingOwnerId = listing.user?.id;
 
   const toggleFav = async () => {
     if (!user) {
       router.push('/login');
       return;
     }
-    if (user.role !== 'BUYER') return;
     if (fav) {
       await removeFavorite(listing.id);
       setFav(false);
@@ -62,7 +61,7 @@ export default function ListingPage() {
       <p style={{ marginTop: 12 }}>{listing.description}</p>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="h2">{listing.price} ₽</div>
-        {user?.role === 'BUYER' ? (
+        {user ? (
           <button className="btn" onClick={toggleFav}>{fav ? 'Убрать из избранного' : 'В избранное'}</button>
         ) : null}
       </div>
@@ -71,8 +70,7 @@ export default function ListingPage() {
 
       <div>
         <div className="h2">Продавец</div>
-        <div>{listing.supplier?.name}</div>
-        <div className="muted">{listing.supplier?.phone}</div>
+        <div>{listing.user?.email}</div>
       </div>
 
       <div style={{ marginTop: 12 }}>
@@ -83,7 +81,7 @@ export default function ListingPage() {
               router.push('/login');
               return;
             }
-            router.push(`/chat?listingId=${listing.id}&receiverId=${supplierUserId}`);
+            router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
           }}
         >
           Связаться с продавцом

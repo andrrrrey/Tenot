@@ -12,7 +12,7 @@ export class AdminService {
     });
   }
 
-  setUserRole(id: number, role: 'BUYER' | 'SUPPLIER' | 'ADMIN') {
+  setUserRole(id: number, role: 'USER' | 'ADMIN') {
     return this.prisma.user.update({
       where: { id },
       data: { role },
@@ -24,7 +24,7 @@ export class AdminService {
     return this.prisma.listing.findMany({
       include: {
         category: true,
-        supplier: { select: { id: true, name: true, phone: true, userId: true } },
+        user: { select: { id: true, email: true } },
         images: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -35,7 +35,7 @@ export class AdminService {
     return this.prisma.listing.update({
       where: { id },
       data: { isActive },
-      include: { category: true, supplier: true, images: true },
+      include: { category: true, user: { select: { id: true, email: true } }, images: true },
     });
   }
 

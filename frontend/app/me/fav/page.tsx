@@ -7,7 +7,7 @@ import { getFavorites, removeFavorite, type Favorite } from "@/services/favorite
 import { ListingCard } from "@/components/ListingCard";
 
 export default function FavPage() {
-  const { user, loading: authLoading } = useRequireRole(["BUYER"]);
+  const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

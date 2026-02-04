@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import type { Listing } from "@/services/listings";
-import { useStore } from "@/lib/store";
 import { useMe } from "@/hooks/useMe";
 import { addFavorite, removeFavorite } from "@/services/favorites";
 import { useState } from "react";
@@ -15,13 +14,11 @@ type Props = {
 
 export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: Props) {
   const { user } = useMe();
-  const storeUser = useStore((s) => s.user);
-  const currentUser = user || storeUser;
   const [fav, setFav] = useState(isFavorite);
   const [loading, setLoading] = useState(false);
 
   const handleToggleFav = async () => {
-    if (!currentUser || currentUser.role !== "BUYER") return;
+    if (!user) return;
     setLoading(true);
     try {
       if (fav) {
@@ -74,7 +71,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
         </div>
       </Link>
 
-      {currentUser?.role === "BUYER" && (
+      {user && (
         <button
           className="btn"
           onClick={handleToggleFav}

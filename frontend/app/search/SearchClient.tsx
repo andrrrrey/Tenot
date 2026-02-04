@@ -34,9 +34,9 @@ export default function SearchClient() {
       .catch(() => setCategories([]));
   }, []);
 
-  // Загрузка избранного для покупателя
+  // Загрузка избранного для авторизованного пользователя
   useEffect(() => {
-    if (user?.role === "BUYER") {
+    if (user) {
       getFavorites()
         .then((favs) => setFavoriteIds(new Set(favs.map((f) => f.listingId))))
         .catch(() => {});
@@ -159,7 +159,7 @@ export default function SearchClient() {
             <option value="expensive">Сначала дороже</option>
           </select>
 
-          {user?.role === "SUPPLIER" && (
+          {user && (
             <Link className="btn primary" href="/add">
               Разместить
             </Link>

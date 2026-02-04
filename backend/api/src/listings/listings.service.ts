@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto.create-listing';
 
@@ -6,15 +6,10 @@ import { CreateListingDto } from './dto.create-listing';
 export class ListingsService {
   constructor(private prisma: PrismaService) {}
 
-  async createByUserId(supplierUserId: number, dto: CreateListingDto) {
-    const profile = await this.prisma.supplierProfile.findUnique({
-      where: { userId: supplierUserId },
-    });
-    if (!profile) throw new BadRequestException('Create supplier profile first');
-
+  async createByUserId(userId: number, dto: CreateListingDto) {
     return this.prisma.listing.create({
-      data: { ...dto, supplierId: profile.id },
-      include: { images: true, category: true, supplier: true },
+      data: { ...dto, userId },
+      include: { images: true, category: true, user: true },
     });
   }
 
@@ -41,7 +36,7 @@ export class ListingsService {
       },
       include: {
         images: true,
-        supplier: true,
+        user: { select: { id: true, email: true } },
         category: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -51,7 +46,7 @@ export class ListingsService {
   findOne(id: number) {
     return this.prisma.listing.findUnique({
       where: { id },
-      include: { images: true, supplier: { include: { user: true } }, category: true },
+      include: { images: true, user: { select: { id: true, email: true } }, category: true },
     });
   }
 
@@ -73,9 +68,9 @@ export class ListingsService {
     });
   }
 
-  getMyListings(supplierUserId: number) {
+  getMyListings(userId: number) {
     return this.prisma.listing.findMany({
-      where: { supplier: { userId: supplierUserId } },
+      where: { userId },
       include: { images: true, category: true },
       orderBy: { createdAt: 'desc' },
     });

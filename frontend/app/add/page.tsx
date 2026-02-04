@@ -8,7 +8,7 @@ import { getCategories, type Category } from "@/services/categories";
 
 export default function AddPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useRequireRole(["SUPPLIER", "ADMIN"]);
+  const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");

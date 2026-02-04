@@ -25,11 +25,10 @@ export default function AdminUsers() {
       {users.map((u) => (
         <div key={u.id} className="card" style={{ padding: 12, marginBottom: 10 }}>
           <div><b>{u.email}</b></div>
-          <div className="muted">Role: {u.role}</div>
+          <div className="muted">Роль: {u.role === 'ADMIN' ? 'Администратор' : 'Пользователь'}</div>
           <div style={{ marginTop: 8 }}>
-            <button className="btn" onClick={() => setRole(u.id, 'BUYER')}>BUYER</button>{' '}
-            <button className="btn" onClick={() => setRole(u.id, 'SUPPLIER')}>SUPPLIER</button>{' '}
-            <button className="btn" onClick={() => setRole(u.id, 'ADMIN')}>ADMIN</button>
+            <button className="btn" onClick={() => setRole(u.id, 'USER')}>Пользователь</button>{' '}
+            <button className="btn" onClick={() => setRole(u.id, 'ADMIN')}>Администратор</button>
           </div>
         </div>
       ))}

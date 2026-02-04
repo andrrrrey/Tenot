@@ -47,8 +47,7 @@ export default function SettingsPage() {
 
   const role = apiUser.role;
   const roleLabel = {
-    BUYER: "Покупатель",
-    SUPPLIER: "Поставщик",
+    USER: "Пользователь",
     ADMIN: "Администратор",
   }[role] || "Пользователь";
 
@@ -124,11 +123,6 @@ export default function SettingsPage() {
             <Link className="btn" href="/me">
               Назад в кабинет
             </Link>
-            {role === "SUPPLIER" && (
-              <Link className="btn" href="/supplier">
-                Профиль поставщика
-              </Link>
-            )}
           </div>
         </div>
       </aside>
