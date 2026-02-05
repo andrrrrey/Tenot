@@ -7,7 +7,7 @@ import { getFavorites, removeFavorite, type Favorite } from "@/services/favorite
 import { ListingCard } from "@/components/ListingCard";
 
 export default function FavPage() {
-  const { user, loading: authLoading } = useRequireRole(["BUYER"]);
+  const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,6 @@ export default function FavPage() {
     setLoading(true);
     getFavorites()
       .then((data) => {
-        // Сортируем по дате добавления (id по возрастанию = старые сначала, поэтому reverse)
         setFavorites(data.sort((a, b) => b.id - a.id));
       })
       .catch((e) => {
@@ -29,7 +28,6 @@ export default function FavPage() {
 
   const handleFavoriteChange = async (listingId: number, isFav: boolean) => {
     if (!isFav) {
-      // Удаляем из локального списка
       setFavorites((prev) => prev.filter((f) => f.listingId !== listingId));
     }
   };

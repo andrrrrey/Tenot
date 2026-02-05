@@ -5,21 +5,21 @@ import { PrismaService } from '../prisma/prisma.service';
 export class FavoritesService {
   constructor(private prisma: PrismaService) {}
 
-  add(buyerId: number, listingId: number) {
+  add(userId: number, listingId: number) {
     return this.prisma.favorite.upsert({
-      where: { buyerId_listingId: { buyerId, listingId } },
-      create: { buyerId, listingId },
+      where: { userId_listingId: { userId, listingId } },
+      create: { userId, listingId },
       update: {},
     });
   }
 
-  remove(buyerId: number, listingId: number) {
-    return this.prisma.favorite.deleteMany({ where: { buyerId, listingId } });
+  remove(userId: number, listingId: number) {
+    return this.prisma.favorite.deleteMany({ where: { userId, listingId } });
   }
 
-  getAll(buyerId: number) {
+  getAll(userId: number) {
     return this.prisma.favorite.findMany({
-      where: { buyerId },
+      where: { userId },
       include: { listing: { include: { images: true, category: true } } },
       orderBy: { id: 'desc' },
     });

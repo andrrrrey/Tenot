@@ -8,7 +8,7 @@ import { getCategories, type Category } from "@/services/categories";
 
 export default function AddPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useRequireRole(["SUPPLIER", "ADMIN"]);
+  const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
@@ -20,7 +20,6 @@ export default function AddPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Загрузка категорий
   useEffect(() => {
     getCategories()
       .then((cats) => {
@@ -70,7 +69,7 @@ export default function AddPage() {
   }
 
   if (!user) {
-    return null; // useRequireRole redirects to login
+    return null;
   }
 
   return (
@@ -93,7 +92,6 @@ export default function AddPage() {
               gap: 10,
             }}
           >
-            {/* Категория */}
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Категория
@@ -113,7 +111,6 @@ export default function AddPage() {
               </select>
             </label>
 
-            {/* Заголовок */}
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Заголовок
@@ -125,7 +122,6 @@ export default function AddPage() {
               />
             </label>
 
-            {/* Артикул */}
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Артикул / SKU
@@ -137,7 +133,6 @@ export default function AddPage() {
               />
             </label>
 
-            {/* Цена */}
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Цена (₽)
@@ -151,7 +146,6 @@ export default function AddPage() {
               />
             </label>
 
-            {/* Описание */}
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Описание
@@ -164,7 +158,6 @@ export default function AddPage() {
               />
             </label>
 
-            {/* Кнопка */}
             <button
               className="btn primary"
               disabled={!canPublish || submitting}

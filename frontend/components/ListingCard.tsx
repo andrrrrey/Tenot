@@ -21,7 +21,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   const [loading, setLoading] = useState(false);
 
   const handleToggleFav = async () => {
-    if (!currentUser || currentUser.role !== "BUYER") return;
+    if (!currentUser) return;
     setLoading(true);
     try {
       if (fav) {
@@ -74,7 +74,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
         </div>
       </Link>
 
-      {currentUser?.role === "BUYER" && (
+      {currentUser && (
         <button
           className="btn"
           onClick={handleToggleFav}

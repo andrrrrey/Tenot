@@ -8,7 +8,7 @@ import { Public } from '../auth/public.decorator';
 export class ListingsController {
   constructor(private service: ListingsService) {}
 
-  @Roles('SUPPLIER')
+  @Roles('USER', 'ADMIN')
   @Get('my')
   getMy(@Req() req: any) {
     return this.service.getMyListings(req.user.userId);
@@ -36,19 +36,19 @@ export class ListingsController {
     return this.service.findOne(+id);
   }
 
-  @Roles('SUPPLIER')
+  @Roles('USER', 'ADMIN')
   @Post()
   create(@Req() req: any, @Body() dto: CreateListingDto) {
     return this.service.createByUserId(req.user.userId, dto);
   }
 
-  @Roles('SUPPLIER', 'ADMIN')
+  @Roles('USER', 'ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: Partial<CreateListingDto>) {
     return this.service.update(+id, dto);
   }
 
-  @Roles('SUPPLIER', 'ADMIN')
+  @Roles('USER', 'ADMIN')
   @Patch(':id/toggle')
   toggle(@Param('id') id: string, @Body('isActive') isActive: boolean) {
     return this.service.toggle(+id, isActive);

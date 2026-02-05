@@ -6,7 +6,7 @@ import { useRequireRole } from "@/hooks/useRequireRole";
 import { getMyListings, toggleListing, type Listing } from "@/services/listings";
 
 export default function MyItemsPage() {
-  const { user, loading: authLoading } = useRequireRole(["SUPPLIER", "ADMIN"]);
+  const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -9,7 +9,7 @@ export type User = {
   name: string;
   city?: string;
   phone?: string;
-  role?: "BUYER" | "SUPPLIER" | "ADMIN";
+  role?: "USER" | "ADMIN";
 };
 
 export type Item = {
