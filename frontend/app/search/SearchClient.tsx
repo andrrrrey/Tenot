@@ -18,7 +18,6 @@ export default function SearchClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Фильтры - инициализация из URL
   const [q, setQ] = useState(searchParams.get("q") || "");
   const [categoryId, setCategoryId] = useState<string>(
     searchParams.get("category") || ""
@@ -27,23 +26,20 @@ export default function SearchClient() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [sort, setSort] = useState<"new" | "cheap" | "expensive">("new");
 
-  // Загрузка категорий
   useEffect(() => {
     getCategories()
       .then(setCategories)
       .catch(() => setCategories([]));
   }, []);
 
-  // Загрузка избранного для покупателя
   useEffect(() => {
-    if (user?.role === "BUYER") {
+    if (user) {
       getFavorites()
         .then((favs) => setFavoriteIds(new Set(favs.map((f) => f.listingId))))
         .catch(() => {});
     }
   }, [user]);
 
-  // Загрузка объявлений с фильтрами (debounced)
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(true);
@@ -73,7 +69,6 @@ export default function SearchClient() {
     return () => clearTimeout(timer);
   }, [q, categoryId, minPrice, maxPrice]);
 
-  // Сортировка на клиенте
   const sortedListings = useMemo(() => {
     const list = [...listings];
     if (sort === "new") {
@@ -159,7 +154,7 @@ export default function SearchClient() {
             <option value="expensive">Сначала дороже</option>
           </select>
 
-          {user?.role === "SUPPLIER" && (
+          {user && (
             <Link className="btn primary" href="/add">
               Разместить
             </Link>

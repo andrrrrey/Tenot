@@ -8,7 +8,7 @@ export async function login(email: string, password: string) {
   return res.json();
 }
 
-export async function register(payload: { email: string; password: string; role: 'BUYER' | 'SUPPLIER' }) {
+export async function register(payload: { email: string; password: string }) {
   const res = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

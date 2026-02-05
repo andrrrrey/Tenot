@@ -3,7 +3,7 @@ import { FavoritesService } from './favorites.service';
 import { Roles } from '../auth/roles.decorator';
 
 @Controller('favorites')
-@Roles('BUYER')
+@Roles('USER', 'ADMIN')
 export class FavoritesController {
   constructor(private service: FavoritesService) {}
 

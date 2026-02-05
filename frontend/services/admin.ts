@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import type { Listing } from './listings';
 
-export type AdminUser = { id: number; email: string; role: 'BUYER' | 'SUPPLIER' | 'ADMIN'; createdAt: string };
+export type AdminUser = { id: number; email: string; role: 'USER' | 'ADMIN'; createdAt: string };
 export type Stats = { users: number; listings: number; chats: number; messages: number };
 
 export const adminGetUsers = () => api.get<AdminUser[]>('/admin/users');

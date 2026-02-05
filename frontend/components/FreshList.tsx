@@ -12,12 +12,10 @@ export function FreshList() {
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  // Загрузка свежих объявлений
   useEffect(() => {
     setLoading(true);
     getListings()
       .then((data) => {
-        // Сортируем по дате и берём 6 последних
         const sorted = data
           .sort(
             (a, b) =>
@@ -30,9 +28,8 @@ export function FreshList() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Загрузка избранного для покупателя
   useEffect(() => {
-    if (user?.role === "BUYER") {
+    if (user) {
       getFavorites()
         .then((favs) => setFavoriteIds(new Set(favs.map((f) => f.listingId))))
         .catch(() => {});

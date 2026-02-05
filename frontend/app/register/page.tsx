@@ -5,7 +5,6 @@ import { register } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const [role, setRole] = useState<'BUYER' | 'SUPPLIER'>('BUYER');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +13,7 @@ export default function RegisterPage() {
   const submit = async () => {
     setError(null);
     try {
-      await register({ email, password, role });
+      await register({ email, password });
       router.push('/');
     } catch {
       setError('Не удалось зарегистрироваться');
@@ -25,10 +24,6 @@ export default function RegisterPage() {
     <div className="card" style={{ padding: 18, maxWidth: 520 }}>
       <h1 className="h2">Регистрация</h1>
       <div className="grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
-        <select className="input" value={role} onChange={(e) => setRole(e.target.value as any)}>
-          <option value="BUYER">Покупатель</option>
-          <option value="SUPPLIER">Поставщик</option>
-        </select>
         <input className="input" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input
           className="input"

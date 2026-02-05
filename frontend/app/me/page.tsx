@@ -11,7 +11,6 @@ export default function MeHome() {
   const storeUser = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
 
-  // Объединяем данные из API и store
   const displayUser = user || storeUser;
 
   const handleLogout = () => {
@@ -35,13 +34,10 @@ export default function MeHome() {
   }
 
   const role = (user?.role || storeUser?.role) as string | undefined;
-  const isBuyer = role === "BUYER";
-  const isSupplier = role === "SUPPLIER";
   const isAdmin = role === "ADMIN";
 
   const roleLabel = {
-    BUYER: "Покупатель",
-    SUPPLIER: "Поставщик",
+    USER: "Пользователь",
     ADMIN: "Администратор",
   }[role || ""] || "Пользователь";
 
@@ -57,26 +53,16 @@ export default function MeHome() {
           </div>
 
           <div className="row" style={{ flexWrap: "wrap", marginTop: 16, gap: 10 }}>
-            {/* Для поставщиков и админов */}
-            {(isSupplier || isAdmin) && (
-              <>
-                <Link className="btn primary" href="/me/items">
-                  Мои объявления
-                </Link>
-                <Link className="btn primary" href="/add">
-                  Разместить объявление
-                </Link>
-              </>
-            )}
+            <Link className="btn primary" href="/me/items">
+              Мои объявления
+            </Link>
+            <Link className="btn primary" href="/add">
+              Разместить объявление
+            </Link>
+            <Link className="btn primary" href="/me/fav">
+              Избранное
+            </Link>
 
-            {/* Для покупателей */}
-            {isBuyer && (
-              <Link className="btn primary" href="/me/fav">
-                Избранное
-              </Link>
-            )}
-
-            {/* Общие для всех */}
             <Link className="btn" href="/me/settings">
               Настройки
             </Link>
@@ -109,12 +95,6 @@ export default function MeHome() {
             {isAdmin && (
               <Link className="btn" href="/admin">
                 Панель администратора
-              </Link>
-            )}
-
-            {isSupplier && (
-              <Link className="btn" href="/supplier">
-                Кабинет поставщика
               </Link>
             )}
           </div>

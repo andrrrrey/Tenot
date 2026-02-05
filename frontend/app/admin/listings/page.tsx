@@ -33,7 +33,7 @@ export default function AdminListings() {
           <div className="muted">Артикул: {l.article}</div>
           <div className="muted">Цена: {l.price} ₽</div>
           <div className="muted">Категория: {l.category?.name ?? '-'}</div>
-          <div className="muted">Поставщик: {l.supplier?.name ?? '-'}</div>
+          <div className="muted">Автор: {l.user?.email ?? '-'}</div>
 
           <div className="row" style={{ gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
             <button className="btn" onClick={() => toggle(l.id, l.isActive)}>

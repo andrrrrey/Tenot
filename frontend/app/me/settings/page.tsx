@@ -16,7 +16,6 @@ export default function SettingsPage() {
   const [city, setCity] = useState("");
   const [saved, setSaved] = useState(false);
 
-  // Инициализируем поля при загрузке
   useEffect(() => {
     if (storeUser) {
       setName(storeUser.name || "");
@@ -24,7 +23,6 @@ export default function SettingsPage() {
     }
   }, [storeUser]);
 
-  // Редирект на логин если не авторизован
   useEffect(() => {
     if (!loading && !apiUser) {
       router.push("/login");
@@ -42,13 +40,12 @@ export default function SettingsPage() {
   }
 
   if (!apiUser) {
-    return null; // Redirecting to login
+    return null;
   }
 
   const role = apiUser.role;
   const roleLabel = {
-    BUYER: "Покупатель",
-    SUPPLIER: "Поставщик",
+    USER: "Пользователь",
     ADMIN: "Администратор",
   }[role] || "Пользователь";
 
@@ -124,11 +121,6 @@ export default function SettingsPage() {
             <Link className="btn" href="/me">
               Назад в кабинет
             </Link>
-            {role === "SUPPLIER" && (
-              <Link className="btn" href="/supplier">
-                Профиль поставщика
-              </Link>
-            )}
           </div>
         </div>
       </aside>

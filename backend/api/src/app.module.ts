@@ -8,7 +8,6 @@ import { RolesGuard } from './auth/roles.guard';
 import { CategoriesModule } from './categories/categories.module';
 import { ListingsModule } from './listings/listings.module';
 import { ChatModule } from './chat/chat.module';
-import { SuppliersModule } from './suppliers/suppliers.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AdminModule } from './admin/admin.module';
 
@@ -20,7 +19,6 @@ import { AdminModule } from './admin/admin.module';
     CategoriesModule,
     ListingsModule,
     ChatModule,
-    SuppliersModule,
     FavoritesModule,
     AdminModule,
   ],

@@ -22,14 +22,12 @@ export default function ChatClient() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  // Редирект на логин если не авторизован
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     }
   }, [authLoading, user, router]);
 
-  // Загрузка списка чатов
   useEffect(() => {
     if (!user) return;
 
@@ -38,7 +36,6 @@ export default function ChatClient() {
       .then((data) => {
         setChats(data);
 
-        // Если есть chatId в параметрах, выбираем этот чат
         if (chatIdParam) {
           const found = data.find((c) => c.id === Number(chatIdParam));
           if (found) setSelectedChat(found);
@@ -48,7 +45,6 @@ export default function ChatClient() {
       .finally(() => setLoading(false));
   }, [user, chatIdParam]);
 
-  // Загрузка сообщений при выборе чата
   useEffect(() => {
     if (!selectedChat) return;
 
@@ -60,7 +56,6 @@ export default function ChatClient() {
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    // Если нет выбранного чата, но есть listingId и receiverId - создаем новый
     if (!selectedChat && listingIdParam && receiverIdParam) {
       setSending(true);
       try {
@@ -70,10 +65,8 @@ export default function ChatClient() {
           text: newMessage.trim(),
         });
         setNewMessage("");
-        // Перезагружаем чаты
         const updatedChats = await getMyChats();
         setChats(updatedChats);
-        // Находим новый чат
         const newChat = updatedChats.find(
           (c) => c.listingId === Number(listingIdParam)
         );
@@ -90,16 +83,18 @@ export default function ChatClient() {
 
     setSending(true);
     try {
+      // Determine the receiver: if I'm the initiator, send to owner; otherwise to initiator
+      const receiverId =
+        Number(user?.id) === selectedChat.initiatorId
+          ? selectedChat.ownerId
+          : selectedChat.initiatorId;
+
       await sendMessage({
         listingId: selectedChat.listingId,
-        receiverId:
-          user?.id === selectedChat.buyerId
-            ? selectedChat.supplierId
-            : selectedChat.buyerId,
+        receiverId,
         text: newMessage.trim(),
       });
       setNewMessage("");
-      // Перезагружаем сообщения
       const updated = await getMessages(selectedChat.id);
       setMessages(updated);
     } catch (e: any) {
@@ -119,7 +114,6 @@ export default function ChatClient() {
 
   return (
     <div className="grid">
-      {/* Список чатов */}
       <aside
         className="card"
         style={{ gridColumn: "span 4", maxHeight: "70vh", overflow: "auto" }}
@@ -151,7 +145,6 @@ export default function ChatClient() {
         </Link>
       </aside>
 
-      {/* Окно чата */}
       <section className="card" style={{ gridColumn: "span 8" }}>
         {selectedChat || (listingIdParam && receiverIdParam) ? (
           <>
