@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto.create-listing';
 
@@ -7,6 +7,9 @@ export class ListingsService {
   constructor(private prisma: PrismaService) {}
 
   async createByUserId(userId: number, dto: CreateListingDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found. Please re-login.');
+
     return this.prisma.listing.create({
       data: { ...dto, userId },
       include: { images: true, category: true, user: { select: { id: true, email: true } } },
