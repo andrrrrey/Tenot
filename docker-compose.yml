@@ -69,6 +69,7 @@ services:
       - ./infra/nginx/www:/var/www/certbot:ro
       - ./infra/nginx/auth:/etc/nginx/auth:ro
       - ./infra/nginx/log:/var/log/nginx
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       web:
         condition: service_started
