@@ -5,7 +5,7 @@ import type { Listing } from "@/services/listings";
 import { useStore } from "@/lib/store";
 import { useMe } from "@/hooks/useMe";
 import { addFavorite, removeFavorite } from "@/services/favorites";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
   listing: Listing;
@@ -19,6 +19,10 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   const currentUser = user || storeUser;
   const [fav, setFav] = useState(isFavorite);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setFav(isFavorite);
+  }, [isFavorite]);
 
   const handleToggleFav = async () => {
     if (!currentUser) return;

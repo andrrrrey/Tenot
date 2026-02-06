@@ -70,17 +70,18 @@ export default function ListingPage() {
 
       <div>
         <div className="h2">Автор объявления</div>
-        <div>{listing.user?.email}</div>
+        <div>{listing.user?.name || 'Без имени'}</div>
+        {listing.user?.phone && (
+          <div className="muted" style={{ marginTop: 4 }}>
+            Тел.: {listing.user.phone}
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: 12 }}>
         <button
           className="btn primary"
           onClick={() => {
-            if (!user) {
-              router.push('/login');
-              return;
-            }
             router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
           }}
         >

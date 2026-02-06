@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
 import { getMyChats, getMessages, sendMessage, type Chat, type Message } from "@/services/chat";
 
 export default function ChatClient() {
   const sp = useSearchParams();
-  const router = useRouter();
   const { user, loading: authLoading } = useMe();
 
   const chatIdParam = sp.get("chatId");
@@ -23,13 +22,10 @@ export default function ChatClient() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [authLoading, user, router]);
-
-  useEffect(() => {
-    if (!user) return;
 
     setLoading(true);
     getMyChats()
@@ -109,7 +105,24 @@ export default function ChatClient() {
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="grid">
+        <section className="card" style={{ gridColumn: "span 12" }}>
+          <div className="h2">Чат с продавцом</div>
+          <p style={{ marginTop: 12 }}>
+            Для отправки сообщений необходимо войти в аккаунт.
+          </p>
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <Link className="btn primary" href="/login">
+              Войти
+            </Link>
+            <Link className="btn" href="/register">
+              Зарегистрироваться
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (

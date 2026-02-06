@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto.register';
+import { UpdateProfileDto } from './dto.update-profile';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,26 @@ export class AuthService {
     if (!ok) throw new UnauthorizedException();
 
     return this.sign(user.id, user.role);
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, phone: true, role: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { name: dto.name, phone: dto.phone },
+      select: { id: true, email: true, name: true, phone: true, role: true },
+    });
   }
 
   private sign(userId: number, role: string) {

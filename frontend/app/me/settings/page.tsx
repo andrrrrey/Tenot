@@ -3,25 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
-import { useStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { getProfile, updateProfile } from "@/services/profile";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user: apiUser, loading } = useMe();
-  const storeUser = useStore((s) => s.user);
-  const updateProfile = useStore((s) => s.updateProfile);
 
   const [name, setName] = useState("");
-  const [city, setCity] = useState("");
+  const [phone, setPhone] = useState("");
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (storeUser) {
-      setName(storeUser.name || "");
-      setCity(storeUser.city || "");
-    }
-  }, [storeUser]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && !apiUser) {
@@ -29,10 +21,28 @@ export default function SettingsPage() {
     }
   }, [loading, apiUser, router]);
 
-  const handleSave = () => {
-    updateProfile({ name, city });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    if (apiUser) {
+      getProfile()
+        .then((profile) => {
+          setName(profile.name || "");
+          setPhone(profile.phone || "");
+        })
+        .catch(() => {});
+    }
+  }, [apiUser]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateProfile({ name, phone });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      alert("Ошибка сохранения профиля");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -88,21 +98,22 @@ export default function SettingsPage() {
             </label>
             <label>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Город
+                Телефон
               </div>
               <input
                 className="input"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Ваш город"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+7 (999) 123-45-67"
               />
             </label>
-            <button className="btn primary" onClick={handleSave}>
-              Сохранить
+            <button
+              className="btn primary"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "Сохранение..." : "Сохранить"}
             </button>
-            <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Настройки отображения хранятся локально в браузере.
-            </p>
           </div>
         </div>
       </section>
