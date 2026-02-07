@@ -23,13 +23,10 @@ export default function ChatClient() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [authLoading, user, router]);
-
-  useEffect(() => {
-    if (!user) return;
 
     setLoading(true);
     getMyChats()
@@ -55,6 +52,11 @@ export default function ChatClient() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
 
     if (!selectedChat && listingIdParam && receiverIdParam) {
       setSending(true);
@@ -85,7 +87,7 @@ export default function ChatClient() {
     try {
       // Determine the receiver: if I'm the initiator, send to owner; otherwise to initiator
       const receiverId =
-        Number(user?.id) === selectedChat.initiatorId
+        Number(user!.id) === selectedChat.initiatorId
           ? selectedChat.ownerId
           : selectedChat.initiatorId;
 
@@ -106,10 +108,6 @@ export default function ChatClient() {
 
   if (authLoading || loading) {
     return <div className="card">Загрузка...</div>;
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
@@ -177,9 +175,9 @@ export default function ChatClient() {
                       padding: 8,
                       borderRadius: 6,
                       background:
-                        m.senderId === Number(user.id) ? "#dbeafe" : "#fff",
+                        user && m.senderId === Number(user.id) ? "#dbeafe" : "#fff",
                       alignSelf:
-                        m.senderId === Number(user.id)
+                        user && m.senderId === Number(user.id)
                           ? "flex-end"
                           : "flex-start",
                       maxWidth: "70%",
