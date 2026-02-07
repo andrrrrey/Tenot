@@ -91,24 +91,15 @@ export default function MeHome() {
       <div
         className="card"
         style={{
-          padding: 0,
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            background: "linear-gradient(135deg, var(--brand) 0%, #a78bfa 100%)",
-            height: 120,
-            position: "relative",
-          }}
-        />
-        <div style={{ padding: "0 24px 24px" }}>
+        <div>
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: "center",
               gap: 16,
-              marginTop: -40,
             }}
           >
             <div
@@ -117,7 +108,7 @@ export default function MeHome() {
                 height: 80,
                 borderRadius: "50%",
                 background: "var(--brand)",
-                border: "4px solid var(--card)",
+                border: "none",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -210,7 +201,7 @@ export default function MeHome() {
         <div
           className="card"
           style={{
-            gridColumn: "span 4",
+            gridColumn: "span 6",
             textAlign: "center",
             padding: 20,
           }}
@@ -227,7 +218,7 @@ export default function MeHome() {
         <div
           className="card"
           style={{
-            gridColumn: "span 4",
+            gridColumn: "span 6",
             textAlign: "center",
             padding: 20,
           }}
@@ -239,23 +230,6 @@ export default function MeHome() {
           </div>
           <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
             В избранном
-          </div>
-        </div>
-        <div
-          className="card"
-          style={{
-            gridColumn: "span 4",
-            textAlign: "center",
-            padding: 20,
-          }}
-        >
-          <div
-            style={{ fontSize: 32, fontWeight: 800, color: "#10b981" }}
-          >
-            {profileLoading ? "—" : role === "ADMIN" ? "ADM" : "USR"}
-          </div>
-          <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
-            Статус
           </div>
         </div>
       </div>

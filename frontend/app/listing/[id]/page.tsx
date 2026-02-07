@@ -198,24 +198,11 @@ export default function ListingPage() {
           <button
             className="btn primary"
             onClick={() => {
-              if (!user) {
-                router.push('/login');
-                return;
-              }
               router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
             }}
           >
             &#128172;&ensp;Написать в чат
           </button>
-
-          {!user && (
-            <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Для чата необходима{' '}
-              <Link href="/login" style={{ color: 'var(--brand)', fontWeight: 600 }}>
-                авторизация
-              </Link>
-            </p>
-          )}
         </div>
       </aside>
     </div>
