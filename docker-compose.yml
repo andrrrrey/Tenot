@@ -21,7 +21,7 @@ services:
       context: ./backend/api
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://autoparts:autoparts@db:5432/autoparts
+      DATABASE_URL: postgresql://autoparts:autoparts@db:5432/autoparts?connection_limit=20&pool_timeout=30
       JWT_SECRET: ${JWT_SECRET:-dev_secret}
     depends_on:
       db:
@@ -44,6 +44,7 @@ services:
     environment:
       BACKEND_URL: http://api:3001
       NODE_ENV: production
+      NEXT_KEEP_ALIVE_TIMEOUT: "65000"
     depends_on:
       api:
         condition: service_healthy

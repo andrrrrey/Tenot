@@ -98,7 +98,7 @@ async function handleProxy(
       method,
       headers,
       body: body || undefined,
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(60_000),
     });
 
     const responseData = await response.text();
