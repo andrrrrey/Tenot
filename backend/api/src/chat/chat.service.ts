@@ -47,7 +47,7 @@ export class ChatService {
     return this.prisma.chat.findMany({
       where: { OR: [{ initiatorId: userId }, { ownerId: userId }] },
       include: {
-        messages: { orderBy: { createdAt: 'asc' } },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
       orderBy: { id: 'desc' },
     });
