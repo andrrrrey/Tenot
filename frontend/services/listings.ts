@@ -10,7 +10,7 @@ export type Listing = {
   createdAt: string;
   category: { id: number; name: string };
   images: { id: number; url: string }[];
-  user: { id: number; email: string };
+  user: { id: number; email: string; name?: string; phone?: string };
 };
 
 export const getListings = (params?: {

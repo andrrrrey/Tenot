@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/hooks/useMe";
 import { useStore } from "@/lib/store";
+import { getMyProfile, type UserProfile } from "@/services/users";
+import { getMyListings, type Listing } from "@/services/listings";
+import { getFavorites } from "@/services/favorites";
 
 export default function MeHome() {
   const router = useRouter();
@@ -11,7 +15,27 @@ export default function MeHome() {
   const storeUser = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
 
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [listingsCount, setListingsCount] = useState(0);
+  const [favCount, setFavCount] = useState(0);
+  const [profileLoading, setProfileLoading] = useState(true);
+
   const displayUser = user || storeUser;
+
+  useEffect(() => {
+    if (!displayUser) return;
+    setProfileLoading(true);
+    Promise.all([
+      getMyProfile().catch(() => null),
+      getMyListings().catch(() => []),
+      getFavorites().catch(() => []),
+    ]).then(([prof, listings, favs]) => {
+      if (prof) setProfile(prof);
+      setListingsCount(listings.length);
+      setFavCount(favs.length);
+      setProfileLoading(false);
+    });
+  }, [displayUser]);
 
   const handleLogout = () => {
     logout();
@@ -24,9 +48,17 @@ export default function MeHome() {
 
   if (!displayUser) {
     return (
-      <div className="card">
-        Нужен вход.{" "}
-        <Link href="/login" style={{ color: "var(--brand)", fontWeight: 700 }}>
+      <div className="card" style={{ textAlign: "center", padding: 40 }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>&#128274;</div>
+        <div className="h2">Требуется авторизация</div>
+        <p className="muted" style={{ marginTop: 8 }}>
+          Войдите в аккаунт, чтобы получить доступ к личному кабинету
+        </p>
+        <Link
+          className="btn primary"
+          href="/login"
+          style={{ marginTop: 16 }}
+        >
           Войти
         </Link>
       </div>
@@ -35,71 +67,297 @@ export default function MeHome() {
 
   const role = (user?.role || storeUser?.role) as string | undefined;
   const isAdmin = role === "ADMIN";
+  const roleLabel =
+    { USER: "Пользователь", ADMIN: "Администратор" }[role || ""] ||
+    "Пользователь";
 
-  const roleLabel = {
-    USER: "Пользователь",
-    ADMIN: "Администратор",
-  }[role || ""] || "Пользователь";
+  const displayName = profile?.name || profile?.email || "Пользователь";
+  const initials = displayName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const memberSince = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString("ru-RU", {
+        year: "numeric",
+        month: "long",
+      })
+    : "";
 
   return (
-    <div className="grid">
-      <section style={{ gridColumn: "span 8" }}>
-        <div className="card">
-          <div className="h2">Личный кабинет</div>
-
-          <div style={{ marginTop: 8 }}>
-            <span className="muted">Роль: </span>
-            <strong>{roleLabel}</strong>
-          </div>
-
-          <div className="row" style={{ flexWrap: "wrap", marginTop: 16, gap: 10 }}>
-            <Link className="btn primary" href="/me/items">
-              Мои объявления
-            </Link>
-            <Link className="btn primary" href="/add">
-              Разместить объявление
-            </Link>
-            <Link className="btn primary" href="/me/fav">
-              Избранное
-            </Link>
-
-            <Link className="btn" href="/me/settings">
-              Настройки
-            </Link>
-            <Link className="btn" href="/chat">
-              Мои чаты
-            </Link>
-
-            <button className="btn" type="button" onClick={handleLogout}>
-              Выйти
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <aside style={{ gridColumn: "span 4" }}>
-        <div className="card" style={{ background: "var(--soft)" }}>
-          <div className="h2">Быстрые действия</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Profile header card */}
+      <div
+        className="card"
+        style={{
+          padding: 0,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            background: "linear-gradient(135deg, var(--brand) 0%, #a78bfa 100%)",
+            height: 120,
+            position: "relative",
+          }}
+        />
+        <div style={{ padding: "0 24px 24px" }}>
           <div
             style={{
-              marginTop: 10,
+              display: "flex",
+              alignItems: "flex-end",
+              gap: 16,
+              marginTop: -40,
+            }}
+          >
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                background: "var(--brand)",
+                border: "4px solid var(--card)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontSize: 28,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {profileLoading ? "..." : initials}
+            </div>
+            <div style={{ flex: 1, paddingBottom: 4 }}>
+              <div className="h2">
+                {profileLoading ? "Загрузка..." : displayName}
+              </div>
+              <div
+                className="muted"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 4,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  className="badge"
+                  style={{
+                    background: isAdmin ? "#fef3c7" : "var(--soft)",
+                    color: isAdmin ? "#92400e" : "var(--muted)",
+                    borderColor: isAdmin ? "#fde68a" : "var(--line)",
+                  }}
+                >
+                  {roleLabel}
+                </span>
+                {memberSince && (
+                  <span style={{ fontSize: 12 }}>
+                    На сайте с {memberSince}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Contact info */}
+          {!profileLoading && (
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 24,
+                flexWrap: "wrap",
+              }}
+            >
+              {profile?.email && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    &#9993;
+                  </span>
+                  <span style={{ fontSize: 14 }}>{profile.email}</span>
+                </div>
+              )}
+              {profile?.phone && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    &#9742;
+                  </span>
+                  <span style={{ fontSize: 14 }}>{profile.phone}</span>
+                </div>
+              )}
+              {!profile?.phone && (
+                <Link
+                  href="/me/settings"
+                  style={{
+                    fontSize: 13,
+                    color: "var(--brand)",
+                    fontWeight: 600,
+                  }}
+                >
+                  + Добавить телефон
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid">
+        <div
+          className="card"
+          style={{
+            gridColumn: "span 4",
+            textAlign: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{ fontSize: 32, fontWeight: 800, color: "var(--brand)" }}
+          >
+            {profileLoading ? "—" : listingsCount}
+          </div>
+          <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+            Объявлений
+          </div>
+        </div>
+        <div
+          className="card"
+          style={{
+            gridColumn: "span 4",
+            textAlign: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{ fontSize: 32, fontWeight: 800, color: "#ef4444" }}
+          >
+            {profileLoading ? "—" : favCount}
+          </div>
+          <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+            В избранном
+          </div>
+        </div>
+        <div
+          className="card"
+          style={{
+            gridColumn: "span 4",
+            textAlign: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{ fontSize: 32, fontWeight: 800, color: "#10b981" }}
+          >
+            {profileLoading ? "—" : role === "ADMIN" ? "ADM" : "USR"}
+          </div>
+          <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+            Статус
+          </div>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid">
+        <section style={{ gridColumn: "span 8" }}>
+          <div className="card">
+            <div className="h2" style={{ marginBottom: 14 }}>
+              Управление
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 10,
+              }}
+            >
+              <Link
+                className="btn primary"
+                href="/me/items"
+                style={{ justifyContent: "flex-start", padding: "14px 16px" }}
+              >
+                &#128196;&ensp;Мои объявления
+              </Link>
+              <Link
+                className="btn primary"
+                href="/add"
+                style={{ justifyContent: "flex-start", padding: "14px 16px" }}
+              >
+                &#10133;&ensp;Разместить объявление
+              </Link>
+              <Link
+                className="btn primary"
+                href="/me/fav"
+                style={{ justifyContent: "flex-start", padding: "14px 16px" }}
+              >
+                &#9829;&ensp;Избранное
+              </Link>
+              <Link
+                className="btn"
+                href="/chat"
+                style={{ justifyContent: "flex-start", padding: "14px 16px" }}
+              >
+                &#128172;&ensp;Мои чаты
+              </Link>
+              <Link
+                className="btn"
+                href="/me/settings"
+                style={{ justifyContent: "flex-start", padding: "14px 16px" }}
+              >
+                &#9881;&ensp;Настройки профиля
+              </Link>
+              <Link
+                className="btn"
+                href="/search"
+                style={{ justifyContent: "flex-start", padding: "14px 16px" }}
+              >
+                &#128269;&ensp;Поиск объявлений
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <aside style={{ gridColumn: "span 4" }}>
+          <div
+            className="card"
+            style={{
+              background: "var(--soft)",
               display: "flex",
               flexDirection: "column",
               gap: 10,
             }}
           >
-            <Link className="btn" href="/search">
-              Поиск объявлений
-            </Link>
+            <div className="h2">Быстрые действия</div>
 
             {isAdmin && (
-              <Link className="btn" href="/admin">
-                Панель администратора
+              <Link
+                className="btn"
+                href="/admin"
+                style={{
+                  background: "#fef3c7",
+                  borderColor: "#fde68a",
+                  color: "#92400e",
+                  fontWeight: 700,
+                }}
+              >
+                &#128737;&ensp;Панель администратора
               </Link>
             )}
+
+            <button
+              className="btn"
+              type="button"
+              onClick={handleLogout}
+              style={{ color: "#ef4444", borderColor: "#fecaca" }}
+            >
+              Выйти из аккаунта
+            </button>
           </div>
-        </div>
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 }

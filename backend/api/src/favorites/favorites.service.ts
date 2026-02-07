@@ -20,7 +20,7 @@ export class FavoritesService {
   getAll(userId: number) {
     return this.prisma.favorite.findMany({
       where: { userId },
-      include: { listing: { include: { images: true, category: true } } },
+      include: { listing: { include: { images: true, category: true, user: { select: { id: true, email: true, name: true, phone: true } } } } },
       orderBy: { id: 'desc' },
     });
   }
