@@ -3,25 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
-import { useStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { getMyProfile, updateMyProfile } from "@/services/users";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user: apiUser, loading } = useMe();
-  const storeUser = useStore((s) => s.user);
-  const updateProfile = useStore((s) => s.updateProfile);
 
   const [name, setName] = useState("");
-  const [city, setCity] = useState("");
+  const [phone, setPhone] = useState("");
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (storeUser) {
-      setName(storeUser.name || "");
-      setCity(storeUser.city || "");
-    }
-  }, [storeUser]);
+  const [saving, setSaving] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !apiUser) {
@@ -29,13 +23,33 @@ export default function SettingsPage() {
     }
   }, [loading, apiUser, router]);
 
-  const handleSave = () => {
-    updateProfile({ name, city });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    if (!apiUser) return;
+    setProfileLoading(true);
+    getMyProfile()
+      .then((profile) => {
+        setName(profile.name || "");
+        setPhone(profile.phone || "");
+      })
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+  }, [apiUser]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await updateMyProfile({ name: name.trim(), phone: phone.trim() });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e: any) {
+      setError(e.message || "Ошибка сохранения");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) {
+  if (loading || profileLoading) {
     return <div className="card">Загрузка...</div>;
   }
 
@@ -44,10 +58,8 @@ export default function SettingsPage() {
   }
 
   const role = apiUser.role;
-  const roleLabel = {
-    USER: "Пользователь",
-    ADMIN: "Администратор",
-  }[role] || "Пользователь";
+  const roleLabel =
+    { USER: "Пользователь", ADMIN: "Администратор" }[role] || "Пользователь";
 
   return (
     <div className="grid">
@@ -74,9 +86,26 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {error && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: 10,
+                background: "#fee2e2",
+                color: "#991b1b",
+                borderRadius: 6,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+              <div
+                className="muted"
+                style={{ fontSize: 12, marginBottom: 6 }}
+              >
                 Имя / Название
               </div>
               <input
@@ -87,21 +116,29 @@ export default function SettingsPage() {
               />
             </label>
             <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Город
+              <div
+                className="muted"
+                style={{ fontSize: 12, marginBottom: 6 }}
+              >
+                Телефон
               </div>
               <input
                 className="input"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Ваш город"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+7 (999) 123-45-67"
+                type="tel"
               />
             </label>
-            <button className="btn primary" onClick={handleSave}>
-              Сохранить
+            <button
+              className="btn primary"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "Сохранение..." : "Сохранить"}
             </button>
             <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Настройки отображения хранятся локально в браузере.
+              Телефон будет отображаться в ваших объявлениях.
             </p>
           </div>
         </div>
