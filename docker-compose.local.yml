@@ -27,8 +27,8 @@ services:
     expose:
       - "3001"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/categories').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
-      interval: 10s
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/categories || exit 1"]
+      interval: 15s
       timeout: 5s
       retries: 10
 
@@ -43,8 +43,8 @@ services:
     expose:
       - "3000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
-      interval: 10s
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 15s
       timeout: 5s
       retries: 10
 
