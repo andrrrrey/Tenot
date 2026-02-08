@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto.create-listing';
 import { Roles } from '../auth/roles.decorator';
@@ -52,5 +52,11 @@ export class ListingsController {
   @Patch(':id/toggle')
   toggle(@Param('id') id: string, @Body('isActive') isActive: boolean) {
     return this.service.toggle(+id, isActive);
+  }
+
+  @Roles('USER', 'ADMIN')
+  @Delete(':id')
+  remove(@Req() req: any, @Param('id') id: string) {
+    return this.service.deleteByOwner(+id, req.user.userId);
   }
 }

@@ -33,7 +33,7 @@ export class ListingsService {
         OR: filters.search
           ? [
               { title: { contains: filters.search, mode: 'insensitive' } },
-              { article: { contains: filters.search, mode: 'insensitive' } },
+              { description: { contains: filters.search, mode: 'insensitive' } },
             ]
           : undefined,
       },
@@ -77,5 +77,21 @@ export class ListingsService {
       include: { images: true, category: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async deleteByOwner(id: number, userId: number) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException('Listing not found');
+    if (listing.userId !== userId) throw new UnauthorizedException('Not the owner');
+
+    await this.prisma.favorite.deleteMany({ where: { listingId: id } });
+    await this.prisma.listingImage.deleteMany({ where: { listingId: id } });
+    await this.prisma.message.deleteMany({
+      where: { chat: { listingId: id } },
+    });
+    await this.prisma.chat.deleteMany({ where: { listingId: id } });
+    await this.prisma.listing.delete({ where: { id } });
+
+    return { deleted: true };
   }
 }

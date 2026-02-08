@@ -13,7 +13,6 @@ export default function AddPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
   const [title, setTitle] = useState("");
-  const [article, setArticle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
 
@@ -34,12 +33,11 @@ export default function AddPage() {
   const canPublish = useMemo(() => {
     return (
       title.trim().length >= 3 &&
-      article.trim().length >= 1 &&
       Number(price) > 0 &&
       description.trim().length >= 10 &&
       categoryId
     );
-  }, [title, article, price, description, categoryId]);
+  }, [title, price, description, categoryId]);
 
   const handleSubmit = async () => {
     if (!canPublish) return;
@@ -50,7 +48,6 @@ export default function AddPage() {
     try {
       await createListing({
         title: title.trim(),
-        article: article.trim(),
         description: description.trim(),
         price: Number(price),
         categoryId: Number(categoryId),
@@ -65,7 +62,13 @@ export default function AddPage() {
   };
 
   if (authLoading) {
-    return <div className="card">Загрузка...</div>;
+    return (
+      <div style={{ maxWidth: 720, margin: "40px auto", padding: "0 16px" }}>
+        <div className="card" style={{ textAlign: "center", padding: 40 }}>
+          Загрузка...
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -73,113 +76,207 @@ export default function AddPage() {
   }
 
   return (
-    <div className="grid">
-      <section style={{ gridColumn: "span 8" }}>
-        <div className="card">
-          <div className="h2">Разместить объявление</div>
+    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="h2" style={{ marginBottom: 4 }}>
+          Новое объявление
+        </h1>
+        <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+          Заполните информацию о товаре
+        </p>
+      </div>
 
-          {error && (
-            <div style={{ marginTop: 12, color: "red", padding: 10, background: "#fee" }}>
-              {error}
-            </div>
-          )}
+      {error && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 16,
+            color: "#dc2626",
+            background: "#fef2f2",
+            borderColor: "#fecaca",
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Категория
-              </div>
-              <select
-                value={categoryId}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                  setCategoryId(e.target.value)
-                }
-              >
-                <option value="">Выберите категорию</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+      {/* Form */}
+      <div className="card" style={{ padding: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+          }}
+        >
+          {/* Category */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Категория
             </label>
+            <select
+              value={categoryId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                setCategoryId(e.target.value)
+              }
+              style={{ padding: "12px 14px" }}
+            >
+              <option value="">Выберите категорию</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Заголовок
-              </div>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например: iPhone 13 Pro, 256GB"
-              />
+          {/* Title */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Заголовок
             </label>
-
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Артикул / SKU
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Например: iPhone 13 Pro, 256GB"
+              style={{ padding: "12px 14px" }}
+            />
+            {title.length > 0 && title.trim().length < 3 && (
+              <div style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
+                Минимум 3 символа
               </div>
-              <input
-                value={article}
-                onChange={(e) => setArticle(e.target.value)}
-                placeholder="Например: IP13P-256-BLK"
-              />
+            )}
+          </div>
+
+          {/* Price */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Цена
             </label>
-
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Цена (₽)
-              </div>
+            <div style={{ position: "relative" }}>
               <input
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0"
                 min="0"
+                style={{ padding: "12px 14px", paddingRight: 40 }}
               />
-            </label>
-
-            <label>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Описание
-              </div>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={5}
-                placeholder="Подробное описание товара..."
-              />
-            </label>
-
-            <button
-              className="btn primary"
-              disabled={!canPublish || submitting}
-              onClick={handleSubmit}
-            >
-              {submitting ? "Публикация..." : "Опубликовать"}
-            </button>
+              <span
+                style={{
+                  position: "absolute",
+                  right: 14,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--muted)",
+                  fontWeight: 600,
+                  pointerEvents: "none",
+                }}
+              >
+                &#8381;
+              </span>
+            </div>
           </div>
-        </div>
-      </section>
 
-      <aside style={{ gridColumn: "span 4" }}>
-        <div className="card" style={{ background: "var(--soft)" }}>
-          <div className="h2">Подсказки</div>
-          <ul style={{ marginTop: 10, paddingLeft: 20, fontSize: 14 }}>
-            <li>Заголовок должен быть не менее 3 символов</li>
-            <li>Укажите артикул для удобства поиска</li>
-            <li>Описание должно быть не менее 10 символов</li>
-            <li>Цена указывается в рублях</li>
-          </ul>
+          {/* Description */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Описание
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              placeholder="Подробное описание товара: состояние, комплектация, особенности..."
+              style={{ padding: "12px 14px" }}
+            />
+            {description.length > 0 && description.trim().length < 10 && (
+              <div style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
+                Минимум 10 символов
+              </div>
+            )}
+          </div>
+
+          <hr style={{ margin: 0 }} />
+
+          {/* Submit */}
+          <button
+            className="btn primary"
+            disabled={!canPublish || submitting}
+            onClick={handleSubmit}
+            style={{
+              padding: "14px 20px",
+              fontSize: 16,
+              opacity: !canPublish || submitting ? 0.6 : 1,
+            }}
+          >
+            {submitting ? "Публикация..." : "Опубликовать объявление"}
+          </button>
         </div>
-      </aside>
+      </div>
+
+      {/* Tips card */}
+      <div
+        className="card"
+        style={{
+          marginTop: 16,
+          background: "var(--soft)",
+          padding: "16px 20px",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+          Советы для быстрой продажи
+        </div>
+        <ul
+          style={{
+            margin: 0,
+            paddingLeft: 18,
+            fontSize: 13,
+            color: "var(--muted)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          <li>Заголовок должен быть не менее 3 символов</li>
+          <li>Описание должно быть не менее 10 символов</li>
+          <li>Цена указывается в рублях</li>
+          <li>Добавьте подробное описание для привлечения покупателей</li>
+        </ul>
+      </div>
     </div>
   );
 }
