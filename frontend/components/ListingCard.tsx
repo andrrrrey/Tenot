@@ -66,7 +66,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
         </div>
 
         <div className="muted" style={{ marginTop: 6 }}>
-          {listing.category?.name || "Без категории"} • Артикул: {listing.article}
+          {listing.category?.name || "Без категории"}
         </div>
 
         <div style={{ marginTop: 8, fontWeight: 800, fontSize: 18 }}>

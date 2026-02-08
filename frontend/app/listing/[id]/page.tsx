@@ -93,10 +93,11 @@ export default function ListingPage() {
           {/* Title & price */}
           <div style={{ marginTop: 16 }}>
             <h1 className="h2" style={{ marginBottom: 4 }}>{listing.title}</h1>
-            <div className="muted" style={{ fontSize: 13 }}>
-              Артикул: {listing.article}
-              {listing.category?.name && <> &bull; {listing.category.name}</>}
-            </div>
+            {listing.category?.name && (
+              <div className="muted" style={{ fontSize: 13 }}>
+                {listing.category.name}
+              </div>
+            )}
           </div>
 
           <div

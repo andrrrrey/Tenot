@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { getMyListings, toggleListing, type Listing } from "@/services/listings";
+import { getMyListings, toggleListing, deleteListing, type Listing } from "@/services/listings";
 
 export default function MyItemsPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
@@ -41,6 +41,17 @@ export default function MyItemsPage() {
       );
     } catch (e: any) {
       alert(e.message || "Ошибка при изменении статуса");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Вы уверены, что хотите удалить это объявление? Это действие необратимо.")) return;
+
+    try {
+      await deleteListing(id);
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    } catch (e: any) {
+      alert(e.message || "Ошибка при удалении объявления");
     }
   };
 
@@ -107,9 +118,6 @@ export default function MyItemsPage() {
                   <div className="h3" style={{ margin: 0 }}>
                     {listing.title}
                   </div>
-                  <div className="muted" style={{ marginTop: 4 }}>
-                    Артикул: {listing.article}
-                  </div>
                   <div style={{ marginTop: 8, fontWeight: 800 }}>
                     {listing.price.toLocaleString("ru-RU")} ₽
                   </div>
@@ -135,13 +143,26 @@ export default function MyItemsPage() {
                   </div>
                 )}
 
-                <button
-                  className="btn"
-                  style={{ marginTop: 10, width: "100%" }}
-                  onClick={() => handleToggle(listing.id, listing.isActive)}
-                >
-                  {listing.isActive ? "Скрыть" : "Показать"}
-                </button>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button
+                    className="btn"
+                    style={{ flex: 1 }}
+                    onClick={() => handleToggle(listing.id, listing.isActive)}
+                  >
+                    {listing.isActive ? "Скрыть" : "Показать"}
+                  </button>
+                  <button
+                    className="btn"
+                    style={{
+                      color: "#dc2626",
+                      borderColor: "#fecaca",
+                      flexShrink: 0,
+                    }}
+                    onClick={() => handleDelete(listing.id)}
+                  >
+                    Удалить
+                  </button>
+                </div>
               </div>
             ))}
 

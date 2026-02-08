@@ -30,7 +30,6 @@ export default function AdminListings() {
             <b>{l.title}</b>
             <span className="muted">{l.isActive ? 'активно' : 'скрыто'}</span>
           </div>
-          <div className="muted">Артикул: {l.article}</div>
           <div className="muted">Цена: {l.price} ₽</div>
           <div className="muted">Категория: {l.category?.name ?? '-'}</div>
           <div className="muted">Автор: {l.user?.email ?? '-'}</div>

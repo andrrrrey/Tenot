@@ -34,7 +34,6 @@ export const getMyListings = () => api.get<Listing[]>('/listings/my');
 
 export const createListing = (payload: {
   title: string;
-  article: string;
   description: string;
   price: number;
   categoryId: number;
@@ -42,3 +41,6 @@ export const createListing = (payload: {
 
 export const toggleListing = (id: number, isActive: boolean) =>
   api.patch<Listing>(`/listings/${id}/toggle`, { isActive });
+
+export const deleteListing = (id: number) =>
+  api.del<{ deleted: boolean }>(`/listings/${id}`);
