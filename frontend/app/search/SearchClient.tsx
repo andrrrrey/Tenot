@@ -124,11 +124,22 @@ export default function SearchClient() {
 
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">Все категории</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            {categories.map((c) =>
+              c.children && c.children.length > 0 ? (
+                <optgroup key={c.id} label={c.name}>
+                  <option value={c.id}>{c.name} (все)</option>
+                  {c.children.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              )
+            )}
           </select>
 
           <div className="row" style={{ gap: 10 }}>

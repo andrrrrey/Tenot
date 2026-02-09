@@ -39,6 +39,11 @@ export const createListing = (payload: {
   categoryId: number;
 }) => api.post<Listing>('/listings', payload);
 
+export const updateListing = (
+  id: number,
+  payload: { title?: string; description?: string; price?: number; categoryId?: number },
+) => api.patch<Listing>(`/listings/${id}`, payload);
+
 export const toggleListing = (id: number, isActive: boolean) =>
   api.patch<Listing>(`/listings/${id}/toggle`, { isActive });
 

@@ -144,9 +144,16 @@ export default function MyItemsPage() {
                 )}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <Link
+                    className="btn"
+                    href={`/edit/${listing.id}`}
+                    style={{ flex: 1, textAlign: "center", textDecoration: "none" }}
+                  >
+                    Редактировать
+                  </Link>
                   <button
                     className="btn"
-                    style={{ flex: 1 }}
+                    style={{ flexShrink: 0 }}
                     onClick={() => handleToggle(listing.id, listing.isActive)}
                   >
                     {listing.isActive ? "Скрыть" : "Показать"}

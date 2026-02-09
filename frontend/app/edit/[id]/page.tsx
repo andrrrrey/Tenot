@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { createListing } from "@/services/listings";
+import { getListing, updateListing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 
-export default function AddPage() {
+export default function EditPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
@@ -16,21 +17,38 @@ export default function AddPage() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
 
+  const [initialLoading, setInitialLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getCategories()
-      .then((cats) => {
-        setCategories(cats);
-        if (cats.length > 0 && !categoryId) {
-          setCategoryId(String(cats[0].id));
-        }
-      })
+      .then(setCategories)
       .catch(() => setCategories([]));
   }, []);
 
-  const canPublish = useMemo(() => {
+  useEffect(() => {
+    if (!user) return;
+    getListing(Number(id))
+      .then((listing) => {
+        if (!listing) {
+          setError("Объявление не найдено");
+          return;
+        }
+        if (listing.user.id !== user.id) {
+          setError("Вы не являетесь владельцем этого объявления");
+          return;
+        }
+        setTitle(listing.title);
+        setPrice(String(listing.price));
+        setDescription(listing.description);
+        setCategoryId(String(listing.category.id));
+      })
+      .catch(() => setError("Ошибка загрузки объявления"))
+      .finally(() => setInitialLoading(false));
+  }, [id, user]);
+
+  const canSave = useMemo(() => {
     return (
       title.trim().length >= 3 &&
       Number(price) > 0 &&
@@ -40,13 +58,13 @@ export default function AddPage() {
   }, [title, price, description, categoryId]);
 
   const handleSubmit = async () => {
-    if (!canPublish) return;
+    if (!canSave) return;
 
     setSubmitting(true);
     setError(null);
 
     try {
-      await createListing({
+      await updateListing(Number(id), {
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
@@ -55,13 +73,13 @@ export default function AddPage() {
 
       router.push("/me/items");
     } catch (e: any) {
-      setError(e.message || "Ошибка при создании объявления");
+      setError(e.message || "Ошибка при сохранении объявления");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (authLoading) {
+  if (authLoading || initialLoading) {
     return (
       <div style={{ maxWidth: 720, margin: "40px auto", padding: "0 16px" }}>
         <div className="card" style={{ textAlign: "center", padding: 40 }}>
@@ -80,10 +98,10 @@ export default function AddPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 className="h2" style={{ marginBottom: 4 }}>
-          Новое объявление
+          Редактирование объявления
         </h1>
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-          Заполните информацию о товаре
+          Измените информацию о товаре
         </p>
       </div>
 
@@ -244,49 +262,29 @@ export default function AddPage() {
           <hr style={{ margin: 0 }} />
 
           {/* Submit */}
-          <button
-            className="btn primary"
-            disabled={!canPublish || submitting}
-            onClick={handleSubmit}
-            style={{
-              padding: "14px 20px",
-              fontSize: 16,
-              opacity: !canPublish || submitting ? 0.6 : 1,
-            }}
-          >
-            {submitting ? "Публикация..." : "Опубликовать объявление"}
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn primary"
+              disabled={!canSave || submitting}
+              onClick={handleSubmit}
+              style={{
+                padding: "14px 20px",
+                fontSize: 16,
+                flex: 1,
+                opacity: !canSave || submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? "Сохранение..." : "Сохранить изменения"}
+            </button>
+            <button
+              className="btn"
+              onClick={() => router.push("/me/items")}
+              style={{ padding: "14px 20px", fontSize: 16 }}
+            >
+              Отмена
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Tips card */}
-      <div
-        className="card"
-        style={{
-          marginTop: 16,
-          background: "var(--soft)",
-          padding: "16px 20px",
-        }}
-      >
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
-          Советы для быстрой продажи
-        </div>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: 18,
-            fontSize: 13,
-            color: "var(--muted)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-          }}
-        >
-          <li>Заголовок должен быть не менее 3 символов</li>
-          <li>Описание должно быть не менее 10 символов</li>
-          <li>Цена указывается в рублях</li>
-          <li>Добавьте подробное описание для привлечения покупателей</li>
-        </ul>
       </div>
     </div>
   );

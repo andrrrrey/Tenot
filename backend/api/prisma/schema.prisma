@@ -35,6 +35,12 @@ model User {
 model Category {
   id       Int       @id @default(autoincrement())
   name     String
+  imageUrl String?
+
+  parentId Int?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
   listings Listing[]
 }
 
