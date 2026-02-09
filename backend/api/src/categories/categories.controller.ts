@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
@@ -15,8 +15,14 @@ export class CategoriesController {
 
   @Roles('ADMIN')
   @Post()
-  create(@Body('name') name: string) {
-    return this.service.create(name);
+  create(@Body() body: { name: string; imageUrl?: string; parentId?: number }) {
+    return this.service.create(body);
+  }
+
+  @Roles('ADMIN')
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() body: { name?: string; imageUrl?: string }) {
+    return this.service.update(+id, body);
   }
 
   @Roles('ADMIN')

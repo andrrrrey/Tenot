@@ -53,9 +53,10 @@ export class ListingsService {
     });
   }
 
-  async update(id: number, dto: Partial<CreateListingDto>) {
-    const exists = await this.prisma.listing.findUnique({ where: { id } });
-    if (!exists) throw new NotFoundException();
+  async update(id: number, userId: number, dto: Partial<CreateListingDto>) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException();
+    if (listing.userId !== userId) throw new UnauthorizedException('Not the owner');
     return this.prisma.listing.update({
       where: { id },
       data: dto,

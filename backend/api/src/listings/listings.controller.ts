@@ -44,8 +44,8 @@ export class ListingsController {
 
   @Roles('USER', 'ADMIN')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateListingDto>) {
-    return this.service.update(+id, dto);
+  update(@Req() req: any, @Param('id') id: string, @Body() dto: Partial<CreateListingDto>) {
+    return this.service.update(+id, req.user.userId, dto);
   }
 
   @Roles('USER', 'ADMIN')
