@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+
 import { useSearchParams } from "next/navigation";
 import { getListings, type Listing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
@@ -164,12 +164,6 @@ export default function SearchClient() {
             <option value="cheap">Сначала дешевле</option>
             <option value="expensive">Сначала дороже</option>
           </select>
-
-          {user && (
-            <Link className="btn primary" href="/add">
-              Разместить
-            </Link>
-          )}
         </div>
       </aside>
 
