@@ -22,10 +22,24 @@ export class ListingsService {
     maxPrice?: number;
     search?: string;
   }) {
+    let categoryFilter: any = undefined;
+    if (filters.categoryId) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: filters.categoryId },
+        include: { children: true },
+      });
+      if (category && category.children && category.children.length > 0) {
+        const ids = [category.id, ...category.children.map((c) => c.id)];
+        categoryFilter = { in: ids };
+      } else {
+        categoryFilter = filters.categoryId;
+      }
+    }
+
     return this.prisma.listing.findMany({
       where: {
         isActive: true,
-        categoryId: filters.categoryId,
+        categoryId: categoryFilter,
         price: {
           gte: filters.minPrice,
           lte: filters.maxPrice,
