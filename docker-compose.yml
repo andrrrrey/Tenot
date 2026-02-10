@@ -70,7 +70,6 @@ services:
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./infra/nginx/ssl:/etc/nginx/ssl:ro
       - ./infra/nginx/www:/var/www/certbot:ro
-      - ./infra/nginx/auth:/etc/nginx/auth:ro
       - ./infra/nginx/log:/var/log/nginx
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
