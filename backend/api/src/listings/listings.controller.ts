@@ -21,12 +21,14 @@ export class ListingsController {
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
     @Query('search') search?: string,
+    @Query('cityId') cityId?: string,
   ) {
     return this.service.findAll({
       categoryId: categoryId ? +categoryId : undefined,
       minPrice: minPrice ? +minPrice : undefined,
       maxPrice: maxPrice ? +maxPrice : undefined,
       search,
+      cityId: cityId ? +cityId : undefined,
     });
   }
 

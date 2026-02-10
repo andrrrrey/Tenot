@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import { getListing, updateListing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
+import { getCities, type City } from "@/services/cities";
 
 export default function EditPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,7 +13,9 @@ export default function EditPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
+  const [cityId, setCityId] = useState<string>("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -25,6 +28,10 @@ export default function EditPage() {
     getCategories()
       .then(setCategories)
       .catch(() => setCategories([]));
+
+    getCities()
+      .then(setCities)
+      .catch(() => setCities([]));
   }, []);
 
   useEffect(() => {
@@ -43,6 +50,7 @@ export default function EditPage() {
         setPrice(String(listing.price));
         setDescription(listing.description);
         setCategoryId(String(listing.category.id));
+        setCityId(listing.cityId ? String(listing.cityId) : "");
       })
       .catch(() => setError("Ошибка загрузки объявления"))
       .finally(() => setInitialLoading(false));
@@ -69,6 +77,7 @@ export default function EditPage() {
         description: description.trim(),
         price: Number(price),
         categoryId: Number(categoryId),
+        cityId: cityId ? Number(cityId) : null,
       });
 
       router.push("/me/items");
@@ -165,6 +174,35 @@ export default function EditPage() {
                   </option>
                 )
               )}
+            </select>
+          </div>
+
+          {/* City */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Город
+            </label>
+            <select
+              value={cityId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                setCityId(e.target.value)
+              }
+              style={{ padding: "12px 14px" }}
+            >
+              <option value="">Выберите город</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
 

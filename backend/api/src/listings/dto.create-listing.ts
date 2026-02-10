@@ -16,4 +16,8 @@ export class CreateListingDto {
 
   @IsNumber()
   categoryId!: number;
+
+  @IsOptional()
+  @IsNumber()
+  cityId?: number;
 }

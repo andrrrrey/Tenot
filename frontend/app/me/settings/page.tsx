@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
 import { useRouter } from "next/navigation";
 import { getMyProfile, updateMyProfile } from "@/services/users";
+import { getCities, type City } from "@/services/cities";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function SettingsPage() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [cityId, setCityId] = useState<string>("");
+  const [cities, setCities] = useState<City[]>([]);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -24,12 +27,19 @@ export default function SettingsPage() {
   }, [loading, apiUser, router]);
 
   useEffect(() => {
+    getCities()
+      .then(setCities)
+      .catch(() => setCities([]));
+  }, []);
+
+  useEffect(() => {
     if (!apiUser) return;
     setProfileLoading(true);
     getMyProfile()
       .then((profile) => {
         setName(profile.name || "");
         setPhone(profile.phone || "");
+        setCityId(profile.cityId ? String(profile.cityId) : "");
       })
       .catch(() => {})
       .finally(() => setProfileLoading(false));
@@ -39,7 +49,11 @@ export default function SettingsPage() {
     setSaving(true);
     setError(null);
     try {
-      await updateMyProfile({ name: name.trim(), phone: phone.trim() });
+      await updateMyProfile({
+        name: name.trim(),
+        phone: phone.trim(),
+        cityId: cityId ? Number(cityId) : null,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e: any) {
@@ -130,6 +144,26 @@ export default function SettingsPage() {
                 type="tel"
               />
             </label>
+            <label>
+              <div
+                className="muted"
+                style={{ fontSize: 12, marginBottom: 6 }}
+              >
+                Город
+              </div>
+              <select
+                value={cityId}
+                onChange={(e) => setCityId(e.target.value)}
+                style={{ padding: "10px 14px" }}
+              >
+                <option value="">Не выбран</option>
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               className="btn primary"
               onClick={handleSave}
@@ -138,7 +172,7 @@ export default function SettingsPage() {
               {saving ? "Сохранение..." : "Сохранить"}
             </button>
             <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Телефон будет отображаться в ваших объявлениях.
+              Телефон и город будут отображаться в ваших объявлениях.
             </p>
           </div>
         </div>

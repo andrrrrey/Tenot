@@ -12,7 +12,7 @@ export class ListingsService {
 
     return this.prisma.listing.create({
       data: { ...dto, userId },
-      include: { images: true, category: true, user: { select: { id: true, email: true, name: true, phone: true } } },
+      include: { images: true, category: true, city: true, user: { select: { id: true, email: true, name: true, phone: true, cityId: true, city: true } } },
     });
   }
 
@@ -21,6 +21,7 @@ export class ListingsService {
     minPrice?: number;
     maxPrice?: number;
     search?: string;
+    cityId?: number;
   }) {
     let categoryFilter: any = undefined;
     if (filters.categoryId) {
@@ -40,6 +41,7 @@ export class ListingsService {
       where: {
         isActive: true,
         categoryId: categoryFilter,
+        cityId: filters.cityId,
         price: {
           gte: filters.minPrice,
           lte: filters.maxPrice,
@@ -53,8 +55,9 @@ export class ListingsService {
       },
       include: {
         images: true,
-        user: { select: { id: true, email: true, name: true, phone: true } },
+        user: { select: { id: true, email: true, name: true, phone: true, cityId: true, city: true } },
         category: true,
+        city: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -63,7 +66,7 @@ export class ListingsService {
   findOne(id: number) {
     return this.prisma.listing.findUnique({
       where: { id },
-      include: { images: true, user: { select: { id: true, email: true, name: true, phone: true } }, category: true },
+      include: { images: true, user: { select: { id: true, email: true, name: true, phone: true, cityId: true, city: true } }, category: true, city: true },
     });
   }
 
@@ -74,7 +77,7 @@ export class ListingsService {
     return this.prisma.listing.update({
       where: { id },
       data: dto,
-      include: { images: true, category: true },
+      include: { images: true, category: true, city: true },
     });
   }
 
@@ -82,14 +85,14 @@ export class ListingsService {
     return this.prisma.listing.update({
       where: { id },
       data: { isActive },
-      include: { images: true, category: true },
+      include: { images: true, category: true, city: true },
     });
   }
 
   getMyListings(userId: number) {
     return this.prisma.listing.findMany({
       where: { userId },
-      include: { images: true, category: true },
+      include: { images: true, category: true, city: true },
       orderBy: { createdAt: 'desc' },
     });
   }

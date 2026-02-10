@@ -93,9 +93,11 @@ export default function ListingPage() {
           {/* Title & price */}
           <div style={{ marginTop: 16 }}>
             <h1 className="h2" style={{ marginBottom: 4 }}>{listing.title}</h1>
-            {listing.category?.name && (
+            {(listing.category?.name || listing.city?.name) && (
               <div className="muted" style={{ fontSize: 13 }}>
-                {listing.category.name}
+                {listing.category?.name}
+                {listing.category?.name && listing.city?.name && ' \u00B7 '}
+                {listing.city?.name}
               </div>
             )}
           </div>

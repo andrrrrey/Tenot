@@ -15,7 +15,7 @@ export class UsersController {
 
   @Roles('USER', 'ADMIN')
   @Patch('me')
-  updateProfile(@Req() req: any, @Body() body: { name?: string; phone?: string }) {
+  updateProfile(@Req() req: any, @Body() body: { name?: string; phone?: string; cityId?: number | null }) {
     return this.service.updateProfile(req.user.userId, body);
   }
 
