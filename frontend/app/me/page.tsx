@@ -310,6 +310,7 @@ export default function MeHome() {
               <Link
                 className="btn"
                 href="/admin"
+                prefetch={false}
                 style={{
                   background: "#fef3c7",
                   borderColor: "#fde68a",
