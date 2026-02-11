@@ -8,7 +8,7 @@ export class UsersService {
   async getProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, cityId: true, city: true },
+      select: { id: true, email: true, name: true, phone: true, avatarUrl: true, role: true, createdAt: true, cityId: true, city: true },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
@@ -18,14 +18,22 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { name: data.name, phone: data.phone, cityId: data.cityId },
-      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, cityId: true, city: true },
+      select: { id: true, email: true, name: true, phone: true, avatarUrl: true, role: true, createdAt: true, cityId: true, city: true },
+    });
+  }
+
+  async updateAvatar(userId: number, avatarUrl: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: { id: true, email: true, name: true, phone: true, avatarUrl: true, role: true, createdAt: true, cityId: true, city: true },
     });
   }
 
   async getPublicProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, phone: true, createdAt: true, cityId: true, city: true },
+      select: { id: true, name: true, phone: true, avatarUrl: true, createdAt: true, cityId: true, city: true },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;

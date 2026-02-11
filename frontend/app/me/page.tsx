@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/hooks/useMe";
 import { useStore } from "@/lib/store";
-import { getMyProfile, type UserProfile } from "@/services/users";
+import { getMyProfile, uploadAvatar, type UserProfile } from "@/services/users";
 import { getMyListings, type Listing } from "@/services/listings";
 import { getFavorites } from "@/services/favorites";
 
@@ -19,6 +19,8 @@ export default function MeHome() {
   const [listingsCount, setListingsCount] = useState(0);
   const [favCount, setFavCount] = useState(0);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayUser = user || storeUser;
 
@@ -40,6 +42,25 @@ export default function MeHome() {
   const handleLogout = () => {
     logout();
     router.push("/");
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const updated = await uploadAvatar(file);
+      setProfile(updated);
+    } catch {
+      // ignore
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   if (loading) {
@@ -104,21 +125,70 @@ export default function MeHome() {
           >
             <div
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                background: "var(--brand)",
-                border: "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontSize: 28,
-                fontWeight: 700,
+                position: "relative",
+                cursor: "pointer",
                 flexShrink: 0,
               }}
+              onClick={handleAvatarClick}
+              title="Нажмите, чтобы загрузить аватар"
             >
-              {profileLoading ? "..." : initials}
+              {profile?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt="Аватар"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "3px solid var(--brand)",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    background: "var(--brand)",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontSize: 28,
+                    fontWeight: 700,
+                  }}
+                >
+                  {profileLoading ? "..." : initials}
+                </div>
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  border: "2px solid var(--line)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 13,
+                }}
+              >
+                {avatarUploading ? "..." : "\u270E"}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                style={{ display: "none" }}
+                onChange={handleAvatarChange}
+              />
             </div>
             <div style={{ flex: 1, paddingBottom: 4 }}>
               <div className="h2">
@@ -209,7 +279,7 @@ export default function MeHome() {
           <div
             style={{ fontSize: 32, fontWeight: 800, color: "var(--brand)" }}
           >
-            {profileLoading ? "—" : listingsCount}
+            {profileLoading ? "\u2014" : listingsCount}
           </div>
           <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
             Объявлений
@@ -226,7 +296,7 @@ export default function MeHome() {
           <div
             style={{ fontSize: 32, fontWeight: 800, color: "#ef4444" }}
           >
-            {profileLoading ? "—" : favCount}
+            {profileLoading ? "\u2014" : favCount}
           </div>
           <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
             В избранном

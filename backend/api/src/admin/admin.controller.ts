@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Roles } from '../auth/roles.decorator';
 
@@ -18,8 +18,18 @@ export class AdminController {
   }
 
   @Get('listings')
-  listings() {
-    return this.service.getListings();
+  listings(
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('userId') userId?: string,
+    @Query('isActive') isActive?: string,
+  ) {
+    return this.service.getListings({
+      search: search || undefined,
+      categoryId: categoryId ? Number(categoryId) : undefined,
+      userId: userId ? Number(userId) : undefined,
+      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+    });
   }
 
   @Patch('listings/:id/toggle')
