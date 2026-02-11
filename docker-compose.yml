@@ -23,6 +23,8 @@ services:
     environment:
       DATABASE_URL: postgresql://autoparts:autoparts@db:5432/autoparts?connection_limit=20&pool_timeout=30
       JWT_SECRET: ${JWT_SECRET:-dev_secret}
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -79,3 +81,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

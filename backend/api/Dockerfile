@@ -27,6 +27,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY package*.json ./
 
+RUN mkdir -p uploads/categories
+
 EXPOSE 3001
 
 CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/main.js"]
