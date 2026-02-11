@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getListings, type Listing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
+import { getCities, type City } from "@/services/cities";
 import { getFavorites } from "@/services/favorites";
 import { ListingCard } from "@/components/ListingCard";
 import { useMe } from "@/hooks/useMe";
@@ -14,6 +15,7 @@ export default function SearchClient() {
   const { user } = useMe();
   const [listings, setListings] = useState<Listing[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,9 @@ export default function SearchClient() {
   const [q, setQ] = useState(searchParams.get("q") || "");
   const [categoryId, setCategoryId] = useState<string>(
     searchParams.get("category") || ""
+  );
+  const [cityId, setCityId] = useState<string>(
+    searchParams.get("cityId") || ""
   );
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
@@ -30,6 +35,10 @@ export default function SearchClient() {
     getCategories()
       .then(setCategories)
       .catch(() => setCategories([]));
+
+    getCities()
+      .then(setCities)
+      .catch(() => setCities([]));
   }, []);
 
   useEffect(() => {
@@ -50,9 +59,11 @@ export default function SearchClient() {
         minPrice?: number;
         maxPrice?: number;
         search?: string;
+        cityId?: number;
       } = {};
 
       if (categoryId) params.categoryId = Number(categoryId);
+      if (cityId) params.cityId = Number(cityId);
       if (minPrice && !isNaN(Number(minPrice))) params.minPrice = Number(minPrice);
       if (maxPrice && !isNaN(Number(maxPrice))) params.maxPrice = Number(maxPrice);
       if (q.trim()) params.search = q.trim();
@@ -67,7 +78,7 @@ export default function SearchClient() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [q, categoryId, minPrice, maxPrice]);
+  }, [q, categoryId, cityId, minPrice, maxPrice]);
 
   const sortedListings = useMemo(() => {
     const list = [...listings];
@@ -121,6 +132,15 @@ export default function SearchClient() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+
+          <select value={cityId} onChange={(e) => setCityId(e.target.value)}>
+            <option value="">Все города</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
 
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">Все категории</option>

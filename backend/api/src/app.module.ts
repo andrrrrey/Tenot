@@ -11,6 +11,7 @@ import { ChatModule } from './chat/chat.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
+import { CitiesModule } from './cities/cities.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UsersModule } from './users/users.module';
     FavoritesModule,
     AdminModule,
     UsersModule,
+    CitiesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

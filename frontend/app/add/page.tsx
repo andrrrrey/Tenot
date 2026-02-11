@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import { createListing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
+import { getCities, type City } from "@/services/cities";
 
 export default function AddPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
+  const [cityId, setCityId] = useState<string>("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -28,6 +31,10 @@ export default function AddPage() {
         }
       })
       .catch(() => setCategories([]));
+
+    getCities()
+      .then(setCities)
+      .catch(() => setCities([]));
   }, []);
 
   const canPublish = useMemo(() => {
@@ -51,6 +58,7 @@ export default function AddPage() {
         description: description.trim(),
         price: Number(price),
         categoryId: Number(categoryId),
+        ...(cityId ? { cityId: Number(cityId) } : {}),
       });
 
       router.push("/me/items");
@@ -147,6 +155,35 @@ export default function AddPage() {
                   </option>
                 )
               )}
+            </select>
+          </div>
+
+          {/* City */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Город
+            </label>
+            <select
+              value={cityId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                setCityId(e.target.value)
+              }
+              style={{ padding: "12px 14px" }}
+            >
+              <option value="">Выберите город</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -282,6 +319,7 @@ export default function AddPage() {
             gap: 6,
           }}
         >
+          <li>Укажите город для привлечения местных покупателей</li>
           <li>Заголовок должен быть не менее 3 символов</li>
           <li>Описание должно быть не менее 10 символов</li>
           <li>Цена указывается в рублях</li>

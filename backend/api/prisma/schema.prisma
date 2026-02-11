@@ -13,6 +13,14 @@ enum Role {
   ADMIN
 }
 
+model City {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  users    User[]
+  listings Listing[]
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -21,6 +29,9 @@ model User {
   phone     String?
   role      Role     @default(USER)
   createdAt DateTime @default(now())
+
+  cityId Int?
+  city   City? @relation(fields: [cityId], references: [id])
 
   listings Listing[]
 
@@ -55,9 +66,11 @@ model Listing {
 
   userId     Int
   categoryId Int
+  cityId     Int?
 
   user     User     @relation(fields: [userId], references: [id])
   category Category @relation(fields: [categoryId], references: [id])
+  city     City?    @relation(fields: [cityId], references: [id])
 
   images    ListingImage[]
   chats     Chat[]

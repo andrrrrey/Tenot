@@ -67,6 +67,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
 
         <div className="muted" style={{ marginTop: 6 }}>
           {listing.category?.name || "Без категории"}
+          {listing.city?.name && ` \u00B7 ${listing.city.name}`}
         </div>
 
         <div style={{ marginTop: 8, fontWeight: 800, fontSize: 18 }}>

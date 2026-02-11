@@ -2,14 +2,30 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
+import { getCities, type City } from "@/services/cities";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useStore();
   const [q, setQ] = useState("");
+  const [cities, setCities] = useState<City[]>([]);
+  const [cityId, setCityId] = useState<string>("");
+
+  useEffect(() => {
+    getCities()
+      .then(setCities)
+      .catch(() => setCities([]));
+  }, []);
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (cityId) params.set("cityId", cityId);
+    router.push(`/search?${params.toString()}`);
+  };
 
   return (
     <header style={{ borderBottom:"1px solid var(--line)", background:"#fff" }}>
@@ -24,17 +40,29 @@ export function SiteHeader() {
             </span>
           </div>
 
-          <div className="row" style={{ flex:1, maxWidth: 520 }}>
+          <div className="row" style={{ flex:1, maxWidth: 600, gap: 8 }}>
+            <select
+              value={cityId}
+              onChange={(e) => setCityId(e.target.value)}
+              style={{ padding: "8px 10px", maxWidth: 160, fontSize: 13 }}
+            >
+              <option value="">Все города</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
             <input
               className="input"
               value={q}
               onChange={(e)=>setQ(e.target.value)}
               placeholder="Поиск…"
               onKeyDown={(e)=>{
-                if (e.key === "Enter") router.push(`/search?q=${encodeURIComponent(q)}`);
+                if (e.key === "Enter") handleSearch();
               }}
             />
-            <button className="btn" onClick={()=>router.push(`/search?q=${encodeURIComponent(q)}`)}>
+            <button className="btn" onClick={handleSearch}>
               Найти
             </button>
           </div>
