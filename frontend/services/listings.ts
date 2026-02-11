@@ -10,7 +10,7 @@ export type Listing = {
   createdAt: string;
   category: { id: number; name: string };
   images: { id: number; url: string }[];
-  user: { id: number; email: string; name?: string; phone?: string; cityId?: number; city?: { id: number; name: string } | null };
+  user: { id: number; email: string; name?: string; phone?: string; avatarUrl?: string | null; cityId?: number; city?: { id: number; name: string } | null };
   cityId: number | null;
   city: { id: number; name: string } | null;
 };

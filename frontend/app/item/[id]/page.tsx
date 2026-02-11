@@ -223,7 +223,7 @@ export default function ItemPage() {
 
       <aside style={{ gridColumn: "span 4" }}>
         <div className="card" style={{ background: "var(--soft)" }}>
-          <div className="h2">ALLO</div>
+          <div className="h2">TENOT</div>
           <p className="muted" style={{ marginTop: 8 }}>
             Объявления без лишнего. В MVP контакты открываются кнопкой.
           </p>

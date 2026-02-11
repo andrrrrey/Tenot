@@ -164,23 +164,39 @@ export default function ListingPage() {
 
           {/* Seller avatar + name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                background: 'var(--brand)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: 16,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              {sellerInitials}
-            </div>
+            {listing.user?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={listing.user.avatarUrl}
+                alt={sellerName}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                  border: '2px solid var(--brand)',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: 'var(--brand)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {sellerInitials}
+              </div>
+            )}
             <div>
               <div style={{ fontWeight: 600 }}>{sellerName}</div>
             </div>

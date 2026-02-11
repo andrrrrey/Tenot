@@ -27,6 +27,7 @@ model User {
   password  String
   name      String?
   phone     String?
+  avatarUrl String?
   role      Role     @default(USER)
   createdAt DateTime @default(now())
 

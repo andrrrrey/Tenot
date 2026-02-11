@@ -33,7 +33,7 @@ export function SiteHeader() {
         <div className="row" style={{ justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
           <div className="row" style={{ gap: 12 }}>
             <Link href="/" style={{ fontWeight:900, letterSpacing:0.5, color:"var(--brand)", fontSize: 22 }}>
-              ALLO
+              TENOT
             </Link>
             <span className="muted" style={{ fontSize: 12, display: pathname === "/" ? "none" : "inline" }}>
               объявления без лишнего

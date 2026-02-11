@@ -12,7 +12,7 @@ export class ListingsService {
 
     return this.prisma.listing.create({
       data: { ...dto, userId },
-      include: { images: true, category: true, city: true, user: { select: { id: true, email: true, name: true, phone: true, cityId: true, city: true } } },
+      include: { images: true, category: true, city: true, user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } } },
     });
   }
 
@@ -55,7 +55,7 @@ export class ListingsService {
       },
       include: {
         images: true,
-        user: { select: { id: true, email: true, name: true, phone: true, cityId: true, city: true } },
+        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
         category: true,
         city: true,
       },
@@ -66,7 +66,7 @@ export class ListingsService {
   findOne(id: number) {
     return this.prisma.listing.findUnique({
       where: { id },
-      include: { images: true, user: { select: { id: true, email: true, name: true, phone: true, cityId: true, city: true } }, category: true, city: true },
+      include: { images: true, user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } }, category: true, city: true },
     });
   }
 

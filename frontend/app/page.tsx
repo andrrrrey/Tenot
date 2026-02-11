@@ -9,7 +9,7 @@ export default function HomePage() {
       <section className="card" style={{ padding: 18 }}>
         <div className="grid" style={{ alignItems: "center" }}>
           <div style={{ gridColumn: "span 7" }}>
-            <div className="badge">ALLO</div>
+            <div className="badge">TENOT</div>
             <h1 className="h1" style={{ marginTop: 10 }}>
               объявления<br />без лишнего
             </h1>
