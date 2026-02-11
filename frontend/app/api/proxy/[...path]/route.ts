@@ -84,10 +84,15 @@ async function handleProxy(
   }
 
   // Получаем тело запроса (для POST, PATCH, PUT, DELETE)
-  let body: string | undefined;
+  let body: string | ArrayBuffer | undefined;
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
     try {
-      body = await request.text();
+      // Для multipart/form-data (загрузка файлов) используем бинарный формат
+      if (contentType && contentType.includes('multipart/')) {
+        body = await request.arrayBuffer();
+      } else {
+        body = await request.text();
+      }
     } catch {
       // Нет тела запроса - это нормально для некоторых DELETE
     }

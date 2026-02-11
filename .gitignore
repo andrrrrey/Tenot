@@ -13,6 +13,9 @@ build/
 .next/
 *.tsbuildinfo
 
+# Uploaded files
+uploads/
+
 # Backups
 backups/
 

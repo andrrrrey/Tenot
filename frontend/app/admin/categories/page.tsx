@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRequireRole } from '@/hooks/useRequireRole';
 import {
   getCategories,
   createCategory,
-  updateCategory,
+  updateCategoryImage,
   deleteCategory,
   type Category,
 } from '@/services/categories';
@@ -16,7 +16,8 @@ export default function AdminCategories() {
 
   // Create form
   const [name, setName] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const createFileRef = useRef<HTMLInputElement>(null);
 
   // Subcategory form
   const [subName, setSubName] = useState('');
@@ -24,7 +25,8 @@ export default function AdminCategories() {
 
   // Edit image form
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
 
   const reload = async () => setItems(await getCategories());
 
@@ -35,9 +37,10 @@ export default function AdminCategories() {
   const create = async () => {
     const n = name.trim();
     if (!n) return;
-    await createCategory({ name: n, imageUrl: imageUrl.trim() || undefined });
+    await createCategory({ name: n, image: imageFile || undefined });
     setName('');
-    setImageUrl('');
+    setImageFile(null);
+    if (createFileRef.current) createFileRef.current.value = '';
     await reload();
   };
 
@@ -58,14 +61,15 @@ export default function AdminCategories() {
 
   const startEditImage = (cat: Category) => {
     setEditingId(cat.id);
-    setEditImageUrl(cat.imageUrl || '');
+    setEditImageFile(null);
   };
 
   const saveImage = async () => {
-    if (editingId === null) return;
-    await updateCategory(editingId, { imageUrl: editImageUrl.trim() || undefined });
+    if (editingId === null || !editImageFile) return;
+    await updateCategoryImage(editingId, editImageFile);
     setEditingId(null);
-    setEditImageUrl('');
+    setEditImageFile(null);
+    if (editFileRef.current) editFileRef.current.value = '';
     await reload();
   };
 
@@ -84,12 +88,17 @@ export default function AdminCategories() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Название категории"
           />
-          <input
-            className="input"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="URL изображения (необязательно)"
-          />
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>
+              Изображение (необязательно)
+            </label>
+            <input
+              ref={createFileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+            />
+          </div>
           <button className="btn primary" onClick={create} disabled={!name.trim()}>
             Создать категорию
           </button>
@@ -197,18 +206,18 @@ export default function AdminCategories() {
 
                 {/* Edit image inline form */}
                 {editingId === cat.id && (
-                  <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
-                      className="input"
-                      value={editImageUrl}
-                      onChange={(e) => setEditImageUrl(e.target.value)}
-                      placeholder="URL изображения"
+                      ref={editFileRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setEditImageFile(e.target.files?.[0] || null)}
                       style={{ flex: 1 }}
                     />
-                    <button className="btn primary" onClick={saveImage}>
+                    <button className="btn primary" onClick={saveImage} disabled={!editImageFile}>
                       Сохранить
                     </button>
-                    <button className="btn" onClick={() => setEditingId(null)}>
+                    <button className="btn" onClick={() => { setEditingId(null); setEditImageFile(null); }}>
                       Отмена
                     </button>
                   </div>

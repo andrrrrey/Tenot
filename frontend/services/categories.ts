@@ -10,10 +10,18 @@ export type Category = {
 
 export const getCategories = () => api.get<Category[]>('/categories');
 
-export const createCategory = (data: { name: string; imageUrl?: string; parentId?: number }) =>
-  api.post<Category>('/categories', data);
+export const createCategory = (data: { name: string; image?: File; parentId?: number }) => {
+  const formData = new FormData();
+  formData.append('name', data.name);
+  if (data.image) formData.append('image', data.image);
+  if (data.parentId !== undefined) formData.append('parentId', String(data.parentId));
+  return api.upload<Category>('/categories', formData, 'POST');
+};
 
-export const updateCategory = (id: number, data: { name?: string; imageUrl?: string }) =>
-  api.patch<Category>(`/categories/${id}`, data);
+export const updateCategoryImage = (id: number, image: File) => {
+  const formData = new FormData();
+  formData.append('image', image);
+  return api.upload<Category>(`/categories/${id}`, formData, 'PATCH');
+};
 
 export const deleteCategory = (id: number) => api.del<any>(`/categories/${id}`);

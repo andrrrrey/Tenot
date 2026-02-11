@@ -78,6 +78,40 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * Отправка FormData (multipart/form-data) — для загрузки файлов.
+ * Content-Type не выставляется вручную, чтобы браузер сам добавил boundary.
+ */
+async function apiUpload<T>(path: string, method: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path.startsWith('/') ? '' : '/'}${path}`, {
+    method,
+    body: formData,
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    let errorMessage = `HTTP ${res.status}`;
+    let errorCode: string | undefined;
+
+    try {
+      const errData = await res.json();
+      errorMessage = errData.message || errData.error || errorMessage;
+      errorCode = errData.error;
+    } catch {
+      const errText = await res.text().catch(() => '');
+      if (errText) errorMessage = errText;
+    }
+
+    const apiError = new ApiError(res.status, errorMessage, errorCode);
+    if (apiError.isAuthError && authErrorHandler) {
+      authErrorHandler(apiError);
+    }
+    throw apiError;
+  }
+
+  return (await res.json()) as T;
+}
+
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body?: any) =>
@@ -85,4 +119,6 @@ export const api = {
   patch: <T>(path: string, body?: any) =>
     apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body ?? {}) }),
   del: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+  upload: <T>(path: string, formData: FormData, method: 'POST' | 'PATCH' = 'POST') =>
+    apiUpload<T>(path, method, formData),
 };
