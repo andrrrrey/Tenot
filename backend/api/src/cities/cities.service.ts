@@ -12,14 +12,18 @@ export class CitiesService {
   }
 
   async search(query: string) {
-    const where = query.trim()
-      ? {
-          name: {
-            contains: query.trim(),
-            mode: 'insensitive' as const,
-          },
-        }
-      : {};
+    const q = query.trim();
+
+    const where: any = {
+      type: { not: 'REGION' as const },
+    };
+
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' as const } },
+        { region: { name: { contains: q, mode: 'insensitive' as const } } },
+      ];
+    }
 
     const cities = await this.prisma.city.findMany({
       where,

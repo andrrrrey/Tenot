@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { searchCities, type City } from "@/services/cities";
 
 const TYPE_LABELS: Record<string, string> = {
-  REGION: "Области и регионы",
   CITY: "Города",
   TOWN: "Посёлки",
   VILLAGE: "Сёла и деревни",
@@ -84,8 +83,7 @@ export function CitySearchPopup({
     setOpen(false);
   };
 
-  const regions = results.filter((c) => c.type === "REGION");
-  const settlements = results.filter((c) => c.type !== "REGION");
+  const settlements = results;
 
   return (
     <div style={{ position: "relative" }}>
@@ -252,59 +250,29 @@ export function CitySearchPopup({
                 </div>
               )}
 
-              {!loading && (
-                <>
-                  {regions.length > 0 && (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                          padding: "8px 0 4px",
-                        }}
-                      >
-                        {TYPE_LABELS.REGION}
-                      </div>
-                      {regions.map((city) => (
-                        <CityRow
-                          key={city.id}
-                          city={city}
-                          isSelected={value === String(city.id)}
-                          onClick={() => handleSelect(city)}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {settlements.length > 0 && (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                          padding: "8px 0 4px",
-                          marginTop: regions.length > 0 ? 8 : 0,
-                        }}
-                      >
-                        Города и населённые пункты
-                      </div>
-                      {settlements.map((city) => (
-                        <CityRow
-                          key={city.id}
-                          city={city}
-                          isSelected={value === String(city.id)}
-                          onClick={() => handleSelect(city)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
+              {!loading && settlements.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      padding: "8px 0 4px",
+                    }}
+                  >
+                    Города и населённые пункты
+                  </div>
+                  {settlements.map((city) => (
+                    <CityRow
+                      key={city.id}
+                      city={city}
+                      isSelected={value === String(city.id)}
+                      onClick={() => handleSelect(city)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -361,7 +329,7 @@ function CityRow({
           </div>
         )}
       </div>
-      {city.type === "REGION" && (
+      {city.type !== "CITY" && TYPE_LABELS[city.type] && (
         <span
           style={{
             fontSize: 11,
@@ -373,7 +341,7 @@ function CityRow({
             flexShrink: 0,
           }}
         >
-          область
+          {TYPE_LABELS[city.type]}
         </span>
       )}
     </button>
