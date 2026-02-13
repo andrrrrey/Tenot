@@ -14,19 +14,19 @@ export class CitiesService {
   async search(query: string) {
     const q = query.trim();
 
-    const where: any = {
-      type: { not: 'REGION' as const },
-    };
+    const conditions: any[] = [{ type: { not: 'REGION' } }];
 
     if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' as const } },
-        { region: { name: { contains: q, mode: 'insensitive' as const } } },
-      ];
+      conditions.push({
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { region: { name: { contains: q, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     const cities = await this.prisma.city.findMany({
-      where,
+      where: { AND: conditions },
       include: {
         region: { select: { id: true, name: true } },
       },
