@@ -20,7 +20,9 @@ ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
 # wget for lightweight Docker health checks (instead of spawning node -e)
-RUN apt-get update && apt-get install -y wget --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# Remove ld.so.preload in case the base image or runtime is compromised
+RUN apt-get update && apt-get install -y wget --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/ld.so.preload
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
