@@ -13,9 +13,21 @@ enum Role {
   ADMIN
 }
 
+enum CityType {
+  REGION
+  CITY
+  VILLAGE
+  TOWN
+}
+
 model City {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id       Int      @id @default(autoincrement())
+  name     String   @unique
+  type     CityType @default(CITY)
+  regionId Int?
+
+  region   City?  @relation("CityRegion", fields: [regionId], references: [id])
+  children City[] @relation("CityRegion")
 
   users    User[]
   listings Listing[]

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import { getListing, updateListing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
-import { getCities, type City } from "@/services/cities";
+import { CitySearchPopup } from "@/components/CitySearchPopup";
 
 export default function EditPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,9 +13,9 @@ export default function EditPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
+  const [cityName, setCityName] = useState<string>("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -28,10 +28,6 @@ export default function EditPage() {
     getCategories()
       .then(setCategories)
       .catch(() => setCategories([]));
-
-    getCities()
-      .then(setCities)
-      .catch(() => setCities([]));
   }, []);
 
   useEffect(() => {
@@ -51,6 +47,7 @@ export default function EditPage() {
         setDescription(listing.description);
         setCategoryId(String(listing.category.id));
         setCityId(listing.cityId ? String(listing.cityId) : "");
+        setCityName(listing.city?.name || "");
       })
       .catch(() => setError("Ошибка загрузки объявления"))
       .finally(() => setInitialLoading(false));
@@ -190,20 +187,12 @@ export default function EditPage() {
             >
               Город
             </label>
-            <select
+            <CitySearchPopup
               value={cityId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                setCityId(e.target.value)
-              }
-              style={{ padding: "12px 14px" }}
-            >
-              <option value="">Выберите город</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              selectedName={cityName}
+              onChange={(id, name) => { setCityId(id); setCityName(name); }}
+              placeholder="Выберите город"
+            />
           </div>
 
           {/* Title */}
