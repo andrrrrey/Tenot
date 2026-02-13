@@ -6,7 +6,7 @@ const nextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        destination: `${process.env.BACKEND_URL || 'http://localhost:3001'}/uploads/:path*`,
+        destination: `${process.env.BACKEND_URL || 'http://api:3001'}/uploads/:path*`,
       },
     ];
   },
