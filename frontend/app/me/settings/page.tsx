@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
 import { useRouter } from "next/navigation";
 import { getMyProfile, updateMyProfile } from "@/services/users";
-import { getCities, type City } from "@/services/cities";
+import { CitySearchPopup } from "@/components/CitySearchPopup";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [cityId, setCityId] = useState<string>("");
-  const [cities, setCities] = useState<City[]>([]);
+  const [cityName, setCityName] = useState<string>("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -27,12 +27,6 @@ export default function SettingsPage() {
   }, [loading, apiUser, router]);
 
   useEffect(() => {
-    getCities()
-      .then(setCities)
-      .catch(() => setCities([]));
-  }, []);
-
-  useEffect(() => {
     if (!apiUser) return;
     setProfileLoading(true);
     getMyProfile()
@@ -40,6 +34,7 @@ export default function SettingsPage() {
         setName(profile.name || "");
         setPhone(profile.phone || "");
         setCityId(profile.cityId ? String(profile.cityId) : "");
+        setCityName(profile.city?.name || "");
       })
       .catch(() => {})
       .finally(() => setProfileLoading(false));
@@ -144,26 +139,20 @@ export default function SettingsPage() {
                 type="tel"
               />
             </label>
-            <label>
+            <div>
               <div
                 className="muted"
                 style={{ fontSize: 12, marginBottom: 6 }}
               >
                 Город
               </div>
-              <select
+              <CitySearchPopup
                 value={cityId}
-                onChange={(e) => setCityId(e.target.value)}
-                style={{ padding: "10px 14px" }}
-              >
-                <option value="">Не выбран</option>
-                {cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                selectedName={cityName}
+                onChange={(id, name) => { setCityId(id); setCityName(name); }}
+                placeholder="Не выбран"
+              />
+            </div>
             <button
               className="btn primary"
               onClick={handleSave}

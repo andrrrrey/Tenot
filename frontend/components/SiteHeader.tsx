@@ -2,23 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { getCities, type City } from "@/services/cities";
+import { CitySearchPopup } from "@/components/CitySearchPopup";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useStore();
   const [q, setQ] = useState("");
-  const [cities, setCities] = useState<City[]>([]);
   const [cityId, setCityId] = useState<string>("");
-
-  useEffect(() => {
-    getCities()
-      .then(setCities)
-      .catch(() => setCities([]));
-  }, []);
+  const [cityName, setCityName] = useState<string>("");
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -41,18 +35,15 @@ export function SiteHeader() {
           </div>
 
           <div className="row" style={{ flex:1, maxWidth: 600, gap: 8 }}>
-            <select
-              value={cityId}
-              onChange={(e) => setCityId(e.target.value)}
-              style={{ padding: "8px 10px", maxWidth: 160, fontSize: 13 }}
-            >
-              <option value="">Все города</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div style={{ maxWidth: 160, flexShrink: 0 }}>
+              <CitySearchPopup
+                value={cityId}
+                selectedName={cityName}
+                onChange={(id, name) => { setCityId(id); setCityName(name); }}
+                placeholder="Все города"
+                compact
+              />
+            </div>
             <input
               className="input"
               value={q}

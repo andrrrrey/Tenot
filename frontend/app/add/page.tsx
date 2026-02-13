@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import { createListing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
-import { getCities, type City } from "@/services/cities";
+import { CitySearchPopup } from "@/components/CitySearchPopup";
 
 export default function AddPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
+  const [cityName, setCityName] = useState<string>("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -31,10 +31,6 @@ export default function AddPage() {
         }
       })
       .catch(() => setCategories([]));
-
-    getCities()
-      .then(setCities)
-      .catch(() => setCities([]));
   }, []);
 
   const canPublish = useMemo(() => {
@@ -171,20 +167,12 @@ export default function AddPage() {
             >
               Город
             </label>
-            <select
+            <CitySearchPopup
               value={cityId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                setCityId(e.target.value)
-              }
-              style={{ padding: "12px 14px" }}
-            >
-              <option value="">Выберите город</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              selectedName={cityName}
+              onChange={(id, name) => { setCityId(id); setCityName(name); }}
+              placeholder="Выберите город"
+            />
           </div>
 
           {/* Title */}
