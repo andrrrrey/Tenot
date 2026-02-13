@@ -20,7 +20,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # OpenSSL нужен для Prisma runtime, wget для health checks
-RUN apt-get update && apt-get install -y openssl wget --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# Remove ld.so.preload in case the base image or runtime is compromised
+RUN apt-get update && apt-get install -y openssl wget --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/ld.so.preload
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
