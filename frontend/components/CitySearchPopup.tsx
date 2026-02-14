@@ -159,7 +159,7 @@ export function CitySearchPopup({
               borderRadius: 16,
               width: "90%",
               maxWidth: 480,
-              maxHeight: "80vh",
+              height: "70vh",
               display: "flex",
               flexDirection: "column",
               boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
@@ -172,6 +172,7 @@ export function CitySearchPopup({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                flexShrink: 0,
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 18 }}>
@@ -195,7 +196,7 @@ export function CitySearchPopup({
             </div>
 
             {/* Search input */}
-            <div style={{ padding: "12px 20px" }}>
+            <div style={{ padding: "12px 20px", flexShrink: 0 }}>
               <input
                 ref={inputRef}
                 className="input"
@@ -213,6 +214,7 @@ export function CitySearchPopup({
             <div
               style={{
                 flex: 1,
+                minHeight: 0,
                 overflowY: "auto",
                 padding: "0 20px 16px",
               }}
