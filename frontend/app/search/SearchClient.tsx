@@ -29,7 +29,7 @@ export default function SearchClient() {
   const [cityName, setCityName] = useState("");
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
-  const [sort, setSort] = useState<"new" | "cheap" | "expensive">("new");
+  const [sort, setSort] = useState<"default" | "cheap" | "expensive" | "new">("default");
 
   useEffect(() => {
     getCategories()
@@ -77,15 +77,16 @@ export default function SearchClient() {
   }, [q, categoryId, cityId, minPrice, maxPrice]);
 
   const sortedListings = useMemo(() => {
+    if (sort === "default") return listings;
     const list = [...listings];
+    if (sort === "cheap") list.sort((a, b) => a.price - b.price);
+    if (sort === "expensive") list.sort((a, b) => b.price - a.price);
     if (sort === "new") {
       list.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     }
-    if (sort === "cheap") list.sort((a, b) => a.price - b.price);
-    if (sort === "expensive") list.sort((a, b) => b.price - a.price);
     return list;
   }, [listings, sort]);
 
@@ -174,9 +175,10 @@ export default function SearchClient() {
           </div>
 
           <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-            <option value="new">Сортировка: свежее</option>
+            <option value="default">По умолчанию</option>
             <option value="cheap">Сначала дешевле</option>
             <option value="expensive">Сначала дороже</option>
+            <option value="new">По дате</option>
           </select>
         </div>
       </aside>
