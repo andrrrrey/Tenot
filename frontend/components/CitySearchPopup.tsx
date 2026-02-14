@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { searchCities, type City } from "@/services/cities";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -83,7 +83,14 @@ export function CitySearchPopup({
     setOpen(false);
   };
 
-  const settlements = results;
+  const regions = useMemo(
+    () => results.filter((c) => c.type === "REGION"),
+    [results]
+  );
+  const settlements = useMemo(
+    () => results.filter((c) => c.type !== "REGION"),
+    [results]
+  );
 
   return (
     <div style={{ position: "relative" }}>
@@ -241,12 +248,38 @@ export function CitySearchPopup({
                 </div>
               )}
 
-              {!loading && results.length === 0 && query.trim() && (
+              {!loading && regions.length === 0 && settlements.length === 0 && query.trim() && (
                 <div
                   className="muted"
                   style={{ padding: "12px 0", fontSize: 14 }}
                 >
                   Ничего не найдено
+                </div>
+              )}
+
+              {!loading && regions.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      padding: "8px 0 4px",
+                    }}
+                  >
+                    Регионы
+                  </div>
+                  {regions.map((region) => (
+                    <CityRow
+                      key={region.id}
+                      city={region}
+                      isSelected={value === String(region.id)}
+                      onClick={() => handleSelect(region)}
+                      query={query}
+                    />
+                  ))}
                 </div>
               )}
 
@@ -270,6 +303,7 @@ export function CitySearchPopup({
                       city={city}
                       isSelected={value === String(city.id)}
                       onClick={() => handleSelect(city)}
+                      query={query}
                     />
                   ))}
                 </div>
@@ -282,15 +316,31 @@ export function CitySearchPopup({
   );
 }
 
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <span style={{ fontWeight: 700 }}>{text.slice(idx, idx + query.length)}</span>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
+
 function CityRow({
   city,
   isSelected,
   onClick,
+  query,
 }: {
   city: City;
   isSelected: boolean;
   onClick: () => void;
+  query: string;
 }) {
+  const isRegion = city.type === "REGION";
   return (
     <button
       type="button"
@@ -320,7 +370,9 @@ function CityRow({
       }}
     >
       <div>
-        <div style={{ fontWeight: isSelected ? 600 : 400 }}>{city.name}</div>
+        <div style={{ fontWeight: isSelected ? 600 : 400 }}>
+          <HighlightMatch text={city.name} query={query} />
+        </div>
         {city.region && (
           <div
             style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}
@@ -329,7 +381,7 @@ function CityRow({
           </div>
         )}
       </div>
-      {city.type !== "CITY" && TYPE_LABELS[city.type] && (
+      {!isRegion && city.type !== "CITY" && TYPE_LABELS[city.type] && (
         <span
           style={{
             fontSize: 11,

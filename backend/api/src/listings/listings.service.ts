@@ -37,11 +37,30 @@ export class ListingsService {
       }
     }
 
+    // If the selected cityId is a region, match all cities within that region
+    let cityFilter: any = undefined;
+    if (filters.cityId) {
+      const selectedCity = await this.prisma.city.findUnique({
+        where: { id: filters.cityId },
+      });
+      if (selectedCity?.type === 'REGION') {
+        // Find all cities belonging to this region
+        const childCities = await this.prisma.city.findMany({
+          where: { regionId: filters.cityId },
+          select: { id: true },
+        });
+        const ids = childCities.map((c) => c.id);
+        cityFilter = { in: ids };
+      } else {
+        cityFilter = filters.cityId;
+      }
+    }
+
     return this.prisma.listing.findMany({
       where: {
         isActive: true,
         categoryId: categoryFilter,
-        cityId: filters.cityId,
+        cityId: cityFilter,
         price: {
           gte: filters.minPrice,
           lte: filters.maxPrice,
