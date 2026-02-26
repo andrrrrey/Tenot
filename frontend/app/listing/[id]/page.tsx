@@ -213,15 +213,21 @@ export default function ListingPage() {
             </a>
           )}
 
-          {/* Chat button */}
-          <button
-            className="btn primary"
-            onClick={() => {
-              router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
-            }}
-          >
-            &#128172;&ensp;Написать в чат
-          </button>
+          {/* Chat button — only for non-owners */}
+          {(!user || user.id !== listingOwnerId) && (
+            <button
+              className="btn primary"
+              onClick={() => {
+                if (!user) {
+                  router.push('/login');
+                  return;
+                }
+                router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
+              }}
+            >
+              &#128172;&ensp;Написать в чат
+            </button>
+          )}
         </div>
       </aside>
     </div>
