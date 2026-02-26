@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
@@ -8,6 +8,7 @@ import {
   getMyChats,
   getMessages,
   sendMessage,
+  markChatRead,
   type Chat,
   type ChatUser,
   type Message,
@@ -71,6 +72,26 @@ function formatTime(dateStr: string): string {
   return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
 
+// ✓ = delivered, ✓✓ = read
+function ReadStatus({ message, isMine }: { message: Message; isMine: boolean }) {
+  if (!isMine) return null;
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        marginLeft: 4,
+        color: message.isRead ? "#4ade80" : "rgba(255,255,255,0.7)",
+        display: "inline-flex",
+        alignItems: "center",
+        letterSpacing: message.isRead ? -1 : 0,
+      }}
+      title={message.isRead ? "Прочитано" : "Доставлено"}
+    >
+      {message.isRead ? "✓✓" : "✓"}
+    </span>
+  );
+}
+
 export default function ChatClient() {
   const sp = useSearchParams();
   const router = useRouter();
@@ -89,6 +110,11 @@ export default function ChatClient() {
   const [sendError, setSendError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedChatRef = useRef<Chat | null>(null);
+  const userRef = useRef<{ id: number; role: string } | null>(null);
+
+  useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   // Load chats on mount / when user changes
   useEffect(() => {
@@ -101,7 +127,6 @@ export default function ChatClient() {
     getMyChats()
       .then((data) => {
         setChats(data);
-
         if (chatIdParam) {
           const found = data.find((c) => c.id === Number(chatIdParam));
           if (found) setSelectedChat(found);
@@ -111,16 +136,69 @@ export default function ChatClient() {
       .finally(() => setLoading(false));
   }, [user, chatIdParam]);
 
-  // Load messages when a chat is selected
+  // Load messages when a chat is selected + mark as read
   useEffect(() => {
-    if (!selectedChat) {
+    if (!selectedChat || !user) {
       setMessages([]);
       return;
     }
     getMessages(selectedChat.id)
-      .then(setMessages)
+      .then((msgs) => {
+        setMessages(msgs);
+        const hasUnread = msgs.some((m) => !m.isRead && m.senderId !== user.id);
+        if (hasUnread) {
+          markChatRead(selectedChat.id).then(() => {
+            getMyChats().then(setChats).catch(() => {});
+          }).catch(() => {});
+        }
+      })
       .catch(() => setMessages([]));
-  }, [selectedChat]);
+  }, [selectedChat?.id, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Polling for real-time messages and chat list updates
+  useEffect(() => {
+    if (!user) return;
+
+    const pollMessages = async () => {
+      const current = selectedChatRef.current;
+      const currentUser = userRef.current;
+      if (!current || !currentUser) return;
+      try {
+        const msgs = await getMessages(current.id);
+        setMessages((prev) => {
+          if (
+            msgs.length !== prev.length ||
+            msgs.some((m, i) => m.id !== prev[i]?.id || m.isRead !== prev[i]?.isRead)
+          ) {
+            return msgs;
+          }
+          return prev;
+        });
+        const hasUnread = msgs.some((m) => !m.isRead && m.senderId !== currentUser.id);
+        if (hasUnread) {
+          markChatRead(current.id).catch(() => {});
+        }
+      } catch {
+        // ignore poll errors
+      }
+    };
+
+    const pollChats = async () => {
+      try {
+        const data = await getMyChats();
+        setChats(data);
+      } catch {
+        // ignore
+      }
+    };
+
+    const msgInterval = setInterval(pollMessages, 3000);
+    const chatInterval = setInterval(pollChats, 10000);
+    return () => {
+      clearInterval(msgInterval);
+      clearInterval(chatInterval);
+    };
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -132,6 +210,10 @@ export default function ChatClient() {
     if (!user) return undefined;
     return user.id === chat.initiatorId ? chat.owner : chat.initiator;
   }
+
+  const handleSelectChat = useCallback((chat: Chat) => {
+    setSelectedChat(chat);
+  }, []);
 
   const handleSendMessage = async () => {
     const text = newMessage.trim();
@@ -281,11 +363,12 @@ export default function ChatClient() {
               const interlocutor = getInterlocutor(chat);
               const lastMsg = chat.messages?.[0];
               const isSelected = selectedChat?.id === chat.id;
+              const unreadCount = chat._count?.messages ?? 0;
 
               return (
                 <button
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => handleSelectChat(chat)}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -308,7 +391,7 @@ export default function ChatClient() {
                     {/* Interlocutor name */}
                     <div
                       style={{
-                        fontWeight: 600,
+                        fontWeight: unreadCount > 0 && !isSelected ? 700 : 600,
                         fontSize: 14,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -350,20 +433,34 @@ export default function ChatClient() {
                     )}
                   </div>
 
-                  {/* Time of last message */}
-                  {lastMsg && (
-                    <div
-                      style={{
-                        fontSize: 11,
-                        opacity: 0.55,
-                        flexShrink: 0,
-                        alignSelf: "flex-start",
-                        marginTop: 2,
-                      }}
-                    >
-                      {formatTime(lastMsg.createdAt)}
-                    </div>
-                  )}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                    {/* Time of last message */}
+                    {lastMsg && (
+                      <div style={{ fontSize: 11, opacity: 0.55 }}>
+                        {formatTime(lastMsg.createdAt)}
+                      </div>
+                    )}
+                    {/* Unread badge */}
+                    {unreadCount > 0 && !isSelected && (
+                      <div
+                        style={{
+                          background: "#ef4444",
+                          color: "#fff",
+                          borderRadius: 10,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          minWidth: 18,
+                          height: 18,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "0 5px",
+                        }}
+                      >
+                        {unreadCount}
+                      </div>
+                    )}
+                  </div>
                 </button>
               );
             })
@@ -479,12 +576,17 @@ export default function ChatClient() {
                             marginTop: 4,
                             opacity: 0.65,
                             textAlign: "right",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "flex-end",
+                            gap: 2,
                           }}
                         >
                           {new Date(m.createdAt).toLocaleTimeString("ru-RU", {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
+                          <ReadStatus message={m} isMine={isMine} />
                         </div>
                       </div>
                     </div>

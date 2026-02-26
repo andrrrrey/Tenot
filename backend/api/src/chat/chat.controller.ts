@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto.create-message';
 
@@ -19,5 +19,10 @@ export class ChatController {
   @Get(':chatId/messages')
   getMessages(@Req() req: any, @Param('chatId') chatId: string) {
     return this.service.getMessages(+chatId, req.user.userId);
+  }
+
+  @Patch(':chatId/read')
+  markAsRead(@Req() req: any, @Param('chatId') chatId: string) {
+    return this.service.markMessagesAsRead(+chatId, req.user.userId);
   }
 }

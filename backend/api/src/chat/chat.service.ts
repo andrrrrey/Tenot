@@ -43,6 +43,19 @@ export class ChatService {
     });
   }
 
+  async markMessagesAsRead(chatId: number, userId: number) {
+    await this.prisma.message.updateMany({
+      where: {
+        chatId,
+        isRead: false,
+        senderId: { not: userId },
+        chat: { OR: [{ initiatorId: userId }, { ownerId: userId }] },
+      },
+      data: { isRead: true },
+    });
+    return { ok: true };
+  }
+
   getChats(userId: number) {
     return this.prisma.chat.findMany({
       where: { OR: [{ initiatorId: userId }, { ownerId: userId }] },
@@ -51,6 +64,13 @@ export class ChatService {
         initiator: { select: { id: true, name: true, avatarUrl: true } },
         owner: { select: { id: true, name: true, avatarUrl: true } },
         listing: { select: { id: true, title: true } },
+        _count: {
+          select: {
+            messages: {
+              where: { isRead: false, senderId: { not: userId } },
+            },
+          },
+        },
       },
       orderBy: { id: 'desc' },
     });
