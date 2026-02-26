@@ -48,6 +48,9 @@ export class ChatService {
       where: { OR: [{ initiatorId: userId }, { ownerId: userId }] },
       include: {
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        initiator: { select: { id: true, name: true, avatarUrl: true } },
+        owner: { select: { id: true, name: true, avatarUrl: true } },
+        listing: { select: { id: true, title: true } },
       },
       orderBy: { id: 'desc' },
     });
