@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
+import { subscribeUnreadCount } from "@/components/ChatWidget";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -13,6 +14,11 @@ export function SiteHeader() {
   const [q, setQ] = useState("");
   const [cityId, setCityId] = useState<string>("");
   const [cityName, setCityName] = useState<string>("");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    return subscribeUnreadCount(setUnreadCount);
+  }, []);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -59,6 +65,43 @@ export function SiteHeader() {
           </div>
 
           <div className="row" style={{ gap: 10 }}>
+            {user && (
+              <Link
+                href="/chat"
+                title="Сообщения"
+                style={{
+                  position: "relative",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  border: "1px solid var(--line)",
+                  background: "#fff",
+                  color: "inherit",
+                  textDecoration: "none",
+                  fontSize: 20,
+                  flexShrink: 0,
+                }}
+              >
+                💬
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -4,
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#ef4444",
+                      border: "2px solid #fff",
+                    }}
+                  />
+                )}
+              </Link>
+            )}
             <Link className="btn primary" href="/add">Разместить</Link>
             <Link className="btn" href={user ? "/me" : "/login"}>
               {user ? "Профиль" : "Войти"}
