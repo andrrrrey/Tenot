@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "ListingImage" ADD COLUMN "type" TEXT NOT NULL DEFAULT 'image';
+ALTER TABLE "ListingImage" ADD COLUMN "isCover" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "ListingImage" ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0;

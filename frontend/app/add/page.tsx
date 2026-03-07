@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { createListing } from "@/services/listings";
+import { createListing, uploadListingMedia } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
+import { MediaUpload, type NewMediaFile } from "@/components/MediaUpload";
 
 export default function AddPage() {
   const router = useRouter();
@@ -18,6 +19,10 @@ export default function AddPage() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+
+  // Media state
+  const [newFiles, setNewFiles] = useState<NewMediaFile[]>([]);
+  const [newCoverIndex, setNewCoverIndex] = useState<number | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +47,39 @@ export default function AddPage() {
     );
   }, [title, price, description, categoryId]);
 
+  // ── Media handlers ──────────────────────────────────────────────────────────
+
+  const handleAddFiles = (files: NewMediaFile[]) => {
+    setNewFiles((prev) => {
+      const updated = [...prev, ...files];
+      // Auto-set cover to first new image if none set
+      if (newCoverIndex === null) {
+        const firstImgIdx = updated.findIndex((f) => f.type === "image");
+        if (firstImgIdx !== -1) setNewCoverIndex(firstImgIdx);
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveNew = (index: number) => {
+    setNewFiles((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      if (newCoverIndex === index) {
+        const firstImgIdx = updated.findIndex((f) => f.type === "image");
+        setNewCoverIndex(firstImgIdx === -1 ? null : firstImgIdx);
+      } else if (newCoverIndex !== null && newCoverIndex > index) {
+        setNewCoverIndex(newCoverIndex - 1);
+      }
+      return updated;
+    });
+  };
+
+  const handleSetCoverNew = (index: number) => {
+    setNewCoverIndex(index);
+  };
+
+  // ── Submit ──────────────────────────────────────────────────────────────────
+
   const handleSubmit = async () => {
     if (!canPublish) return;
 
@@ -49,13 +87,28 @@ export default function AddPage() {
     setError(null);
 
     try {
-      await createListing({
+      const listing = await createListing({
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
         categoryId: Number(categoryId),
         ...(cityId ? { cityId: Number(cityId) } : {}),
       });
+
+      if (newFiles.length > 0) {
+        const coverIdx =
+          newCoverIndex !== null
+            ? newFiles
+                .slice(0, newCoverIndex + 1)
+                .filter((f) => f.type === "image").length - 1
+            : undefined;
+
+        await uploadListingMedia(
+          listing.id,
+          newFiles.map((f) => f.file),
+          coverIdx !== undefined && coverIdx >= 0 ? coverIdx : undefined,
+        );
+      }
 
       router.push("/me/items");
     } catch (e: any) {
@@ -266,6 +319,31 @@ export default function AddPage() {
             )}
           </div>
 
+          {/* Media upload */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Фото и видео
+            </label>
+            <MediaUpload
+              existingMedia={[]}
+              newFiles={newFiles}
+              onAddFiles={handleAddFiles}
+              onRemoveExisting={() => {}}
+              onRemoveNew={handleRemoveNew}
+              onSetCoverExisting={() => {}}
+              onSetCoverNew={handleSetCoverNew}
+              newCoverIndex={newCoverIndex}
+            />
+          </div>
+
           <hr style={{ margin: 0 }} />
 
           {/* Submit */}
@@ -307,11 +385,11 @@ export default function AddPage() {
             gap: 6,
           }}
         >
+          <li>Добавьте до 10 фотографий и 1 видео</li>
           <li>Укажите город для привлечения местных покупателей</li>
           <li>Заголовок должен быть не менее 3 символов</li>
           <li>Описание должно быть не менее 10 символов</li>
           <li>Цена указывается в рублях</li>
-          <li>Добавьте подробное описание для привлечения покупателей</li>
         </ul>
       </div>
     </div>

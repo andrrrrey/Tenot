@@ -1,5 +1,13 @@
 import { api } from '@/lib/api';
 
+export type ListingImage = {
+  id: number;
+  url: string;
+  type: string;
+  isCover: boolean;
+  order: number;
+};
+
 export type Listing = {
   id: number;
   title: string;
@@ -9,7 +17,7 @@ export type Listing = {
   isActive: boolean;
   createdAt: string;
   category: { id: number; name: string };
-  images: { id: number; url: string }[];
+  images: ListingImage[];
   user: { id: number; email: string; name?: string; phone?: string; avatarUrl?: string | null; cityId?: number; city?: { id: number; name: string } | null };
   cityId: number | null;
   city: { id: number; name: string } | null;
@@ -54,3 +62,31 @@ export const toggleListing = (id: number, isActive: boolean) =>
 
 export const deleteListing = (id: number) =>
   api.del<{ deleted: boolean }>(`/listings/${id}`);
+
+// ── Media API ─────────────────────────────────────────────────────────────────
+
+export const uploadListingMedia = (
+  listingId: number,
+  files: File[],
+  coverIndex?: number,
+) => {
+  const formData = new FormData();
+  files.forEach((f) => formData.append('files', f));
+  if (coverIndex !== undefined) formData.append('coverIndex', String(coverIndex));
+  return api.upload<Listing>(`/listings/${listingId}/media`, formData, 'POST');
+};
+
+export const deleteListingMedia = (listingId: number, mediaId: number) =>
+  api.del<{ deleted: boolean }>(`/listings/${listingId}/media/${mediaId}`);
+
+export const setListingCover = (listingId: number, mediaId: number) =>
+  api.patch<ListingImage>(`/listings/${listingId}/media/${mediaId}/cover`, {});
+
+/** Helper: get the cover image URL (falls back to first image) */
+export const getCoverUrl = (images: ListingImage[]): string | null => {
+  if (!images?.length) return null;
+  const cover = images.find((i) => i.type === 'image' && i.isCover);
+  if (cover) return cover.url;
+  const firstImage = images.find((i) => i.type === 'image');
+  return firstImage?.url ?? null;
+};
