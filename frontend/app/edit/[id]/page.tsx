@@ -3,9 +3,17 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { getListing, updateListing } from "@/services/listings";
+import {
+  getListing,
+  updateListing,
+  uploadListingMedia,
+  deleteListingMedia,
+  setListingCover,
+  type ListingImage,
+} from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
+import { MediaUpload, type ExistingMedia, type NewMediaFile } from "@/components/MediaUpload";
 
 export default function EditPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +27,14 @@ export default function EditPage() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+
+  // Media state
+  const [existingMedia, setExistingMedia] = useState<ExistingMedia[]>([]);
+  const [deletedIds, setDeletedIds] = useState<number[]>([]);
+  const [newFiles, setNewFiles] = useState<NewMediaFile[]>([]);
+  const [newCoverIndex, setNewCoverIndex] = useState<number | null>(null);
+  // Track if user explicitly changed the cover of an existing item
+  const [pendingCoverId, setPendingCoverId] = useState<number | null>(null);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -48,6 +64,14 @@ export default function EditPage() {
         setCategoryId(String(listing.category.id));
         setCityId(listing.cityId ? String(listing.cityId) : "");
         setCityName(listing.city?.name || "");
+        setExistingMedia(
+          listing.images.map((img: ListingImage) => ({
+            id: img.id,
+            url: img.url,
+            type: img.type,
+            isCover: img.isCover,
+          }))
+        );
       })
       .catch(() => setError("Ошибка загрузки объявления"))
       .finally(() => setInitialLoading(false));
@@ -62,6 +86,84 @@ export default function EditPage() {
     );
   }, [title, price, description, categoryId]);
 
+  // ── Media handlers ──────────────────────────────────────────────────────────
+
+  const handleAddFiles = (files: NewMediaFile[]) => {
+    setNewFiles((prev) => {
+      const updated = [...prev, ...files];
+      if (newCoverIndex === null && pendingCoverId === null) {
+        const hasCover = existingMedia.some((m) => m.isCover && !deletedIds.includes(m.id));
+        if (!hasCover) {
+          const firstImgIdx = updated.findIndex((f) => f.type === "image");
+          if (firstImgIdx !== -1) setNewCoverIndex(firstImgIdx);
+        }
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveExisting = (mediaId: number) => {
+    setDeletedIds((prev) => [...prev, mediaId]);
+    setExistingMedia((prev) =>
+      prev.map((m) => (m.id === mediaId ? { ...m, isCover: false } : m))
+    );
+
+    // If we removed the cover, reassign
+    const removed = existingMedia.find((m) => m.id === mediaId);
+    if (removed?.isCover) {
+      setPendingCoverId(null);
+      const nextImage = existingMedia.find(
+        (m) => m.id !== mediaId && m.type === "image" && !deletedIds.includes(m.id)
+      );
+      if (nextImage) {
+        setPendingCoverId(nextImage.id);
+        setExistingMedia((prev) =>
+          prev.map((m) => ({ ...m, isCover: m.id === nextImage.id }))
+        );
+      } else {
+        const firstNewImg = newFiles.findIndex((f) => f.type === "image");
+        setNewCoverIndex(firstNewImg === -1 ? null : firstNewImg);
+      }
+    }
+
+    if (pendingCoverId === mediaId) setPendingCoverId(null);
+  };
+
+  const handleRemoveNew = (index: number) => {
+    setNewFiles((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      if (newCoverIndex === index) {
+        const hasCover = existingMedia.some((m) => m.isCover && !deletedIds.includes(m.id));
+        if (!hasCover) {
+          const firstImgIdx = updated.findIndex((f) => f.type === "image");
+          setNewCoverIndex(firstImgIdx === -1 ? null : firstImgIdx);
+        } else {
+          setNewCoverIndex(null);
+        }
+      } else if (newCoverIndex !== null && newCoverIndex > index) {
+        setNewCoverIndex(newCoverIndex - 1);
+      }
+      return updated;
+    });
+  };
+
+  const handleSetCoverExisting = (mediaId: number) => {
+    // Unset all covers in existing, unset new cover
+    setExistingMedia((prev) =>
+      prev.map((m) => ({ ...m, isCover: m.id === mediaId }))
+    );
+    setPendingCoverId(mediaId);
+    setNewCoverIndex(null);
+  };
+
+  const handleSetCoverNew = (index: number) => {
+    setNewCoverIndex(index);
+    setExistingMedia((prev) => prev.map((m) => ({ ...m, isCover: false })));
+    setPendingCoverId(null);
+  };
+
+  // ── Submit ──────────────────────────────────────────────────────────────────
+
   const handleSubmit = async () => {
     if (!canSave) return;
 
@@ -69,6 +171,7 @@ export default function EditPage() {
     setError(null);
 
     try {
+      // 1. Update listing fields
       await updateListing(Number(id), {
         title: title.trim(),
         description: description.trim(),
@@ -76,6 +179,25 @@ export default function EditPage() {
         categoryId: Number(categoryId),
         cityId: cityId ? Number(cityId) : null,
       });
+
+      // 2. Delete removed media
+      for (const mediaId of deletedIds) {
+        await deleteListingMedia(Number(id), mediaId);
+      }
+
+      // 3. Upload new files
+      if (newFiles.length > 0) {
+        await uploadListingMedia(
+          Number(id),
+          newFiles.map((f) => f.file),
+          newCoverIndex !== null ? newCoverIndex : undefined,
+        );
+      }
+
+      // 4. Set new cover on existing image if changed
+      if (pendingCoverId !== null && !deletedIds.includes(pendingCoverId)) {
+        await setListingCover(Number(id), pendingCoverId);
+      }
 
       router.push("/me/items");
     } catch (e: any) {
@@ -98,6 +220,11 @@ export default function EditPage() {
   if (!user) {
     return null;
   }
+
+  // Filter out deleted items from view
+  const visibleExistingMedia = existingMedia.filter(
+    (m) => !deletedIds.includes(m.id)
+  );
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -284,6 +411,31 @@ export default function EditPage() {
                 Минимум 10 символов
               </div>
             )}
+          </div>
+
+          {/* Media upload */}
+          <div>
+            <label
+              className="muted"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Фото и видео
+            </label>
+            <MediaUpload
+              existingMedia={visibleExistingMedia}
+              newFiles={newFiles}
+              onAddFiles={handleAddFiles}
+              onRemoveExisting={handleRemoveExisting}
+              onRemoveNew={handleRemoveNew}
+              onSetCoverExisting={handleSetCoverExisting}
+              onSetCoverNew={handleSetCoverNew}
+              newCoverIndex={newCoverIndex}
+            />
           </div>
 
           <hr style={{ margin: 0 }} />

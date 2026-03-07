@@ -1,8 +1,46 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { mkdirSync } from 'fs';
 import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto.create-listing';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
+
+const LISTINGS_UPLOAD_DIR = './uploads/listings';
+mkdirSync(LISTINGS_UPLOAD_DIR, { recursive: true });
+
+const listingMediaStorage = diskStorage({
+  destination: LISTINGS_UPLOAD_DIR,
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+  },
+});
+
+const mediaFileFilter = (_req: any, file: Express.Multer.File, cb: any) => {
+  if (
+    file.mimetype.match(/^image\/(jpeg|jpg|png|gif|webp)$/) ||
+    file.mimetype.match(/^video\/(mp4|webm|ogg|quicktime)$/)
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image and video files are allowed'), false);
+  }
+};
 
 @Controller('listings')
 export class ListingsController {
@@ -60,5 +98,50 @@ export class ListingsController {
   @Delete(':id')
   remove(@Req() req: any, @Param('id') id: string) {
     return this.service.deleteByOwner(+id, req.user.userId);
+  }
+
+  // ── Media endpoints ──────────────────────────────────────────────────────────
+
+  @Roles('USER', 'ADMIN')
+  @Post(':id/media')
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      storage: listingMediaStorage,
+      fileFilter: mediaFileFilter,
+      limits: { files: 11, fileSize: 20 * 1024 * 1024 },
+    }),
+  )
+  uploadMedia(
+    @Req() req: any,
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body('coverIndex') coverIndex?: string,
+  ) {
+    return this.service.uploadMedia(
+      +id,
+      req.user.userId,
+      files || [],
+      coverIndex !== undefined ? +coverIndex : undefined,
+    );
+  }
+
+  @Roles('USER', 'ADMIN')
+  @Delete(':id/media/:mediaId')
+  deleteMedia(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('mediaId') mediaId: string,
+  ) {
+    return this.service.deleteMedia(+id, req.user.userId, +mediaId);
+  }
+
+  @Roles('USER', 'ADMIN')
+  @Patch(':id/media/:mediaId/cover')
+  setCover(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('mediaId') mediaId: string,
+  ) {
+    return this.service.setCover(+id, req.user.userId, +mediaId);
   }
 }

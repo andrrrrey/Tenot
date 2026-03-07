@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getListing, type Listing } from '@/services/listings';
 import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
+import { MediaGallery } from '@/components/MediaGallery';
 
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
@@ -56,39 +57,8 @@ export default function ListingPage() {
       {/* Main content */}
       <div style={{ gridColumn: 'span 8' }}>
         <div className="card" style={{ padding: 20 }}>
-          {/* Images */}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {listing.images?.length ? (
-              listing.images.map((img) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={img.id}
-                  src={img.url}
-                  alt=""
-                  style={{
-                    width: listing.images.length === 1 ? '100%' : 280,
-                    maxHeight: 320,
-                    objectFit: 'cover',
-                    borderRadius: 12,
-                  }}
-                />
-              ))
-            ) : (
-              <div
-                style={{
-                  width: '100%',
-                  height: 200,
-                  background: 'var(--soft)',
-                  borderRadius: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <span className="muted">Нет фото</span>
-              </div>
-            )}
-          </div>
+          {/* Media gallery */}
+          <MediaGallery media={listing.images ?? []} />
 
           {/* Title & price */}
           <div style={{ marginTop: 16 }}>

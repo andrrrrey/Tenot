@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Listing } from "@/services/listings";
+import { getCoverUrl } from "@/services/listings";
 import { useStore } from "@/lib/store";
 import { useMe } from "@/hooks/useMe";
 import { addFavorite, removeFavorite } from "@/services/favorites";
@@ -47,10 +48,10 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   return (
     <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <Link href={`/listing/${listing.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-        {listing.images?.[0] && (
+        {getCoverUrl(listing.images) && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={listing.images[0].url}
+            src={getCoverUrl(listing.images)!}
             alt={listing.title}
             style={{
               width: "100%",
