@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type GalleryMedia = {
   id: number;
@@ -15,15 +15,37 @@ type Props = {
 
 export function MediaGallery({ media }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sort: videos first, then images
+  // Sort: cover first, then images, then videos at end
   const sorted = [...media].sort((a, b) => {
-    if (a.type === "video" && b.type !== "video") return -1;
-    if (a.type !== "video" && b.type === "video") return 1;
+    if (a.isCover && !b.isCover) return -1;
+    if (!a.isCover && b.isCover) return 1;
+    if (a.type === "video" && b.type !== "video") return 1;
+    if (a.type !== "video" && b.type === "video") return -1;
     return 0;
   });
 
-  const images = sorted.filter((m) => m.type === "image");
+  const startAutoplay = useCallback(() => {
+    if (sorted.length <= 1) return;
+    if (autoplayRef.current) clearInterval(autoplayRef.current);
+    autoplayRef.current = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % sorted.length);
+    }, 4000);
+  }, [sorted.length]);
+
+  useEffect(() => {
+    startAutoplay();
+    return () => {
+      if (autoplayRef.current) clearInterval(autoplayRef.current);
+    };
+  }, [startAutoplay]);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+    startAutoplay();
+  };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -62,7 +84,7 @@ export function MediaGallery({ media }: Props) {
     );
   }
 
-  // Single item — full width
+  // Single item — full width, no slider needed
   if (sorted.length === 1) {
     const item = sorted[0];
     return (
@@ -72,13 +94,13 @@ export function MediaGallery({ media }: Props) {
           onClick={() => setActiveIndex(0)}
         >
           {item.type === "video" ? (
-            <VideoThumb url={item.url} />
+            <VideoThumb url={item.url} height={340} showLabel />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.url}
               alt=""
-              style={{ width: "100%", maxHeight: 400, objectFit: "cover", display: "block" }}
+              style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }}
             />
           )}
         </div>
@@ -94,25 +116,25 @@ export function MediaGallery({ media }: Props) {
     );
   }
 
-  // Multiple items: main (first) + thumbnails row
-  const main = sorted[0];
-  const thumbs = sorted.slice(1);
+  // Multiple items: slider + thumbnails strip
+  const main = sorted[currentSlide];
 
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Main item */}
+        {/* Slider main item */}
         <div
           style={{
             borderRadius: 12,
             overflow: "hidden",
             cursor: "pointer",
             position: "relative",
+            userSelect: "none",
           }}
-          onClick={() => setActiveIndex(0)}
+          onClick={() => setActiveIndex(currentSlide)}
         >
           {main.type === "video" ? (
-            <VideoThumb url={main.url} large />
+            <VideoThumb url={main.url} height={340} showLabel />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -126,114 +148,177 @@ export function MediaGallery({ media }: Props) {
               }}
             />
           )}
+
+          {/* Hover overlay */}
           <div
             style={{
               position: "absolute",
               inset: 0,
               background: "rgba(0,0,0,0)",
               transition: "background 0.15s",
+              pointerEvents: "none",
             }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLDivElement).style.background =
-                "rgba(0,0,0,0.08)")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLDivElement).style.background =
-                "rgba(0,0,0,0)")
-            }
           />
+
+          {/* Prev arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToSlide((currentSlide - 1 + sorted.length) % sorted.length);
+            }}
+            style={{
+              position: "absolute",
+              left: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "rgba(0,0,0,0.45)",
+              border: "none",
+              color: "#fff",
+              fontSize: 22,
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 2,
+              lineHeight: 1,
+            }}
+          >
+            ‹
+          </button>
+
+          {/* Next arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToSlide((currentSlide + 1) % sorted.length);
+            }}
+            style={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "rgba(0,0,0,0.45)",
+              border: "none",
+              color: "#fff",
+              fontSize: 22,
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 2,
+              lineHeight: 1,
+            }}
+          >
+            ›
+          </button>
+
+          {/* Dots */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 12,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: 6,
+              zIndex: 2,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {sorted.map((_, i) => (
+              <div
+                key={i}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToSlide(i);
+                }}
+                style={{
+                  width: i === currentSlide ? 20 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  background:
+                    i === currentSlide
+                      ? "#fff"
+                      : "rgba(255,255,255,0.45)",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Counter badge */}
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 12,
+              background: "rgba(0,0,0,0.5)",
+              color: "#fff",
+              fontSize: 12,
+              padding: "2px 8px",
+              borderRadius: 12,
+              zIndex: 2,
+            }}
+          >
+            {currentSlide + 1} / {sorted.length}
+          </div>
         </div>
 
-        {/* Thumbnails row */}
+        {/* Thumbnails row — fixed height, horizontal scroll */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${Math.min(thumbs.length, 5)}, 1fr)`,
+            display: "flex",
             gap: 6,
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            paddingBottom: 2,
           }}
         >
-          {thumbs.map((item, i) => {
-            const realIndex = i + 1;
-            const isLast = i === 4 && sorted.length > 6;
-            return (
-              <div
-                key={item.id}
-                onClick={() => setActiveIndex(realIndex)}
-                style={{
-                  position: "relative",
-                  paddingTop: "75%",
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                }}
-              >
-                {item.type === "video" ? (
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "#1a1a2e",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <span style={{ fontSize: 24, color: "#fff" }}>▶</span>
-                  </div>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.url}
-                    alt=""
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                )}
-
-                {/* "More" overlay on last thumbnail */}
-                {isLast && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "rgba(0,0,0,0.55)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 700,
-                      fontSize: 16,
-                    }}
-                  >
-                    +{sorted.length - 5}
-                  </div>
-                )}
-
-                {/* Hover overlay */}
-                <div
+          {sorted.map((item, i) => (
+            <div
+              key={item.id}
+              onClick={() => goToSlide(i)}
+              style={{
+                flexShrink: 0,
+                width: 80,
+                height: 60,
+                borderRadius: 8,
+                overflow: "hidden",
+                cursor: "pointer",
+                border:
+                  i === currentSlide
+                    ? "2px solid var(--accent, #3b82f6)"
+                    : "2px solid transparent",
+                opacity: i === currentSlide ? 1 : 0.55,
+                transition: "all 0.15s",
+              }}
+            >
+              {item.type === "video" ? (
+                <VideoThumb url={item.url} height={60} />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={item.url}
+                  alt=""
                   style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(0,0,0,0)",
-                    transition: "background 0.15s",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
                   }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLDivElement).style.background =
-                      "rgba(0,0,0,0.12)")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLDivElement).style.background =
-                      "rgba(0,0,0,0)")
-                  }
                 />
-              </div>
-            );
-          })}
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -249,40 +334,120 @@ export function MediaGallery({ media }: Props) {
   );
 }
 
-// ── Video thumbnail ───────────────────────────────────────────────────────────
+// ── Video thumbnail with canvas preview ───────────────────────────────────────
 
-function VideoThumb({ url, large }: { url: string; large?: boolean }) {
+function VideoThumb({
+  url,
+  height,
+  showLabel,
+}: {
+  url: string;
+  height: number;
+  showLabel?: boolean;
+}) {
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.src = url;
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    const onSeeked = () => {
+      if (cancelled) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 320;
+      canvas.height = video.videoHeight || 180;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        try {
+          ctx.drawImage(video, 0, 0);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          setThumbUrl(dataUrl);
+        } catch {
+          // CORS-tainted canvas — keep dark fallback
+        }
+      }
+    };
+
+    const onMetadata = () => {
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    };
+
+    video.addEventListener("loadedmetadata", onMetadata);
+    video.addEventListener("seeked", onSeeked);
+
+    return () => {
+      cancelled = true;
+      video.removeEventListener("loadedmetadata", onMetadata);
+      video.removeEventListener("seeked", onSeeked);
+      video.src = "";
+    };
+  }, [url]);
+
+  const iconSize = height >= 200 ? 60 : height >= 100 ? 40 : 22;
+  const fontSize = height >= 200 ? 24 : height >= 100 ? 16 : 10;
+
   return (
     <div
       style={{
+        position: "relative",
         width: "100%",
-        height: large ? 340 : 140,
+        height,
         background: "#0f0f23",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        gap: 8,
+        overflow: "hidden",
       }}
     >
+      {thumbUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={thumbUrl}
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      )}
       <div
         style={{
-          width: large ? 64 : 44,
-          height: large ? 64 : 44,
-          borderRadius: "50%",
-          border: "3px solid rgba(255,255,255,0.8)",
+          position: "absolute",
+          inset: 0,
+          background: thumbUrl ? "rgba(0,0,0,0.32)" : "transparent",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: large ? 26 : 18,
+          color: "#fff",
+          gap: 8,
         }}
       >
-        ▶
+        <div
+          style={{
+            width: iconSize,
+            height: iconSize,
+            borderRadius: "50%",
+            border: `${height >= 200 ? 3 : 2}px solid rgba(255,255,255,0.85)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize,
+          }}
+        >
+          ▶
+        </div>
+        {showLabel && (
+          <span style={{ fontSize: 14, opacity: 0.75 }}>
+            Нажмите для просмотра видео
+          </span>
+        )}
       </div>
-      <span style={{ fontSize: large ? 14 : 12, opacity: 0.7 }}>
-        Нажмите для просмотра видео
-      </span>
     </div>
   );
 }
@@ -465,6 +630,9 @@ function Lightbox({ items, index, onClose, onChange }: LightboxProps) {
             display: "flex",
             gap: 6,
             zIndex: 10000,
+            maxWidth: "90vw",
+            overflowX: "auto",
+            scrollbarWidth: "none",
           }}
         >
           {items.map((it, i) => (
@@ -472,6 +640,7 @@ function Lightbox({ items, index, onClose, onChange }: LightboxProps) {
               key={it.id}
               onClick={() => onChange(i)}
               style={{
+                flexShrink: 0,
                 width: 48,
                 height: 36,
                 borderRadius: 6,
@@ -479,14 +648,10 @@ function Lightbox({ items, index, onClose, onChange }: LightboxProps) {
                 cursor: "pointer",
                 border: i === index ? "2px solid #fff" : "2px solid transparent",
                 opacity: i === index ? 1 : 0.55,
-                background: it.type === "video" ? "#1a1a2e" : undefined,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
               }}
             >
               {it.type === "video" ? (
-                <span style={{ color: "#fff", fontSize: 14 }}>▶</span>
+                <VideoThumb url={it.url} height={36} />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
