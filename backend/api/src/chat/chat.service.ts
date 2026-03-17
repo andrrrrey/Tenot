@@ -6,7 +6,10 @@ import { CreateMessageDto } from './dto.create-message';
 export class ChatService {
   constructor(private prisma: PrismaService) {}
 
-  async sendMessage(sender: { userId: number; role: string }, dto: CreateMessageDto) {
+  private async findOrCreateChat(
+    sender: { userId: number; role: string },
+    dto: { listingId: number; receiverId: number },
+  ) {
     const listing = await this.prisma.listing.findUnique({ where: { id: dto.listingId } });
     if (!listing) throw new NotFoundException('Listing not found');
 
@@ -16,11 +19,9 @@ export class ChatService {
     let ownerId: number;
 
     if (sender.userId === listingOwnerId) {
-      // Sender is the listing owner, receiver is the initiator
       ownerId = sender.userId;
       initiatorId = dto.receiverId;
     } else {
-      // Sender is someone contacting the listing owner
       initiatorId = sender.userId;
       ownerId = listingOwnerId;
       if (dto.receiverId !== listingOwnerId) {
@@ -38,8 +39,28 @@ export class ChatService {
       });
     }
 
+    return chat;
+  }
+
+  async sendMessage(sender: { userId: number; role: string }, dto: CreateMessageDto) {
+    if (!dto.text?.trim()) throw new BadRequestException('Message text is required');
+
+    const chat = await this.findOrCreateChat(sender, dto);
+
     return this.prisma.message.create({
       data: { chatId: chat.id, senderId: sender.userId, text: dto.text },
+    });
+  }
+
+  async sendAudioMessage(
+    sender: { userId: number; role: string },
+    dto: { listingId: number; receiverId: number },
+    audioUrl: string,
+  ) {
+    const chat = await this.findOrCreateChat(sender, dto);
+
+    return this.prisma.message.create({
+      data: { chatId: chat.id, senderId: sender.userId, audioUrl },
     });
   }
 

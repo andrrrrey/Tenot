@@ -4,7 +4,8 @@ export type Message = {
   id: number;
   chatId: number;
   senderId: number;
-  text: string;
+  text: string | null;
+  audioUrl: string | null;
   isRead: boolean;
   createdAt: string;
 };
@@ -29,3 +30,15 @@ export const sendMessage = (payload: { listingId: number; receiverId: number; te
   api.post<Message>('/chat/send', payload);
 export const markChatRead = (chatId: number) =>
   api.patch<{ ok: boolean }>(`/chat/${chatId}/read`);
+
+export const sendAudioMessage = (payload: {
+  listingId: number;
+  receiverId: number;
+  audioBlob: Blob;
+}) => {
+  const formData = new FormData();
+  formData.append('listingId', String(payload.listingId));
+  formData.append('receiverId', String(payload.receiverId));
+  formData.append('audio', payload.audioBlob, 'voice.webm');
+  return api.upload<Message>('/chat/send/audio', formData);
+};

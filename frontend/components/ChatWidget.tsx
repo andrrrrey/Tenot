@@ -6,6 +6,7 @@ import {
   getMyChats,
   getMessages,
   sendMessage,
+  sendAudioMessage,
   markChatRead,
   type Chat,
   type ChatUser,
@@ -68,6 +69,91 @@ function ReadStatus({ message, isMine }: { message: Message; isMine: boolean }) 
     >
       {message.isRead ? "✓✓" : "✓"}
     </span>
+  );
+}
+
+function AudioPlayer({ src, isMine }: { src: string; isMine: boolean }) {
+  return (
+    <audio
+      controls
+      src={src}
+      style={{
+        height: 32,
+        maxWidth: 220,
+        accentColor: isMine ? "#fff" : "var(--brand)",
+      }}
+      preload="metadata"
+    />
+  );
+}
+
+function MicButton({
+  onAudioReady,
+  disabled,
+}: {
+  onAudioReady: (blob: Blob) => void;
+  disabled?: boolean;
+}) {
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        onAudioReady(blob);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+    } catch {
+      alert("Нет доступа к микрофону");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    setRecording(false);
+  };
+
+  return (
+    <button
+      type="button"
+      onMouseDown={startRecording}
+      onMouseUp={stopRecording}
+      onTouchStart={startRecording}
+      onTouchEnd={stopRecording}
+      disabled={disabled}
+      title={recording ? "Отпустите для отправки" : "Удерживайте для записи голосового"}
+      style={{
+        background: recording ? "#ef4444" : "transparent",
+        color: recording ? "#fff" : "var(--brand)",
+        border: `1px solid ${recording ? "#ef4444" : "var(--line)"}`,
+        borderRadius: 14,
+        width: 34,
+        height: 34,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        fontSize: 16,
+        flexShrink: 0,
+        alignSelf: "flex-end",
+        transition: "background 0.15s, color 0.15s",
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      {recording ? "⏹" : "🎙"}
+    </button>
   );
 }
 
@@ -213,6 +299,32 @@ export default function ChatWidget() {
     }
   };
 
+  const handleAudioReady = async (audioBlob: Blob) => {
+    if (!selectedChat || !user || sending) return;
+
+    setSending(true);
+    try {
+      const receiverId = user.id === selectedChat.initiatorId
+        ? selectedChat.ownerId
+        : selectedChat.initiatorId;
+
+      await sendAudioMessage({
+        listingId: selectedChat.listingId,
+        receiverId,
+        audioBlob,
+      });
+
+      const [msgs, updatedChats] = await Promise.all([
+        getMessages(selectedChat.id),
+        getMyChats(),
+      ]);
+      setMessages(msgs);
+      updateChats(updatedChats);
+    } catch { /* ignore */ } finally {
+      setSending(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -317,16 +429,20 @@ export default function ChatWidget() {
                         >
                           <div
                             style={{
-                              padding: "8px 12px",
+                              padding: m.audioUrl ? "6px 10px" : "8px 12px",
                               borderRadius: isMine ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
                               background: isMine ? "var(--brand)" : "#fff",
                               color: isMine ? "#fff" : "inherit",
-                              maxWidth: "80%",
+                              maxWidth: "85%",
                               boxShadow: "0 1px 2px rgba(0,0,0,0.07)",
                               wordBreak: "break-word",
                             }}
                           >
-                            <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.text}</div>
+                            {m.audioUrl ? (
+                              <AudioPlayer src={m.audioUrl} isMine={isMine} />
+                            ) : (
+                              <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.text}</div>
+                            )}
                             <div
                               style={{
                                 fontSize: 10,
@@ -357,6 +473,7 @@ export default function ChatWidget() {
                     borderTop: "1px solid var(--line)",
                     display: "flex",
                     gap: 8,
+                    alignItems: "flex-end",
                     background: "#fff",
                   }}
                 >
@@ -380,6 +497,7 @@ export default function ChatWidget() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
+                  <MicButton onAudioReady={handleAudioReady} disabled={sending} />
                   <button
                     onClick={handleSend}
                     disabled={sending || !newMessage.trim()}
@@ -476,7 +594,7 @@ export default function ChatWidget() {
                             {lastMsg && (
                               <div style={{ fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
                                 {lastMsg.senderId === user.id ? "Вы: " : ""}
-                                {lastMsg.text}
+                                {lastMsg.audioUrl ? "🎙 Голосовое сообщение" : lastMsg.text}
                               </div>
                             )}
                           </div>
