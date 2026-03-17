@@ -119,7 +119,15 @@ function MicButton({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const startRecording = async () => {
+  const toggleRecording = async () => {
+    if (recording) {
+      // Stop: mediaRecorder.stop() triggers onstop which calls onAudioReady
+      mediaRecorderRef.current?.stop();
+      mediaRecorderRef.current = null;
+      setRecording(false);
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -127,17 +135,19 @@ function MicButton({
         : MediaRecorder.isTypeSupported("audio/webm")
         ? "audio/webm"
         : "";
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        onAudioReady(blob);
+        if (blob.size > 0) onAudioReady(blob);
         stream.getTracks().forEach((t) => t.stop());
       };
-      recorder.start(100); // collect data every 100ms to avoid empty blobs
+      recorder.start(100);
       mediaRecorderRef.current = recorder;
       setRecording(true);
     } catch {
@@ -145,21 +155,12 @@ function MicButton({
     }
   };
 
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    mediaRecorderRef.current = null;
-    setRecording(false);
-  };
-
   return (
     <button
       type="button"
-      onMouseDown={startRecording}
-      onMouseUp={stopRecording}
-      onTouchStart={startRecording}
-      onTouchEnd={stopRecording}
+      onClick={toggleRecording}
       disabled={disabled}
-      title={recording ? "Отпустите для отправки" : "Удерживайте для записи голосового"}
+      title={recording ? "Остановить запись и отправить" : "Записать голосовое сообщение"}
       style={{
         background: recording ? "#ef4444" : "var(--soft)",
         color: recording ? "#fff" : "var(--brand)",
