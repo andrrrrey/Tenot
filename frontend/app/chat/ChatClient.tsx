@@ -8,6 +8,7 @@ import {
   getMyChats,
   getMessages,
   sendMessage,
+  sendAudioMessage,
   markChatRead,
   type Chat,
   type ChatUser,
@@ -89,6 +90,91 @@ function ReadStatus({ message, isMine }: { message: Message; isMine: boolean }) 
     >
       {message.isRead ? "✓✓" : "✓"}
     </span>
+  );
+}
+
+function AudioPlayer({ src, isMine }: { src: string; isMine: boolean }) {
+  return (
+    <audio
+      controls
+      src={src}
+      style={{
+        height: 36,
+        maxWidth: 260,
+        accentColor: isMine ? "#fff" : "var(--brand)",
+      }}
+      preload="metadata"
+    />
+  );
+}
+
+function MicButton({
+  onAudioReady,
+  disabled,
+}: {
+  onAudioReady: (blob: Blob) => void;
+  disabled?: boolean;
+}) {
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        onAudioReady(blob);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+    } catch {
+      alert("Нет доступа к микрофону");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    setRecording(false);
+  };
+
+  return (
+    <button
+      type="button"
+      onMouseDown={startRecording}
+      onMouseUp={stopRecording}
+      onTouchStart={startRecording}
+      onTouchEnd={stopRecording}
+      disabled={disabled}
+      title={recording ? "Отпустите для отправки" : "Удерживайте для записи голосового"}
+      style={{
+        background: recording ? "#ef4444" : "var(--soft)",
+        color: recording ? "#fff" : "var(--brand)",
+        border: `1px solid ${recording ? "#ef4444" : "var(--border)"}`,
+        borderRadius: 20,
+        width: 40,
+        height: 40,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        fontSize: 18,
+        flexShrink: 0,
+        alignSelf: "flex-end",
+        transition: "background 0.15s, color 0.15s",
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      {recording ? "⏹" : "🎙"}
+    </button>
   );
 }
 
@@ -215,6 +301,20 @@ export default function ChatClient() {
     setSelectedChat(chat);
   }, []);
 
+  const getReceiverAndListingId = () => {
+    if (selectedChat) {
+      const receiverId =
+        user!.id === selectedChat.initiatorId
+          ? selectedChat.ownerId
+          : selectedChat.initiatorId;
+      return { listingId: selectedChat.listingId, receiverId };
+    }
+    if (listingIdParam && receiverIdParam) {
+      return { listingId: Number(listingIdParam), receiverId: Number(receiverIdParam) };
+    }
+    return null;
+  };
+
   const handleSendMessage = async () => {
     const text = newMessage.trim();
     if (!text) return;
@@ -228,7 +328,6 @@ export default function ChatClient() {
     setSendError(null);
 
     try {
-      // First message in a new chat (came from listing page via URL params)
       if (!selectedChat && listingIdParam && receiverIdParam) {
         await sendMessage({
           listingId: Number(listingIdParam),
@@ -253,7 +352,6 @@ export default function ChatClient() {
 
       if (!selectedChat) return;
 
-      // Determine receiver: opposite side
       const receiverId =
         user.id === selectedChat.initiatorId
           ? selectedChat.ownerId
@@ -269,11 +367,52 @@ export default function ChatClient() {
       const updated = await getMessages(selectedChat.id);
       setMessages(updated);
 
-      // Refresh last message in chat list
       const updatedChats = await getMyChats();
       setChats(updatedChats);
     } catch (e: any) {
       setSendError(e.message || "Ошибка отправки сообщения");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleAudioReady = async (audioBlob: Blob) => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    const ids = getReceiverAndListingId();
+    if (!ids) return;
+
+    setSending(true);
+    setSendError(null);
+
+    try {
+      await sendAudioMessage({ ...ids, audioBlob });
+
+      if (!selectedChat && listingIdParam) {
+        const updatedChats = await getMyChats();
+        setChats(updatedChats);
+        const newChat = updatedChats.find((c) => c.listingId === Number(listingIdParam));
+        if (newChat) {
+          setSelectedChat(newChat);
+          const msgs = await getMessages(newChat.id);
+          setMessages(msgs);
+        }
+        return;
+      }
+
+      if (selectedChat) {
+        const [updated, updatedChats] = await Promise.all([
+          getMessages(selectedChat.id),
+          getMyChats(),
+        ]);
+        setMessages(updated);
+        setChats(updatedChats);
+      }
+    } catch (e: any) {
+      setSendError(e.message || "Ошибка отправки голосового сообщения");
     } finally {
       setSending(false);
     }
@@ -428,7 +567,7 @@ export default function ChatClient() {
                         }}
                       >
                         {lastMsg.senderId === user.id ? "Вы: " : ""}
-                        {lastMsg.text}
+                        {lastMsg.audioUrl ? "🎙 Голосовое сообщение" : lastMsg.text}
                       </div>
                     )}
                   </div>
@@ -556,7 +695,7 @@ export default function ChatClient() {
                     >
                       <div
                         style={{
-                          padding: "10px 14px",
+                          padding: m.audioUrl ? "8px 12px" : "10px 14px",
                           borderRadius: isMine
                             ? "16px 16px 4px 16px"
                             : "16px 16px 16px 4px",
@@ -567,9 +706,13 @@ export default function ChatClient() {
                           wordBreak: "break-word",
                         }}
                       >
-                        <div style={{ fontSize: 14, lineHeight: 1.5 }}>
-                          {m.text}
-                        </div>
+                        {m.audioUrl ? (
+                          <AudioPlayer src={m.audioUrl} isMine={isMine} />
+                        ) : (
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+                            {m.text}
+                          </div>
+                        )}
                         <div
                           style={{
                             fontSize: 10,
@@ -618,6 +761,7 @@ export default function ChatClient() {
                 borderTop: "1px solid var(--border)",
                 display: "flex",
                 gap: 8,
+                alignItems: "flex-end",
               }}
             >
               <textarea
@@ -639,6 +783,7 @@ export default function ChatClient() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
+              <MicButton onAudioReady={handleAudioReady} disabled={sending} />
               <button
                 className="btn primary"
                 onClick={handleSendMessage}
