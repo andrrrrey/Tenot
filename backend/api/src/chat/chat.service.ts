@@ -56,11 +56,12 @@ export class ChatService {
     sender: { userId: number; role: string },
     dto: { listingId: number; receiverId: number },
     audioUrl: string,
+    audioDuration?: number,
   ) {
     const chat = await this.findOrCreateChat(sender, dto);
 
     return this.prisma.message.create({
-      data: { chatId: chat.id, senderId: sender.userId, audioUrl },
+      data: { chatId: chat.id, senderId: sender.userId, audioUrl, audioDuration: audioDuration ?? null },
     });
   }
 

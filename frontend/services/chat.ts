@@ -6,6 +6,7 @@ export type Message = {
   senderId: number;
   text: string | null;
   audioUrl: string | null;
+  audioDuration: number | null;
   isRead: boolean;
   createdAt: string;
 };
@@ -35,10 +36,14 @@ export const sendAudioMessage = (payload: {
   listingId: number;
   receiverId: number;
   audioBlob: Blob;
+  durationSeconds?: number;
 }) => {
   const formData = new FormData();
   formData.append('listingId', String(payload.listingId));
   formData.append('receiverId', String(payload.receiverId));
   formData.append('audio', payload.audioBlob, 'voice.webm');
+  if (payload.durationSeconds != null) {
+    formData.append('audioDuration', String(payload.durationSeconds));
+  }
   return api.upload<Message>('/chat/send/audio', formData);
 };

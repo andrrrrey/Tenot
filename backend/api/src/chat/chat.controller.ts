@@ -56,14 +56,15 @@ export class ChatController {
   sendAudio(
     @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { listingId: string; receiverId: string },
+    @Body() body: { listingId: string; receiverId: string; audioDuration?: string },
   ) {
     if (!file) throw new BadRequestException('Audio file is required');
     const audioUrl = `/uploads/audio/${file.filename}`;
+    const audioDuration = body.audioDuration ? parseFloat(body.audioDuration) : undefined;
     return this.service.sendAudioMessage(req.user, {
       listingId: +body.listingId,
       receiverId: +body.receiverId,
-    }, audioUrl);
+    }, audioUrl, audioDuration);
   }
 
   @Get('my')
