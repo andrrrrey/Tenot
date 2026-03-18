@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { CitiesService } from './cities.service';
 import { Public } from '../auth/public.decorator';
 
@@ -16,5 +16,11 @@ export class CitiesController {
   @Get('search')
   search(@Query('q') q: string) {
     return this.service.search(q || '');
+  }
+
+  @Public()
+  @Get(':id/districts')
+  findDistricts(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findDistricts(id);
   }
 }
