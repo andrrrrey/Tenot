@@ -116,13 +116,14 @@ model Chat {
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  chatId    Int
-  senderId  Int
-  text      String?
-  audioUrl  String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  chatId        Int
+  senderId      Int
+  text          String?
+  audioUrl      String?
+  audioDuration Float?
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   chat   Chat @relation(fields: [chatId], references: [id])
   sender User @relation(fields: [senderId], references: [id])

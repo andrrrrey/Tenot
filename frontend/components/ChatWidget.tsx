@@ -72,32 +72,34 @@ function ReadStatus({ message, isMine }: { message: Message; isMine: boolean }) 
   );
 }
 
-function AudioPlayer({ src, isMine }: { src: string; isMine: boolean }) {
+function AudioPlayer({ src, isMine, initialDuration = 0 }: { src: string; isMine: boolean; initialDuration?: number }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(initialDuration);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    setDuration(initialDuration);
+    setCurrentTime(0);
+    setPlaying(false);
+  }, [src, initialDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const onLoaded = () => {
-      if (isFinite(audio.duration)) setDuration(audio.duration);
-    };
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
     const onEnded = () => { setPlaying(false); setCurrentTime(0); };
+    const onDurationChange = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) setDuration(audio.duration);
+    };
 
-    audio.addEventListener("loadedmetadata", onLoaded);
+    audio.addEventListener("durationchange", onDurationChange);
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
 
-    if (audio.readyState >= 1 && isFinite(audio.duration)) {
-      setDuration(audio.duration);
-    }
-
     return () => {
-      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener("durationchange", onDurationChange);
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
     };
@@ -139,7 +141,7 @@ function AudioPlayer({ src, isMine }: { src: string; isMine: boolean }) {
       <input
         type="range"
         min={0}
-        max={duration || 0}
+        max={duration || 0.001}
         step={0.1}
         value={currentTime}
         onChange={(e) => {
@@ -159,12 +161,13 @@ function MicButton({
   onAudioReady,
   disabled,
 }: {
-  onAudioReady: (blob: Blob) => void;
+  onAudioReady: (blob: Blob, durationSeconds: number) => void;
   disabled?: boolean;
 }) {
   const [recording, setRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const startTimeRef = useRef<number>(0);
 
   const toggleRecording = async () => {
     if (recording) {
@@ -189,10 +192,12 @@ function MicButton({
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
+        const durationSeconds = (Date.now() - startTimeRef.current) / 1000;
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        if (blob.size > 0) onAudioReady(blob);
+        if (blob.size > 0) onAudioReady(blob, durationSeconds);
         stream.getTracks().forEach((t) => t.stop());
       };
+      startTimeRef.current = Date.now();
       recorder.start(100);
       mediaRecorderRef.current = recorder;
       setRecording(true);
@@ -372,7 +377,7 @@ export default function ChatWidget() {
     }
   };
 
-  const handleAudioReady = async (audioBlob: Blob) => {
+  const handleAudioReady = async (audioBlob: Blob, durationSeconds: number) => {
     if (!selectedChat || !user || sending) return;
 
     setSending(true);
@@ -385,6 +390,7 @@ export default function ChatWidget() {
         listingId: selectedChat.listingId,
         receiverId,
         audioBlob,
+        durationSeconds,
       });
 
       const [msgs, updatedChats] = await Promise.all([
@@ -512,7 +518,7 @@ export default function ChatWidget() {
                             }}
                           >
                             {m.audioUrl ? (
-                              <AudioPlayer src={m.audioUrl} isMine={isMine} />
+                              <AudioPlayer src={m.audioUrl} isMine={isMine} initialDuration={m.audioDuration ?? 0} />
                             ) : (
                               <div style={{ fontSize: 13, lineHeight: 1.4 }}>{m.text}</div>
                             )}
