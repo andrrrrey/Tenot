@@ -11,6 +11,13 @@ export class CitiesService {
     });
   }
 
+  findDistricts(cityId: number) {
+    return this.prisma.city.findMany({
+      where: { regionId: cityId, type: 'DISTRICT' },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async search(query: string) {
     const q = query.trim();
 
