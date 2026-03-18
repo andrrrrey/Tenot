@@ -1,4 +1,6 @@
--- Drop unique constraint on City.name (districts can share names across cities)
+-- Drop unique index on City.name (districts can share names across cities)
+-- Note: original migration created a standalone UNIQUE INDEX, not a named CONSTRAINT
+DROP INDEX IF EXISTS "City_name_key";
 ALTER TABLE "City" DROP CONSTRAINT IF EXISTS "City_name_key";
 
 -- Insert districts for Москва
