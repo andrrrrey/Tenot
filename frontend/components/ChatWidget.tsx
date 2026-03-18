@@ -73,17 +73,85 @@ function ReadStatus({ message, isMine }: { message: Message; isMine: boolean }) 
 }
 
 function AudioPlayer({ src, isMine }: { src: string; isMine: boolean }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const onLoaded = () => {
+      if (isFinite(audio.duration)) setDuration(audio.duration);
+    };
+    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onEnded = () => { setPlaying(false); setCurrentTime(0); };
+
+    audio.addEventListener("loadedmetadata", onLoaded);
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("ended", onEnded);
+
+    if (audio.readyState >= 1 && isFinite(audio.duration)) {
+      setDuration(audio.duration);
+    }
+
+    return () => {
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("ended", onEnded);
+    };
+  }, [src]);
+
+  const toggle = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) { audio.pause(); setPlaying(false); }
+    else { audio.play(); setPlaying(true); }
+  };
+
+  const formatTime = (s: number) =>
+    isFinite(s) && s > 0
+      ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`
+      : "0:00";
+
+  const accent = isMine ? "#fff" : "var(--brand)";
+
   return (
-    <audio
-      controls
-      src={src}
-      style={{
-        height: 32,
-        maxWidth: 220,
-        accentColor: isMine ? "#fff" : "var(--brand)",
-      }}
-      preload="metadata"
-    />
+    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 180 }}>
+      <audio ref={audioRef} src={src} preload="metadata" />
+      <button
+        onClick={toggle}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+          color: accent,
+          fontSize: 18,
+          lineHeight: 1,
+          flexShrink: 0,
+        }}
+        aria-label={playing ? "Пауза" : "Воспроизвести"}
+      >
+        {playing ? "⏸" : "▶"}
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={duration || 0}
+        step={0.1}
+        value={currentTime}
+        onChange={(e) => {
+          const audio = audioRef.current;
+          if (audio) { audio.currentTime = Number(e.target.value); setCurrentTime(Number(e.target.value)); }
+        }}
+        style={{ flex: 1, accentColor: accent, cursor: "pointer" }}
+      />
+      <span style={{ fontSize: 11, color: accent, flexShrink: 0, minWidth: 32, textAlign: "right" }}>
+        {playing ? formatTime(currentTime) : formatTime(duration)}
+      </span>
+    </div>
   );
 }
 
