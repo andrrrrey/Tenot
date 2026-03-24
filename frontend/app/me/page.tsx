@@ -8,6 +8,7 @@ import { useStore } from "@/lib/store";
 import { getMyProfile, uploadAvatar, type UserProfile } from "@/services/users";
 import { getMyListings, type Listing } from "@/services/listings";
 import { getFavorites } from "@/services/favorites";
+import { AvatarCropModal } from "@/components/AvatarCropModal";
 
 export default function MeHome() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function MeHome() {
   const [favCount, setFavCount] = useState(0);
   const [profileLoading, setProfileLoading] = useState(true);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayUser = user || storeUser;
@@ -48,19 +50,31 @@ export default function MeHome() {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setCropSrc(objectUrl);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropSrc(null);
     setAvatarUploading(true);
     try {
-      const updated = await uploadAvatar(file);
+      const croppedFile = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      const updated = await uploadAvatar(croppedFile);
       setProfile(updated);
     } catch {
       // ignore
     } finally {
       setAvatarUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleCropCancel = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
   };
 
   if (loading) {
@@ -107,6 +121,7 @@ export default function MeHome() {
     : "";
 
   return (
+    <>
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Profile header card */}
       <div
@@ -404,5 +419,14 @@ export default function MeHome() {
         </aside>
       </div>
     </div>
+
+    {cropSrc && (
+      <AvatarCropModal
+        imageSrc={cropSrc}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
+      />
+    )}
+    </>
   );
 }

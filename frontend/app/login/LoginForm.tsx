@@ -13,6 +13,7 @@ export default function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -89,14 +90,40 @@ export default function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <input
-          className="input"
-          placeholder="Пароль"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            className="input"
+            placeholder="Пароль"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{ paddingRight: 40, width: '100%', boxSizing: 'border-box' }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            style={{
+              position: 'absolute',
+              right: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              color: 'var(--muted)',
+              fontSize: 18,
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            tabIndex={-1}
+            title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+          >
+            {showPassword ? '🙈' : '👁'}
+          </button>
+        </div>
         <button
           className="btn primary"
           onClick={submit}

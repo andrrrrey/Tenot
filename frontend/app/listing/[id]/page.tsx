@@ -14,6 +14,7 @@ export default function ListingPage() {
   const { user } = useMe();
   const [listing, setListing] = useState<Listing | null>(null);
   const [fav, setFav] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
 
   useEffect(() => {
     getListing(Number(id)).then(setListing);
@@ -174,13 +175,27 @@ export default function ListingPage() {
 
           {/* Phone number */}
           {sellerPhone && (
-            <a
-              href={`tel:${sellerPhone}`}
-              className="btn primary"
-              style={{ textDecoration: 'none' }}
-            >
-              &#9742;&ensp;{sellerPhone}
-            </a>
+            showPhone ? (
+              <a
+                href={`tel:${sellerPhone}`}
+                className="btn primary"
+                style={{ textDecoration: 'none' }}
+              >
+                &#9742;&ensp;{sellerPhone}
+              </a>
+            ) : (
+              <button
+                className="btn primary"
+                onClick={() => setShowPhone(true)}
+                style={{ width: '100%' }}
+              >
+                &#9742;&ensp;{sellerPhone.slice(0, 6)}
+                <span style={{ filter: 'blur(4px)', userSelect: 'none' }}>
+                  {sellerPhone.slice(6)}
+                </span>
+                &ensp;Показать
+              </button>
+            )
           )}
 
           {/* Chat button — only for non-owners */}

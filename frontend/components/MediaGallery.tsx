@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 export type GalleryMedia = {
   id: number;
@@ -17,6 +17,8 @@ export function MediaGallery({ media }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const thumbStripRef = useRef<HTMLDivElement>(null);
+  const thumbRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Sort: cover first, then images, then videos at end
   const sorted = [...media].sort((a, b) => {
@@ -65,6 +67,22 @@ export function MediaGallery({ media }: Props) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [activeIndex, sorted.length]);
+
+  // Scroll active thumbnail into view
+  useEffect(() => {
+    const strip = thumbStripRef.current;
+    const thumb = thumbRefs.current[currentSlide];
+    if (!strip || !thumb) return;
+    const stripLeft = strip.scrollLeft;
+    const stripRight = stripLeft + strip.clientWidth;
+    const thumbLeft = thumb.offsetLeft;
+    const thumbRight = thumbLeft + thumb.offsetWidth;
+    if (thumbLeft < stripLeft) {
+      strip.scrollTo({ left: thumbLeft - 6, behavior: "smooth" });
+    } else if (thumbRight > stripRight) {
+      strip.scrollTo({ left: thumbRight - strip.clientWidth + 6, behavior: "smooth" });
+    }
+  }, [currentSlide]);
 
   if (sorted.length === 0) {
     return (
@@ -274,6 +292,7 @@ export function MediaGallery({ media }: Props) {
 
         {/* Thumbnails row — fixed height, horizontal scroll */}
         <div
+          ref={thumbStripRef}
           style={{
             display: "flex",
             gap: 6,
@@ -286,6 +305,7 @@ export function MediaGallery({ media }: Props) {
           {sorted.map((item, i) => (
             <div
               key={item.id}
+              ref={(el) => { thumbRefs.current[i] = el; }}
               onClick={() => goToSlide(i)}
               style={{
                 flexShrink: 0,
