@@ -96,17 +96,10 @@ export default function AddPage() {
       });
 
       if (newFiles.length > 0) {
-        const coverIdx =
-          newCoverIndex !== null
-            ? newFiles
-                .slice(0, newCoverIndex + 1)
-                .filter((f) => f.type === "image").length - 1
-            : undefined;
-
         await uploadListingMedia(
           listing.id,
           newFiles.map((f) => f.file),
-          coverIdx !== undefined && coverIdx >= 0 ? coverIdx : undefined,
+          newCoverIndex !== null ? newCoverIndex : undefined,
         );
       }
 
