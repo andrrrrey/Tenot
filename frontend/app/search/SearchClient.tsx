@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
 import { useSearchParams } from "next/navigation";
 import { getListings, type Listing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
@@ -20,21 +19,15 @@ export default function SearchClient() {
   const [error, setError] = useState<string | null>(null);
 
   const [q, setQ] = useState(searchParams.get("q") || "");
-  const [categoryId, setCategoryId] = useState<string>(
-    searchParams.get("category") || ""
-  );
-  const [cityId, setCityId] = useState<string>(
-    searchParams.get("cityId") || ""
-  );
+  const [categoryId, setCategoryId] = useState<string>(searchParams.get("category") || "");
+  const [cityId, setCityId] = useState<string>(searchParams.get("cityId") || "");
   const [cityName, setCityName] = useState("");
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [sort, setSort] = useState<"default" | "cheap" | "expensive" | "new">("default");
 
   useEffect(() => {
-    getCategories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
+    getCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
@@ -82,10 +75,7 @@ export default function SearchClient() {
     if (sort === "cheap") list.sort((a, b) => a.price - b.price);
     if (sort === "expensive") list.sort((a, b) => b.price - a.price);
     if (sort === "new") {
-      list.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return list;
   }, [listings, sort]);
@@ -93,133 +83,191 @@ export default function SearchClient() {
   const handleFavoriteChange = (listingId: number, isFav: boolean) => {
     setFavoriteIds((prev) => {
       const next = new Set(prev);
-      if (isFav) {
-        next.add(listingId);
-      } else {
-        next.delete(listingId);
-      }
+      if (isFav) next.add(listingId);
+      else next.delete(listingId);
       return next;
     });
   };
 
   return (
-    <div className="grid">
+    <div className="grid search-layout" style={{ alignItems: "start" }}>
+      {/* Sidebar */}
       <aside
         className="card"
         style={{
           gridColumn: "span 3",
           position: "sticky",
-          top: 16,
+          top: 76,
           alignSelf: "start",
+          padding: 20,
         }}
       >
-        <div className="h2">Поиск</div>
+        <div className="h2" style={{ marginBottom: 16 }}>Фильтры</div>
 
-        <div
-          style={{
-            marginTop: 10,
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-          }}
-        >
-          <input
-            className="input"
-            placeholder="Например: iPhone, диван..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-
-          <CitySearchPopup
-            value={cityId}
-            selectedName={cityName}
-            onChange={(id, name) => { setCityId(id); setCityName(name); }}
-            placeholder="Все города"
-          />
-
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Все категории</option>
-            {categories.map((c) =>
-              c.children && c.children.length > 0 ? (
-                <optgroup key={c.id} label={c.name}>
-                  <option value={c.id}>{c.name} (все)</option>
-                  {c.children.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ) : (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              )
-            )}
-          </select>
-
-          <div className="row" style={{ gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div className="field-label">Поиск</div>
             <input
               className="input"
-              placeholder="Цена от"
-              type="number"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-            />
-            <input
-              className="input"
-              placeholder="до"
-              type="number"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
+              placeholder="Название товара..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
             />
           </div>
 
-          <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-            <option value="default">По умолчанию</option>
-            <option value="cheap">Сначала дешевле</option>
-            <option value="expensive">Сначала дороже</option>
-            <option value="new">По дате</option>
-          </select>
+          <div>
+            <div className="field-label">Город</div>
+            <CitySearchPopup
+              value={cityId}
+              selectedName={cityName}
+              onChange={(id, name) => { setCityId(id); setCityName(name); }}
+              placeholder="Все города"
+            />
+          </div>
+
+          <div>
+            <div className="field-label">Категория</div>
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <option value="">Все категории</option>
+              {categories.map((c) =>
+                c.children && c.children.length > 0 ? (
+                  <optgroup key={c.id} label={c.name}>
+                    <option value={c.id}>{c.name} (все)</option>
+                    {c.children.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+
+          <div>
+            <div className="field-label">Цена</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                className="input"
+                placeholder="от"
+                type="number"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <input
+                className="input"
+                placeholder="до"
+                type="number"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="field-label">Сортировка</div>
+            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+              <option value="default">По умолчанию</option>
+              <option value="cheap">Сначала дешевле</option>
+              <option value="expensive">Сначала дороже</option>
+              <option value="new">По дате</option>
+            </select>
+          </div>
         </div>
       </aside>
 
+      {/* Results */}
       <section style={{ gridColumn: "span 9" }}>
-        <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
           <div className="h2">Результаты</div>
-          <div className="muted">
+          <div
+            style={{
+              fontSize: 13,
+              color: "var(--muted)",
+              fontWeight: 500,
+              background: "var(--card)",
+              backdropFilter: "var(--blur-sm)",
+              WebkitBackdropFilter: "var(--blur-sm)",
+              padding: "6px 14px",
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.8)",
+              boxShadow: "var(--shadow-xs)",
+            }}
+          >
             {loading ? "Загрузка..." : `${sortedListings.length} объявл.`}
           </div>
         </div>
 
         {error && (
-          <div className="card" style={{ marginTop: 12, color: "red" }}>
+          <div className="alert error" style={{ marginBottom: 16 }}>
             {error}
           </div>
         )}
 
-        <div
-          style={{
-            marginTop: 12,
-            display: "grid",
-            gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-            gap: 16,
-          }}
-        >
-          {sortedListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              isFavorite={favoriteIds.has(listing.id)}
-              onFavoriteChange={handleFavoriteChange}
-            />
-          ))}
+        {loading ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 16,
+            }}
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 280, borderRadius: "var(--radius-lg)" }} />
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 16,
+            }}
+          >
+            {sortedListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                isFavorite={favoriteIds.has(listing.id)}
+                onFavoriteChange={handleFavoriteChange}
+              />
+            ))}
 
-          {!loading && sortedListings.length === 0 && (
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              Ничего не найдено. Попробуйте изменить фильтры.
-            </div>
-          )}
-        </div>
+            {!loading && sortedListings.length === 0 && (
+              <div
+                className="card"
+                style={{
+                  gridColumn: "1 / -1",
+                  textAlign: "center",
+                  padding: 48,
+                  color: "var(--muted)",
+                }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M20 20l-3.5-3.5" />
+                  </svg>
+                </div>
+                <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>Ничего не найдено</div>
+                <div style={{ fontSize: 14 }}>Попробуйте изменить фильтры</div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -6,6 +6,7 @@ import { useMe } from "@/hooks/useMe";
 import { useRouter } from "next/navigation";
 import { getMyProfile, updateMyProfile } from "@/services/users";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
+import { IconArrowLeft, IconSettings, IconUser, IconPhone, IconMapPin, IconCheck } from "@/components/Icons";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function SettingsPage() {
         cityId: cityId ? Number(cityId) : null,
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), 3000);
     } catch (e: any) {
       setError(e.message || "Ошибка сохранения");
     } finally {
@@ -59,76 +60,77 @@ export default function SettingsPage() {
   };
 
   if (loading || profileLoading) {
-    return <div className="card">Загрузка...</div>;
+    return (
+      <div className="card" style={{ textAlign: "center", padding: 48 }}>
+        <div className="muted">Загрузка...</div>
+      </div>
+    );
   }
 
-  if (!apiUser) {
-    return null;
-  }
+  if (!apiUser) return null;
 
   const role = apiUser.role;
-  const roleLabel =
-    { USER: "Пользователь", ADMIN: "Администратор" }[role] || "Пользователь";
+  const roleLabel = { USER: "Пользователь", ADMIN: "Администратор" }[role] || "Пользователь";
 
   return (
     <div className="grid">
       <section style={{ gridColumn: "span 8" }}>
-        <div className="card" style={{ maxWidth: 680 }}>
-          <div className="h2">Настройки профиля</div>
-
-          <div style={{ marginTop: 12, marginBottom: 16 }}>
-            <span className="muted">Роль: </span>
-            <strong>{roleLabel}</strong>
+        <div className="card" style={{ padding: "28px 28px" }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                background: "var(--brand-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--brand)",
+                flexShrink: 0,
+              }}
+            >
+              <IconSettings size={20} strokeWidth={1.8} />
+            </div>
+            <div>
+              <div className="h2">Настройки профиля</div>
+              <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                Роль: <strong style={{ color: "var(--text)" }}>{roleLabel}</strong>
+              </div>
+            </div>
           </div>
 
           {saved && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: 10,
-                background: "#d1fae5",
-                color: "#065f46",
-                borderRadius: 6,
-              }}
-            >
+            <div className="alert success" style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+              <IconCheck size={16} strokeWidth={2.2} color="#065f46" />
               Настройки сохранены
             </div>
           )}
 
           {error && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: 10,
-                background: "#fee2e2",
-                color: "#991b1b",
-                borderRadius: 6,
-              }}
-            >
+            <div className="alert error" style={{ marginBottom: 20 }}>
               {error}
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <label>
-              <div
-                className="muted"
-                style={{ fontSize: 12, marginBottom: 6 }}
-              >
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div>
+              <div className="field-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <IconUser size={13} strokeWidth={1.8} />
                 Имя / Название
               </div>
               <input
                 className="input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ваше имя"
+                placeholder="Ваше имя или название"
               />
-            </label>
-            <label>
-              <div
-                className="muted"
-                style={{ fontSize: 12, marginBottom: 6 }}
-              >
+            </div>
+
+            <div>
+              <div className="field-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <IconPhone size={13} strokeWidth={1.8} />
                 Телефон
               </div>
               <input
@@ -138,12 +140,11 @@ export default function SettingsPage() {
                 placeholder="+7 (999) 123-45-67"
                 type="tel"
               />
-            </label>
+            </div>
+
             <div>
-              <div
-                className="muted"
-                style={{ fontSize: 12, marginBottom: 6 }}
-              >
+              <div className="field-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <IconMapPin size={13} strokeWidth={1.8} />
                 Город
               </div>
               <CitySearchPopup
@@ -153,35 +154,49 @@ export default function SettingsPage() {
                 placeholder="Не выбран"
               />
             </div>
+
+            <div
+              style={{
+                padding: "12px 16px",
+                background: "rgba(94,92,248,0.06)",
+                border: "1px solid rgba(94,92,248,0.12)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: 13,
+                color: "var(--muted)",
+              }}
+            >
+              Телефон и город будут отображаться в ваших объявлениях для связи с покупателями.
+            </div>
+
             <button
               className="btn primary"
               onClick={handleSave}
               disabled={saving}
+              style={{ padding: "13px 24px", fontSize: 15, opacity: saving ? 0.7 : 1 }}
             >
-              {saving ? "Сохранение..." : "Сохранить"}
+              {saving ? "Сохранение..." : "Сохранить изменения"}
             </button>
-            <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Телефон и город будут отображаться в ваших объявлениях.
-            </p>
           </div>
         </div>
       </section>
 
       <aside style={{ gridColumn: "span 4" }}>
-        <div className="card" style={{ background: "var(--soft)" }}>
-          <div className="h2">Навигация</div>
-          <div
-            style={{
-              marginTop: 10,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
+        <div
+          className="card"
+          style={{
+            background: "rgba(255,255,255,0.55)",
+            padding: "22px 22px",
+          }}
+        >
+          <div className="h2" style={{ marginBottom: 14 }}>Навигация</div>
+          <Link
+            className="btn"
+            href="/me"
+            style={{ justifyContent: "flex-start", gap: 8 }}
           >
-            <Link className="btn" href="/me">
-              Назад в кабинет
-            </Link>
-          </div>
+            <IconArrowLeft size={16} strokeWidth={1.8} />
+            Назад в кабинет
+          </Link>
         </div>
       </aside>
     </div>

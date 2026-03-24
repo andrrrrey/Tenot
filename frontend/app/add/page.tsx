@@ -7,6 +7,7 @@ import { createListing, uploadListingMedia } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { MediaUpload, type NewMediaFile } from "@/components/MediaUpload";
+import { IconPlus, IconCheck } from "@/components/Icons";
 
 export default function AddPage() {
   const router = useRouter();
@@ -20,7 +21,6 @@ export default function AddPage() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
 
-  // Media state
   const [newFiles, setNewFiles] = useState<NewMediaFile[]>([]);
   const [newCoverIndex, setNewCoverIndex] = useState<number | null>(null);
 
@@ -47,12 +47,9 @@ export default function AddPage() {
     );
   }, [title, price, description, categoryId]);
 
-  // ── Media handlers ──────────────────────────────────────────────────────────
-
   const handleAddFiles = (files: NewMediaFile[]) => {
     setNewFiles((prev) => {
       const updated = [...prev, ...files];
-      // Auto-set cover to first new image if none set
       if (newCoverIndex === null) {
         const firstImgIdx = updated.findIndex((f) => f.type === "image");
         if (firstImgIdx !== -1) setNewCoverIndex(firstImgIdx);
@@ -78,11 +75,8 @@ export default function AddPage() {
     setNewCoverIndex(index);
   };
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
-
   const handleSubmit = async () => {
     if (!canPublish) return;
-
     setSubmitting(true);
     setError(null);
 
@@ -113,72 +107,61 @@ export default function AddPage() {
 
   if (authLoading) {
     return (
-      <div style={{ maxWidth: 720, margin: "40px auto", padding: "0 16px" }}>
-        <div className="card" style={{ textAlign: "center", padding: 40 }}>
-          Загрузка...
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div className="card" style={{ textAlign: "center", padding: 48 }}>
+          <div className="muted">Загрузка...</div>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 className="h2" style={{ marginBottom: 4 }}>
-          Новое объявление
-        </h1>
-        <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-          Заполните информацию о товаре
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: "var(--brand)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 16px var(--brand-glow)",
+            }}
+          >
+            <IconPlus size={20} color="#fff" strokeWidth={2.4} />
+          </div>
+          <div>
+            <h1 className="h2" style={{ margin: 0 }}>Новое объявление</h1>
+            <p className="muted" style={{ margin: 0, fontSize: 13, marginTop: 2 }}>
+              Заполните информацию о товаре
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div
-          className="card"
-          style={{
-            marginBottom: 16,
-            color: "#dc2626",
-            background: "#fef2f2",
-            borderColor: "#fecaca",
-          }}
-        >
+        <div className="alert error" style={{ marginBottom: 20 }}>
           {error}
         </div>
       )}
 
       {/* Form */}
-      <div className="card" style={{ padding: 24 }}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 20,
-          }}
-        >
+      <div className="card" style={{ padding: "28px 28px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+
           {/* Category */}
           <div>
-            <label
-              className="muted"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Категория
-            </label>
+            <div className="field-label">Категория</div>
             <select
               value={categoryId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                setCategoryId(e.target.value)
-              }
-              style={{ padding: "12px 14px" }}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setCategoryId(e.target.value)}
             >
               <option value="">Выберите категорию</option>
               {categories.map((c) =>
@@ -186,15 +169,11 @@ export default function AddPage() {
                   <optgroup key={c.id} label={c.name}>
                     <option value={c.id}>{c.name} (все)</option>
                     {c.children.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
+                      <option key={sub.id} value={sub.id}>{sub.name}</option>
                     ))}
                   </optgroup>
                 ) : (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 )
               )}
             </select>
@@ -202,17 +181,7 @@ export default function AddPage() {
 
           {/* City */}
           <div>
-            <label
-              className="muted"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Город
-            </label>
+            <div className="field-label">Город</div>
             <CitySearchPopup
               value={cityId}
               selectedName={cityName}
@@ -223,22 +192,12 @@ export default function AddPage() {
 
           {/* Title */}
           <div>
-            <label
-              className="muted"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Заголовок
-            </label>
+            <div className="field-label">Заголовок</div>
             <input
+              className="input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Например: iPhone 13 Pro, 256GB"
-              style={{ padding: "12px 14px" }}
             />
             {title.length > 0 && title.trim().length < 3 && (
               <div style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
@@ -249,61 +208,43 @@ export default function AddPage() {
 
           {/* Price */}
           <div>
-            <label
-              className="muted"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Цена
-            </label>
+            <div className="field-label">Цена</div>
             <div style={{ position: "relative" }}>
               <input
                 type="number"
+                className="input"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0"
                 min="0"
-                style={{ padding: "12px 14px", paddingRight: 40 }}
+                style={{ paddingRight: 48 }}
               />
               <span
                 style={{
                   position: "absolute",
-                  right: 14,
+                  right: 16,
                   top: "50%",
                   transform: "translateY(-50%)",
                   color: "var(--muted)",
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  fontSize: 16,
                   pointerEvents: "none",
                 }}
               >
-                &#8381;
+                ₽
               </span>
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label
-              className="muted"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Описание
-            </label>
+            <div className="field-label">Описание</div>
             <textarea
+              className="input"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
-              placeholder="Подробное описание товара: состояние, комплектация, особенности..."
-              style={{ padding: "12px 14px" }}
+              placeholder="Подробное описание: состояние, комплектация, особенности..."
             />
             {description.length > 0 && description.trim().length < 10 && (
               <div style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
@@ -312,19 +253,9 @@ export default function AddPage() {
             )}
           </div>
 
-          {/* Media upload */}
+          {/* Media */}
           <div>
-            <label
-              className="muted"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Фото и видео
-            </label>
+            <div className="field-label">Фото и видео</div>
             <MediaUpload
               existingMedia={[]}
               newFiles={newFiles}
@@ -339,32 +270,40 @@ export default function AddPage() {
 
           <hr style={{ margin: 0 }} />
 
-          {/* Submit */}
           <button
             className="btn primary"
             disabled={!canPublish || submitting}
             onClick={handleSubmit}
             style={{
-              padding: "14px 20px",
-              fontSize: 16,
+              padding: "14px 24px",
+              fontSize: 15,
               opacity: !canPublish || submitting ? 0.6 : 1,
+              gap: 8,
             }}
           >
-            {submitting ? "Публикация..." : "Опубликовать объявление"}
+            {submitting ? (
+              "Публикация..."
+            ) : (
+              <>
+                <IconCheck size={17} strokeWidth={2.2} />
+                Опубликовать объявление
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Tips card */}
+      {/* Tips */}
       <div
         className="card"
         style={{
           marginTop: 16,
-          background: "var(--soft)",
-          padding: "16px 20px",
+          padding: "18px 24px",
+          background: "rgba(94,92,248,0.04)",
+          border: "1px solid rgba(94,92,248,0.1)",
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, color: "var(--brand)" }}>
           Советы для быстрой продажи
         </div>
         <ul
@@ -376,12 +315,12 @@ export default function AddPage() {
             display: "flex",
             flexDirection: "column",
             gap: 6,
+            lineHeight: 1.5,
           }}
         >
           <li>Добавьте до 10 фотографий и 1 видео</li>
           <li>Укажите город для привлечения местных покупателей</li>
-          <li>Заголовок должен быть не менее 3 символов</li>
-          <li>Описание должно быть не менее 10 символов</li>
+          <li>Напишите подробное и честное описание</li>
           <li>Цена указывается в рублях</li>
         </ul>
       </div>

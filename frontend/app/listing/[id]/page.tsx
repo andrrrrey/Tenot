@@ -7,6 +7,13 @@ import { getListing, type Listing } from '@/services/listings';
 import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 import { MediaGallery } from '@/components/MediaGallery';
+import {
+  IconHeart,
+  IconPhone,
+  IconMessage,
+  IconMapPin,
+  IconArrowLeft,
+} from '@/components/Icons';
 
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +34,13 @@ export default function ListingPage() {
       .catch(() => {});
   }, [user, listing]);
 
-  if (!listing) return <div className="card">Загрузка...</div>;
+  if (!listing) {
+    return (
+      <div className="card" style={{ textAlign: "center", padding: 48 }}>
+        <div className="muted">Загрузка...</div>
+      </div>
+    );
+  }
 
   const listingOwnerId = listing.user?.id;
   const sellerName = listing.user?.name || 'Продавец';
@@ -54,167 +67,269 @@ export default function ListingPage() {
   };
 
   return (
-    <div className="grid">
-      {/* Main content */}
-      <div style={{ gridColumn: 'span 8' }}>
-        <div className="card" style={{ padding: 20 }}>
-          {/* Media gallery */}
-          <MediaGallery media={listing.images ?? []} />
+    <div>
+      {/* Back button */}
+      <button
+        onClick={() => router.back()}
+        className="btn"
+        style={{
+          marginBottom: 20,
+          gap: 8,
+          padding: "8px 14px",
+          fontSize: 13,
+        }}
+      >
+        <IconArrowLeft size={15} strokeWidth={2} />
+        Назад
+      </button>
 
-          {/* Title & price */}
-          <div style={{ marginTop: 16 }}>
-            <h1 className="h2" style={{ marginBottom: 4 }}>{listing.title}</h1>
-            {(listing.category?.name || listing.city?.name) && (
-              <div className="muted" style={{ fontSize: 13 }}>
-                {listing.category?.name}
-                {listing.category?.name && listing.city?.name && ' \u00B7 '}
-                {listing.city?.name}
-              </div>
-            )}
-          </div>
+      <div className="grid">
+        {/* Main content */}
+        <div className="listing-main" style={{ gridColumn: 'span 8' }}>
+          <div className="card" style={{ padding: '24px 24px' }}>
+            {/* Media gallery */}
+            <MediaGallery media={listing.images ?? []} />
 
-          <div
-            style={{
-              marginTop: 16,
-              fontSize: 28,
-              fontWeight: 800,
-              color: 'var(--brand)',
-            }}
-          >
-            {listing.price.toLocaleString('ru-RU')} ₽
-          </div>
+            {/* Title & meta */}
+            <div style={{ marginTop: 20 }}>
+              <h1 className="h2" style={{ marginBottom: 6 }}>{listing.title}</h1>
 
-          {/* Favorite button */}
-          {user && (
-            <div style={{ marginTop: 12 }}>
-              <button
-                className="btn"
-                onClick={toggleFav}
-                style={{
-                  borderColor: fav ? '#fecaca' : undefined,
-                  color: fav ? '#ef4444' : undefined,
-                }}
-              >
-                {fav ? '♥ Убрать из избранного' : '♡ В избранное'}
-              </button>
+              {(listing.category?.name || listing.city?.name) && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    flexWrap: 'wrap',
+                    marginTop: 8,
+                  }}
+                >
+                  {listing.city?.name && (
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 13,
+                        color: 'var(--muted)',
+                        fontWeight: 500,
+                        background: 'rgba(0,0,0,0.04)',
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                      }}
+                    >
+                      <IconMapPin size={12} strokeWidth={2} />
+                      {listing.city.name}
+                    </span>
+                  )}
+                  {listing.category?.name && (
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--muted)',
+                        fontWeight: 500,
+                        background: 'rgba(0,0,0,0.04)',
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                      }}
+                    >
+                      {listing.category.name}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Description */}
-          <hr style={{ margin: '16px 0' }} />
-          <div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Описание</div>
-            <p style={{ margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-              {listing.description}
-            </p>
-          </div>
-
-          <div className="muted" style={{ marginTop: 16, fontSize: 12 }}>
-            Опубликовано: {new Date(listing.createdAt).toLocaleDateString('ru-RU', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Seller sidebar */}
-      <aside style={{ gridColumn: 'span 4' }}>
-        <div
-          className="card"
-          style={{
-            position: 'sticky',
-            top: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-          }}
-        >
-          <div style={{ fontWeight: 600, fontSize: 16 }}>Продавец</div>
-
-          {/* Seller avatar + name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {listing.user?.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={listing.user.avatarUrl}
-                alt={sellerName}
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  flexShrink: 0,
-                  border: '2px solid var(--brand)',
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  background: 'var(--brand)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 16,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {sellerInitials}
-              </div>
-            )}
-            <div>
-              <div style={{ fontWeight: 600 }}>{sellerName}</div>
-            </div>
-          </div>
-
-          {/* Phone number */}
-          {sellerPhone && (
-            showPhone ? (
-              <a
-                href={`tel:${sellerPhone}`}
-                className="btn primary"
-                style={{ textDecoration: 'none' }}
-              >
-                &#9742;&ensp;{sellerPhone}
-              </a>
-            ) : (
-              <button
-                className="btn primary"
-                onClick={() => setShowPhone(true)}
-                style={{ width: '100%' }}
-              >
-                &#9742;&ensp;{sellerPhone.slice(0, 6)}
-                <span style={{ filter: 'blur(4px)', userSelect: 'none' }}>
-                  {sellerPhone.slice(6)}
-                </span>
-                &ensp;Показать
-              </button>
-            )
-          )}
-
-          {/* Chat button — only for non-owners */}
-          {(!user || user.id !== listingOwnerId) && (
-            <button
-              className="btn primary"
-              onClick={() => {
-                if (!user) {
-                  router.push('/login');
-                  return;
-                }
-                router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
+            {/* Price */}
+            <div
+              style={{
+                marginTop: 20,
+                fontSize: 32,
+                fontWeight: 800,
+                color: 'var(--brand)',
+                letterSpacing: '-0.03em',
               }}
             >
-              &#128172;&ensp;Написать в чат
-            </button>
-          )}
+              {listing.price.toLocaleString('ru-RU')} ₽
+            </div>
+
+            {/* Favorite */}
+            {user && (
+              <div style={{ marginTop: 14 }}>
+                <button
+                  className="btn"
+                  onClick={toggleFav}
+                  style={{
+                    borderColor: fav ? 'rgba(239,68,68,0.3)' : undefined,
+                    color: fav ? '#ef4444' : undefined,
+                    background: fav ? 'rgba(239,68,68,0.06)' : undefined,
+                    gap: 8,
+                  }}
+                >
+                  <IconHeart size={16} filled={fav} color={fav ? '#ef4444' : 'currentColor'} strokeWidth={2} />
+                  {fav ? 'Убрать из избранного' : 'В избранное'}
+                </button>
+              </div>
+            )}
+
+            <hr style={{ margin: '20px 0' }} />
+
+            {/* Description */}
+            <div>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 15,
+                  marginBottom: 12,
+                  color: 'var(--text)',
+                }}
+              >
+                Описание
+              </div>
+              <p
+                style={{
+                  margin: 0,
+                  lineHeight: 1.7,
+                  whiteSpace: 'pre-wrap',
+                  fontSize: 14,
+                  color: 'var(--muted)',
+                }}
+              >
+                {listing.description}
+              </p>
+            </div>
+
+            <div
+              className="muted"
+              style={{ marginTop: 20, fontSize: 12, paddingTop: 16, borderTop: '1px solid var(--line-solid)' }}
+            >
+              Опубликовано:{' '}
+              {new Date(listing.createdAt).toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </div>
+          </div>
         </div>
-      </aside>
+
+        {/* Seller sidebar */}
+        <aside className="listing-aside" style={{ gridColumn: 'span 4' }}>
+          <div
+            className="card"
+            style={{
+              position: 'sticky',
+              top: 80,
+              padding: '22px 22px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Продавец</div>
+
+            {/* Avatar + name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {listing.user?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={listing.user.avatarUrl}
+                  alt={sellerName}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    background: 'var(--brand)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    boxShadow: '0 4px 12px var(--brand-glow)',
+                  }}
+                >
+                  {sellerInitials}
+                </div>
+              )}
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{sellerName}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Продавец</div>
+              </div>
+            </div>
+
+            {/* Phone */}
+            {sellerPhone && (
+              showPhone ? (
+                <a
+                  href={`tel:${sellerPhone}`}
+                  className="btn primary"
+                  style={{ textDecoration: 'none', gap: 8, justifyContent: 'center' }}
+                >
+                  <IconPhone size={16} strokeWidth={1.8} />
+                  {sellerPhone}
+                </a>
+              ) : (
+                <button
+                  className="btn primary"
+                  onClick={() => setShowPhone(true)}
+                  style={{ gap: 8 }}
+                >
+                  <IconPhone size={16} strokeWidth={1.8} />
+                  <span style={{ letterSpacing: 0 }}>
+                    {sellerPhone.slice(0, 6)}
+                    <span style={{ filter: 'blur(5px)', userSelect: 'none' }}>
+                      {sellerPhone.slice(6)}
+                    </span>
+                  </span>
+                  &nbsp;Показать
+                </button>
+              )
+            )}
+
+            {/* Chat */}
+            {(!user || user.id !== listingOwnerId) && (
+              <button
+                className="btn primary"
+                onClick={() => {
+                  if (!user) {
+                    router.push('/login');
+                    return;
+                  }
+                  router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
+                }}
+                style={{ gap: 8 }}
+              >
+                <IconMessage size={16} strokeWidth={1.8} />
+                Написать в чат
+              </button>
+            )}
+
+            {user && user.id === listingOwnerId && (
+              <Link
+                className="btn"
+                href={`/edit/${listing.id}`}
+                style={{ gap: 8, justifyContent: 'center' }}
+              >
+                Редактировать объявление
+              </Link>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

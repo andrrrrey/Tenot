@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { searchCities, getCityDistricts, type City } from "@/services/cities";
+import { IconChevronDown, IconChevronRight, IconX, IconArrowLeft, IconMapPin } from "@/components/Icons";
 
 const TYPE_LABELS: Record<string, string> = {
   CITY: "Города",
@@ -29,7 +30,6 @@ export function CitySearchPopup({
   const [results, setResults] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // District selection step
   const [step, setStep] = useState<"city" | "district">("city");
   const [pendingCity, setPendingCity] = useState<City | null>(null);
   const [districts, setDistricts] = useState<City[]>([]);
@@ -67,12 +67,8 @@ export function CitySearchPopup({
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (step === "district") {
-          setStep("city");
-          setPendingCity(null);
-        } else {
-          setOpen(false);
-        }
+        if (step === "district") { setStep("city"); setPendingCity(null); }
+        else setOpen(false);
       }
     };
     document.addEventListener("keydown", handler);
@@ -91,7 +87,6 @@ export function CitySearchPopup({
   }, [open]);
 
   const handleCityClick = (city: City) => {
-    // Only cities/towns can have districts, not regions or villages
     if (city.type === "CITY" || city.type === "TOWN") {
       setDistrictsLoading(true);
       getCityDistricts(city.id)
@@ -139,143 +134,149 @@ export function CitySearchPopup({
     setOpen(false);
   };
 
-  const regions = useMemo(
-    () => results.filter((c) => c.type === "REGION"),
-    [results]
-  );
-  const settlements = useMemo(
-    () => results.filter((c) => c.type !== "REGION"),
-    [results]
-  );
+  const regions = useMemo(() => results.filter((c) => c.type === "REGION"), [results]);
+  const settlements = useMemo(() => results.filter((c) => c.type !== "REGION"), [results]);
 
   return (
     <div style={{ position: "relative" }}>
+      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         style={{
           width: "100%",
-          padding: compact ? "8px 10px" : "12px 14px",
-          borderRadius: 12,
-          border: "1px solid var(--line)",
-          background: "#fff",
+          padding: compact ? "9px 12px" : "11px 14px",
+          borderRadius: "var(--radius-sm)",
+          border: "1.5px solid var(--line-solid)",
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           textAlign: "left",
           cursor: "pointer",
           fontSize: compact ? 13 : 14,
-          color: selectedName ? "var(--text)" : "var(--muted)",
-          maxWidth: compact ? 160 : undefined,
+          color: selectedName ? "var(--text)" : "var(--muted-light)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
+          fontFamily: "inherit",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+        }}
+        onFocus={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--brand)";
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 3px var(--brand-light)";
+        }}
+        onBlur={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--line-solid)";
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
         }}
       >
-        <span
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {selectedName || placeholder}
-        </span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          style={{ flexShrink: 0, opacity: 0.4 }}
-        >
-          <path
-            d="M2.5 4.5L6 8L9.5 4.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+          {selectedName && <IconMapPin size={13} color="var(--brand)" strokeWidth={2} style={{ flexShrink: 0 }} />}
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {selectedName || placeholder}
+          </span>
+        </div>
+        <IconChevronDown size={14} color="var(--muted-light)" strokeWidth={2} style={{ flexShrink: 0 }} />
       </button>
 
+      {/* Backdrop */}
       {open && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.3)",
+            background: "rgba(0,0,0,0.35)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
             zIndex: 1000,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            padding: 20,
           }}
         >
           <div
             ref={popupRef}
             style={{
-              background: "#fff",
-              borderRadius: 16,
-              width: "90%",
+              background: "rgba(255,255,255,0.95)",
+              backdropFilter: "blur(32px) saturate(200%)",
+              WebkitBackdropFilter: "blur(32px) saturate(200%)",
+              borderRadius: "var(--radius-xl)",
+              width: "100%",
               maxWidth: 480,
               height: "70vh",
+              maxHeight: 560,
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              boxShadow: "var(--shadow-lg)",
+              border: "1px solid rgba(255,255,255,0.9)",
+              overflow: "hidden",
             }}
           >
             {/* Header */}
             <div
               style={{
-                padding: "16px 20px 0",
+                padding: "18px 20px 14px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
+                gap: 10,
+                borderBottom: "1px solid var(--line-solid)",
                 flexShrink: 0,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {step === "district" && (
-                  <button
-                    type="button"
-                    onClick={handleBackToCity}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "4px 0",
-                      fontSize: 20,
-                      color: "var(--muted)",
-                      lineHeight: 1,
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                    title="Назад"
-                  >
-                    ←
-                  </button>
-                )}
-                <div style={{ fontWeight: 700, fontSize: 18 }}>
-                  {step === "district" && pendingCity
-                    ? `Районы: ${pendingCity.name}`
-                    : "Выбор города"}
-                </div>
+              {step === "district" && (
+                <button
+                  type="button"
+                  onClick={handleBackToCity}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 6,
+                    borderRadius: 8,
+                    color: "var(--muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.06)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+                >
+                  <IconArrowLeft size={18} strokeWidth={2} />
+                </button>
+              )}
+              <div style={{ fontWeight: 700, fontSize: 17, flex: 1 }}>
+                {step === "district" && pendingCity ? `Районы: ${pendingCity.name}` : "Выбор города"}
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 style={{
-                  background: "none",
+                  background: "rgba(0,0,0,0.06)",
                   border: "none",
                   cursor: "pointer",
-                  padding: 4,
-                  fontSize: 20,
+                  padding: 6,
+                  borderRadius: 999,
                   color: "var(--muted)",
-                  lineHeight: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  width: 30,
+                  height: 30,
+                  justifyContent: "center",
                 }}
               >
-                &times;
+                <IconX size={16} strokeWidth={2} />
               </button>
             </div>
 
-            {/* Search input — only on city step */}
+            {/* Search input (city step) */}
             {step === "city" && (
               <div style={{ padding: "12px 20px", flexShrink: 0 }}>
                 <input
@@ -283,28 +284,23 @@ export function CitySearchPopup({
                   className="input"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Начните вводить название..."
-                  style={{
-                    padding: "12px 14px",
-                    fontSize: 15,
-                  }}
+                  placeholder="Введите название города..."
+                  style={{ fontSize: 14 }}
                 />
               </div>
             )}
 
-            {/* Results */}
+            {/* Results list */}
             <div
               style={{
                 flex: 1,
                 minHeight: 0,
                 overflowY: "auto",
-                padding: step === "city" ? "0 20px 16px" : "12px 20px 16px",
+                padding: step === "city" ? "0 12px 16px" : "12px 12px 16px",
               }}
             >
-              {/* ---- City selection step ---- */}
               {step === "city" && (
                 <>
-                  {/* Clear selection option */}
                   {value && (
                     <button
                       type="button"
@@ -315,11 +311,12 @@ export function CitySearchPopup({
                         textAlign: "left",
                         background: "none",
                         border: "none",
-                        borderBottom: "1px solid var(--line)",
+                        borderBottom: "1px solid var(--line-solid)",
                         cursor: "pointer",
                         color: "var(--muted)",
-                        fontSize: 14,
-                        marginBottom: 8,
+                        fontSize: 13,
+                        marginBottom: 4,
+                        fontFamily: "inherit",
                       }}
                     >
                       Сбросить выбор
@@ -327,37 +324,20 @@ export function CitySearchPopup({
                   )}
 
                   {(loading || districtsLoading) && (
-                    <div
-                      className="muted"
-                      style={{ padding: "12px 0", fontSize: 14 }}
-                    >
+                    <div className="muted" style={{ padding: "12px 12px", fontSize: 13 }}>
                       Поиск...
                     </div>
                   )}
 
                   {!loading && !districtsLoading && regions.length === 0 && settlements.length === 0 && query.trim() && (
-                    <div
-                      className="muted"
-                      style={{ padding: "12px 0", fontSize: 14 }}
-                    >
+                    <div className="muted" style={{ padding: "12px 12px", fontSize: 13 }}>
                       Ничего не найдено
                     </div>
                   )}
 
                   {!loading && regions.length > 0 && (
                     <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                          padding: "8px 0 4px",
-                        }}
-                      >
-                        Регионы
-                      </div>
+                      <SectionLabel>Регионы</SectionLabel>
                       {regions.map((region) => (
                         <CityRow
                           key={region.id}
@@ -372,18 +352,7 @@ export function CitySearchPopup({
 
                   {!loading && settlements.length > 0 && (
                     <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                          padding: "8px 0 4px",
-                        }}
-                      >
-                        Города и населённые пункты
-                      </div>
+                      <SectionLabel>Города и населённые пункты</SectionLabel>
                       {settlements.map((city) => (
                         <CityRow
                           key={city.id}
@@ -399,10 +368,8 @@ export function CitySearchPopup({
                 </>
               )}
 
-              {/* ---- District selection step ---- */}
               {step === "district" && pendingCity && (
                 <>
-                  {/* Select whole city option */}
                   <button
                     type="button"
                     onClick={handleSelectWholeCity}
@@ -410,43 +377,30 @@ export function CitySearchPopup({
                       width: "100%",
                       padding: "10px 12px",
                       textAlign: "left",
-                      background: value === String(pendingCity.id) ? "var(--soft)" : "none",
+                      background: value === String(pendingCity.id) ? "var(--brand-light)" : "none",
                       border: "none",
-                      borderBottom: "1px solid var(--line)",
+                      borderBottom: "1px solid var(--line-solid)",
                       cursor: "pointer",
                       fontSize: 14,
-                      marginBottom: 8,
+                      marginBottom: 4,
                       borderRadius: 8,
                       fontWeight: value === String(pendingCity.id) ? 600 : 400,
-                      color: "var(--text)",
+                      color: value === String(pendingCity.id) ? "var(--brand)" : "var(--text)",
+                      fontFamily: "inherit",
                     }}
                   >
                     Весь город
                   </button>
 
                   {districtsLoading && (
-                    <div
-                      className="muted"
-                      style={{ padding: "12px 0", fontSize: 14 }}
-                    >
+                    <div className="muted" style={{ padding: "12px 12px", fontSize: 13 }}>
                       Загрузка районов...
                     </div>
                   )}
 
                   {!districtsLoading && districts.length > 0 && (
                     <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                          padding: "8px 0 4px",
-                        }}
-                      >
-                        Районы
-                      </div>
+                      <SectionLabel>Районы</SectionLabel>
                       {districts.map((district) => (
                         <DistrictRow
                           key={district.id}
@@ -467,6 +421,23 @@ export function CitySearchPopup({
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        color: "var(--muted)",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        padding: "10px 12px 4px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function HighlightMatch({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
   const idx = text.toLowerCase().indexOf(query.toLowerCase());
@@ -474,7 +445,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <span style={{ fontWeight: 700 }}>{text.slice(idx, idx + query.length)}</span>
+      <span style={{ fontWeight: 700, color: "var(--brand)" }}>{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </>
   );
@@ -493,7 +464,6 @@ function CityRow({
   query: string;
   hasDistricts?: boolean;
 }) {
-  const isRegion = city.type === "REGION";
   return (
     <button
       type="button"
@@ -502,24 +472,24 @@ function CityRow({
         width: "100%",
         padding: "10px 12px",
         textAlign: "left",
-        background: isSelected ? "var(--soft)" : "none",
+        background: isSelected ? "var(--brand-light)" : "none",
         border: "none",
-        borderRadius: 8,
+        borderRadius: 10,
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 8,
         fontSize: 14,
-        transition: "background 0.15s",
+        fontFamily: "inherit",
+        transition: "background 0.12s",
+        color: isSelected ? "var(--brand)" : "var(--text)",
       }}
       onMouseEnter={(e) => {
-        if (!isSelected)
-          (e.currentTarget as HTMLElement).style.background = "var(--soft)";
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.04)";
       }}
       onMouseLeave={(e) => {
-        if (!isSelected)
-          (e.currentTarget as HTMLElement).style.background = "none";
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "none";
       }}
     >
       <div>
@@ -527,45 +497,26 @@ function CityRow({
           <HighlightMatch text={city.name} query={query} />
         </div>
         {city.region && (
-          <div
-            style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}
-          >
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1 }}>
             {city.region.name}
           </div>
         )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-        {!isRegion && city.type !== "CITY" && TYPE_LABELS[city.type] && (
+        {city.type !== "CITY" && city.type !== "REGION" && TYPE_LABELS[city.type] && (
           <span
             style={{
               fontSize: 11,
               color: "var(--muted)",
-              background: "var(--soft)",
+              background: "rgba(0,0,0,0.05)",
               padding: "2px 8px",
               borderRadius: 999,
-              border: "1px solid var(--line)",
             }}
           >
             {TYPE_LABELS[city.type]}
           </span>
         )}
-        {hasDistricts && (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            style={{ opacity: 0.4 }}
-          >
-            <path
-              d="M4.5 2.5L8 6L4.5 9.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
+        {hasDistricts && <IconChevronRight size={14} color="var(--muted-light)" strokeWidth={2} />}
       </div>
     </button>
   );
@@ -588,21 +539,21 @@ function DistrictRow({
         width: "100%",
         padding: "10px 12px",
         textAlign: "left",
-        background: isSelected ? "var(--soft)" : "none",
+        background: isSelected ? "var(--brand-light)" : "none",
         border: "none",
-        borderRadius: 8,
+        borderRadius: 10,
         cursor: "pointer",
         fontSize: 14,
         fontWeight: isSelected ? 600 : 400,
-        transition: "background 0.15s",
+        fontFamily: "inherit",
+        color: isSelected ? "var(--brand)" : "var(--text)",
+        transition: "background 0.12s",
       }}
       onMouseEnter={(e) => {
-        if (!isSelected)
-          (e.currentTarget as HTMLElement).style.background = "var(--soft)";
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.04)";
       }}
       onMouseLeave={(e) => {
-        if (!isSelected)
-          (e.currentTarget as HTMLElement).style.background = "none";
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "none";
       }}
     >
       {district.name}
