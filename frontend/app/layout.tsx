@@ -13,10 +13,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body>
         <AuthProvider>
           <SiteHeader />
-          <main className="container" style={{ padding: "18px 16px 40px" }}>
+          <main className="container" style={{ padding: "24px 20px 56px" }}>
             {children}
           </main>
           <SiteFooter />

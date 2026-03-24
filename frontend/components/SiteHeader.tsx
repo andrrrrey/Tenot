@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { subscribeUnreadCount } from "@/components/ChatWidget";
+import { IconSearch, IconMessage, IconUser, IconPlus } from "@/components/Icons";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -28,20 +29,56 @@ export function SiteHeader() {
   };
 
   return (
-    <header style={{ borderBottom:"1px solid var(--line)", background:"#fff" }}>
-      <div className="container" style={{ padding:"12px 16px" }}>
-        <div className="row" style={{ justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-          <div className="row" style={{ gap: 12 }}>
-            <Link href="/" style={{ fontWeight:900, letterSpacing:0.5, color:"var(--brand)", fontSize: 22 }}>
-              TENOT
-            </Link>
-            <span className="muted" style={{ fontSize: 12, display: pathname === "/" ? "none" : "inline" }}>
-              объявления без лишнего
-            </span>
-          </div>
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "rgba(242, 244, 248, 0.82)",
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.7)",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
+      }}
+    >
+      <div className="container" style={{ padding: "0 20px" }}>
+        {/* Desktop layout */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            height: 60,
+          }}
+        >
+          {/* Logo */}
+          <Link
+            href="/"
+            style={{
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              color: "var(--brand)",
+              fontSize: 20,
+              flexShrink: 0,
+              lineHeight: 1,
+            }}
+          >
+            TENOT
+          </Link>
 
-          <div className="row" style={{ flex:1, maxWidth: 600, gap: 8 }}>
-            <div style={{ maxWidth: 160, flexShrink: 0 }}>
+          {/* Search bar — hidden on small mobile */}
+          <div
+            style={{
+              flex: 1,
+              maxWidth: 580,
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+            }}
+            className="header-search"
+          >
+            <div style={{ maxWidth: 150, flexShrink: 0, width: "100%" }}>
               <CitySearchPopup
                 value={cityId}
                 selectedName={cityName}
@@ -50,21 +87,43 @@ export function SiteHeader() {
                 compact
               />
             </div>
-            <input
-              className="input"
-              value={q}
-              onChange={(e)=>setQ(e.target.value)}
-              placeholder="Поиск…"
-              onKeyDown={(e)=>{
-                if (e.key === "Enter") handleSearch();
-              }}
-            />
-            <button className="btn" onClick={handleSearch}>
-              Найти
-            </button>
+            <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
+              <input
+                className="input"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Поиск объявлений..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                onClick={handleSearch}
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  background: "var(--brand)",
+                  border: "none",
+                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#fff",
+                  flexShrink: 0,
+                  transition: "background 0.2s",
+                }}
+              >
+                <IconSearch size={15} strokeWidth={2.2} />
+              </button>
+            </div>
           </div>
 
-          <div className="row" style={{ gap: 10 }}>
+          {/* Right actions */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
             {user && (
               <Link
                 href="/chat"
@@ -76,39 +135,130 @@ export function SiteHeader() {
                   justifyContent: "center",
                   width: 40,
                   height: 40,
-                  borderRadius: 12,
-                  border: "1px solid var(--line)",
-                  background: "#fff",
-                  color: "inherit",
-                  textDecoration: "none",
-                  fontSize: 20,
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid rgba(255,255,255,0.7)",
+                  background: "var(--card)",
+                  backdropFilter: "var(--blur-sm)",
+                  WebkitBackdropFilter: "var(--blur-sm)",
+                  color: "var(--muted)",
+                  boxShadow: "var(--shadow-xs)",
+                  transition: "all 0.2s",
                   flexShrink: 0,
                 }}
               >
-                💬
+                <IconMessage size={18} strokeWidth={1.8} />
                 {unreadCount > 0 && (
                   <span
                     style={{
                       position: "absolute",
-                      top: -4,
-                      right: -4,
-                      width: 10,
-                      height: 10,
+                      top: -3,
+                      right: -3,
+                      minWidth: 18,
+                      height: 18,
                       borderRadius: "50%",
                       background: "#ef4444",
-                      border: "2px solid #fff",
+                      border: "2px solid #eef1f8",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0 3px",
                     }}
-                  />
+                  >
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 )}
               </Link>
             )}
-            <Link className="btn primary" href="/add">Разместить</Link>
-            <Link className="btn" href={user ? "/me" : "/login"}>
-              {user ? "Профиль" : "Войти"}
+
+            <Link
+              className="btn primary"
+              href="/add"
+              style={{ gap: 6, paddingLeft: 12, paddingRight: 14 }}
+            >
+              <IconPlus size={15} strokeWidth={2.5} />
+              <span className="btn-text-hide">Разместить</span>
+            </Link>
+
+            <Link
+              className="btn"
+              href={user ? "/me" : "/login"}
+              style={{ gap: 6, paddingLeft: 12, paddingRight: 14 }}
+            >
+              <IconUser size={16} strokeWidth={1.8} />
+              <span className="btn-text-hide">{user ? "Профиль" : "Войти"}</span>
             </Link>
           </div>
         </div>
+
+        {/* Mobile search row */}
+        <div className="header-search-mobile">
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              paddingBottom: 10,
+            }}
+          >
+            <div style={{ maxWidth: 130, flexShrink: 0, width: "100%" }}>
+              <CitySearchPopup
+                value={cityId}
+                selectedName={cityName}
+                onChange={(id, name) => { setCityId(id); setCityName(name); }}
+                placeholder="Все города"
+                compact
+              />
+            </div>
+            <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
+              <input
+                className="input"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Поиск..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                onClick={handleSearch}
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  background: "var(--brand)",
+                  border: "none",
+                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#fff",
+                  flexShrink: 0,
+                }}
+              >
+                <IconSearch size={15} strokeWidth={2.2} />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        .header-search { display: flex !important; }
+        .header-search-mobile { display: none !important; }
+        .btn-text-hide { display: inline; }
+
+        @media (max-width: 640px) {
+          .header-search { display: none !important; }
+          .header-search-mobile { display: block !important; }
+          .btn-text-hide { display: none; }
+        }
+      `}</style>
     </header>
   );
 }

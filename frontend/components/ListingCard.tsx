@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { useMe } from "@/hooks/useMe";
 import { addFavorite, removeFavorite } from "@/services/favorites";
 import { useState, useEffect } from "react";
+import { IconHeart, IconMapPin } from "@/components/Icons";
 
 type Props = {
   listing: Listing;
@@ -25,7 +26,9 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
     setFav(isFavorite);
   }, [isFavorite]);
 
-  const handleToggleFav = async () => {
+  const handleToggleFav = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!currentUser) return;
     setLoading(true);
     try {
@@ -45,50 +48,165 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
     }
   };
 
+  const coverUrl = getCoverUrl(listing.images);
+
   return (
-    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <Link href={`/listing/${listing.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-        {getCoverUrl(listing.images) && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={getCoverUrl(listing.images)!}
-            alt={listing.title}
+    <div
+      style={{
+        background: "var(--card)",
+        backdropFilter: "var(--blur)",
+        WebkitBackdropFilter: "var(--blur)",
+        border: "1px solid rgba(255,255,255,0.85)",
+        borderRadius: "var(--radius-lg)",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "var(--shadow)",
+        transition: "transform 0.22s ease, box-shadow 0.22s ease",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-lg)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)";
+      }}
+    >
+      <Link href={`/listing/${listing.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
+        {/* Image */}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            paddingTop: "62%",
+            background: "linear-gradient(135deg, #f0f2f8, #e8ebf4)",
+            overflow: "hidden",
+            flexShrink: 0,
+          }}
+        >
+          {coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverUrl}
+              alt={listing.title}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "rgba(0,0,0,0.18)",
+              }}
+            >
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </div>
+          )}
+
+          {/* Favorite button overlay */}
+          {currentUser && (
+            <button
+              onClick={handleToggleFav}
+              disabled={loading}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                transition: "all 0.2s ease",
+                color: fav ? "#ef4444" : "var(--muted)",
+              }}
+            >
+              <IconHeart size={15} filled={fav} color={fav ? "#ef4444" : "currentColor"} strokeWidth={2} />
+            </button>
+          )}
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: "14px 14px 16px", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+          <div
             style={{
-              width: "100%",
-              height: 140,
-              objectFit: "cover",
-              borderRadius: 8,
-              marginBottom: 8,
+              fontWeight: 600,
+              fontSize: 14,
+              lineHeight: 1.4,
+              color: "var(--text)",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
-          />
-        )}
-        <div className="h3" style={{ margin: 0 }}>
-          {listing.title}
-        </div>
+          >
+            {listing.title}
+          </div>
 
-        <div className="muted" style={{ marginTop: 6 }}>
-          {listing.category?.name || "Без категории"}
-          {listing.city?.name && ` \u00B7 ${listing.city.name}`}
-        </div>
+          {(listing.category?.name || listing.city?.name) && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                color: "var(--muted)",
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+            >
+              {listing.city?.name && (
+                <>
+                  <IconMapPin size={11} strokeWidth={1.8} />
+                  <span>{listing.city.name}</span>
+                  {listing.category?.name && <span style={{ opacity: 0.5 }}>·</span>}
+                </>
+              )}
+              {listing.category?.name && <span>{listing.category.name}</span>}
+            </div>
+          )}
 
-        <div style={{ marginTop: 8, fontWeight: 800, fontSize: 18 }}>
-          {listing.price.toLocaleString("ru-RU")} ₽
-        </div>
+          <div
+            style={{
+              marginTop: "auto",
+              paddingTop: 8,
+              fontWeight: 800,
+              fontSize: 18,
+              color: "var(--brand)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {listing.price.toLocaleString("ru-RU")} ₽
+          </div>
 
-        <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-          {new Date(listing.createdAt).toLocaleString("ru-RU")}
+          <div style={{ color: "var(--muted-light)", fontSize: 11, fontWeight: 500 }}>
+            {new Date(listing.createdAt).toLocaleDateString("ru-RU", {
+              day: "numeric",
+              month: "short",
+            })}
+          </div>
         </div>
       </Link>
-
-      {currentUser && (
-        <button
-          className="btn"
-          onClick={handleToggleFav}
-          disabled={loading}
-        >
-          {loading ? "..." : fav ? "Убрать из избранного" : "В избранное"}
-        </button>
-      )}
     </div>
   );
 }

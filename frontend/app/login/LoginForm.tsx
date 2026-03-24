@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '@/services/auth';
 import { useStore } from '@/lib/store';
+import { IconEye, IconEyeOff, IconLock, IconMail } from '@/components/Icons';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -17,7 +18,6 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Показываем сообщения об ошибках из URL
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'session_expired') {
@@ -38,7 +38,6 @@ export default function LoginForm() {
 
     try {
       const data = await login(email, password);
-      // Обновляем store
       if (data.user) {
         setUser({
           id: String(data.user.id),
@@ -55,89 +54,139 @@ export default function LoginForm() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      submit();
-    }
+    if (e.key === 'Enter') submit();
   };
 
   return (
-    <div className="card" style={{ padding: 18, maxWidth: 520 }}>
-      <h1 className="h2">Вход</h1>
-
-      {error && (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 10,
-            background: '#fee2e2',
-            color: '#991b1b',
-            borderRadius: 6,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
+    <div
+      style={{
+        minHeight: "60vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px 0",
+      }}
+    >
       <div
-        className="grid"
-        style={{ gridTemplateColumns: '1fr', gap: 10, marginTop: 12 }}
+        style={{
+          width: "100%",
+          maxWidth: 440,
+          background: "var(--card)",
+          backdropFilter: "var(--blur)",
+          WebkitBackdropFilter: "var(--blur)",
+          border: "1px solid rgba(255,255,255,0.85)",
+          borderRadius: "var(--radius-xl)",
+          padding: "36px 36px 32px",
+          boxShadow: "var(--shadow-lg)",
+        }}
       >
-        <input
-          className="input"
-          placeholder="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <div style={{ position: 'relative' }}>
-          <input
-            className="input"
-            placeholder="Пароль"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            style={{ paddingRight: 40, width: '100%', boxSizing: 'border-box' }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div
             style={{
-              position: 'absolute',
-              right: 10,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              color: 'var(--muted)',
-              fontSize: 18,
-              lineHeight: 1,
-              display: 'flex',
-              alignItems: 'center',
+              width: 52,
+              height: 52,
+              borderRadius: "16px",
+              background: "var(--brand)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+              boxShadow: "0 8px 24px var(--brand-glow)",
             }}
-            tabIndex={-1}
-            title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
           >
-            {showPassword ? '🙈' : '👁'}
+            <IconLock size={24} color="#fff" strokeWidth={2} />
+          </div>
+          <h1 className="h2" style={{ marginBottom: 6 }}>Добро пожаловать</h1>
+          <div className="muted" style={{ fontSize: 14 }}>Войдите в свой аккаунт</div>
+        </div>
+
+        {error && (
+          <div className="alert error" style={{ marginBottom: 20 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div className="field-label">Email</div>
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <input
+                className="input"
+                placeholder="your@email.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
+                style={{ paddingLeft: 42 }}
+              />
+              <div style={{ position: "absolute", left: 14, color: "var(--muted-light)", pointerEvents: "none" }}>
+                <IconMail size={16} strokeWidth={1.6} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="field-label">Пароль</div>
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <input
+                className="input"
+                placeholder="Ваш пароль"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                style={{ paddingLeft: 42, paddingRight: 44 }}
+              />
+              <div style={{ position: "absolute", left: 14, color: "var(--muted-light)", pointerEvents: "none" }}>
+                <IconLock size={16} strokeWidth={1.6} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 4,
+                  color: 'var(--muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                tabIndex={-1}
+              >
+                {showPassword ? <IconEyeOff size={16} strokeWidth={1.6} /> : <IconEye size={16} strokeWidth={1.6} />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            className="btn primary"
+            onClick={submit}
+            disabled={loading}
+            style={{
+              marginTop: 6,
+              padding: "13px 20px",
+              fontSize: 15,
+              borderRadius: "var(--radius-sm)",
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? 'Вход...' : 'Войти'}
           </button>
         </div>
-        <button
-          className="btn primary"
-          onClick={submit}
-          disabled={loading}
-        >
-          {loading ? 'Вход...' : 'Войти'}
-        </button>
-      </div>
 
-      <div style={{ marginTop: 16 }}>
-        <span className="muted">Нет аккаунта? </span>
-        <Link href="/register" style={{ color: 'var(--brand)', fontWeight: 600 }}>
-          Зарегистрироваться
-        </Link>
+        <div style={{ marginTop: 24, textAlign: "center" }}>
+          <span className="muted" style={{ fontSize: 14 }}>Нет аккаунта? </span>
+          <Link
+            href="/register"
+            style={{ color: 'var(--brand)', fontWeight: 600, fontSize: 14 }}
+          >
+            Зарегистрироваться
+          </Link>
+        </div>
       </div>
     </div>
   );

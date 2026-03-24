@@ -14,6 +14,15 @@ import {
   type ChatUser,
   type Message,
 } from "@/services/chat";
+import {
+  IconArrowLeft,
+  IconMessage,
+  IconSend,
+  IconMic,
+  IconStop,
+  IconPlay,
+  IconPause,
+} from "@/components/Icons";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -38,6 +47,7 @@ function Avatar({ user, size = 40 }: { user?: ChatUser; size?: number }) {
           borderRadius: "50%",
           objectFit: "cover",
           flexShrink: 0,
+          border: "2px solid rgba(255,255,255,0.8)",
         }}
       />
     );
@@ -56,6 +66,7 @@ function Avatar({ user, size = 40 }: { user?: ChatUser; size?: number }) {
         fontWeight: 700,
         fontSize: size * 0.35,
         flexShrink: 0,
+        boxShadow: "0 2px 8px var(--brand-glow)",
       }}
     >
       {getInitials(user?.name)}
@@ -73,18 +84,16 @@ function formatTime(dateStr: string): string {
   return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
 
-// ✓ = delivered, ✓✓ = read
 function ReadStatus({ message, isMine }: { message: Message; isMine: boolean }) {
   if (!isMine) return null;
   return (
     <span
       style={{
-        fontSize: 11,
+        fontSize: 10,
         marginLeft: 4,
-        color: message.isRead ? "#4ade80" : "rgba(255,255,255,0.7)",
-        display: "inline-flex",
-        alignItems: "center",
+        color: message.isRead ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.55)",
         letterSpacing: message.isRead ? -1 : 0,
+        fontWeight: 600,
       }}
       title={message.isRead ? "Прочитано" : "Доставлено"}
     >
@@ -108,17 +117,14 @@ function AudioPlayer({ src, isMine, initialDuration = 0 }: { src: string; isMine
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
     const onEnded = () => { setPlaying(false); setCurrentTime(0); };
     const onDurationChange = () => {
       if (isFinite(audio.duration) && audio.duration > 0) setDuration(audio.duration);
     };
-
     audio.addEventListener("durationchange", onDurationChange);
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
-
     return () => {
       audio.removeEventListener("durationchange", onDurationChange);
       audio.removeEventListener("timeupdate", onTimeUpdate);
@@ -133,7 +139,7 @@ function AudioPlayer({ src, isMine, initialDuration = 0 }: { src: string; isMine
     else { audio.play(); setPlaying(true); }
   };
 
-  const formatTime = (s: number) =>
+  const fmt = (s: number) =>
     isFinite(s) && s > 0
       ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`
       : "0:00";
@@ -141,7 +147,7 @@ function AudioPlayer({ src, isMine, initialDuration = 0 }: { src: string; isMine
   const accent = isMine ? "#fff" : "var(--brand)";
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 200 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 200 }}>
       <audio ref={audioRef} src={src} preload="metadata" />
       <button
         onClick={toggle}
@@ -151,13 +157,13 @@ function AudioPlayer({ src, isMine, initialDuration = 0 }: { src: string; isMine
           cursor: "pointer",
           padding: 0,
           color: accent,
-          fontSize: 20,
-          lineHeight: 1,
+          display: "flex",
+          alignItems: "center",
           flexShrink: 0,
         }}
         aria-label={playing ? "Пауза" : "Воспроизвести"}
       >
-        {playing ? "⏸" : "▶"}
+        {playing ? <IconPause size={18} color={accent} strokeWidth={2} /> : <IconPlay size={18} color={accent} />}
       </button>
       <input
         type="range"
@@ -171,8 +177,8 @@ function AudioPlayer({ src, isMine, initialDuration = 0 }: { src: string; isMine
         }}
         style={{ flex: 1, accentColor: accent, cursor: "pointer" }}
       />
-      <span style={{ fontSize: 12, color: accent, flexShrink: 0, minWidth: 36, textAlign: "right" }}>
-        {playing ? formatTime(currentTime) : formatTime(duration)}
+      <span style={{ fontSize: 11, color: accent, flexShrink: 0, minWidth: 34, textAlign: "right" }}>
+        {playing ? fmt(currentTime) : fmt(duration)}
       </span>
     </div>
   );
@@ -192,7 +198,6 @@ function MicButton({
 
   const toggleRecording = async () => {
     if (recording) {
-      // Stop: mediaRecorder.stop() triggers onstop which calls onAudioReady
       mediaRecorderRef.current?.stop();
       mediaRecorderRef.current = null;
       setRecording(false);
@@ -203,9 +208,7 @@ function MicButton({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "";
+        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
@@ -233,26 +236,26 @@ function MicButton({
       type="button"
       onClick={toggleRecording}
       disabled={disabled}
-      title={recording ? "Остановить запись и отправить" : "Записать голосовое сообщение"}
+      title={recording ? "Остановить запись" : "Голосовое сообщение"}
       style={{
-        background: recording ? "#ef4444" : "var(--soft)",
+        background: recording ? "#ef4444" : "var(--card)",
         color: recording ? "#fff" : "var(--brand)",
-        border: `1px solid ${recording ? "#ef4444" : "var(--border)"}`,
-        borderRadius: 20,
+        border: `1px solid ${recording ? "#ef4444" : "rgba(255,255,255,0.7)"}`,
+        borderRadius: 999,
         width: 40,
         height: 40,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         cursor: disabled ? "not-allowed" : "pointer",
-        fontSize: 18,
         flexShrink: 0,
         alignSelf: "flex-end",
-        transition: "background 0.15s, color 0.15s",
+        transition: "all 0.2s",
         opacity: disabled ? 0.5 : 1,
+        boxShadow: "var(--shadow-xs)",
       }}
     >
-      {recording ? "⏹" : "🎙"}
+      {recording ? <IconStop size={14} color="#fff" /> : <IconMic size={16} strokeWidth={1.8} />}
     </button>
   );
 }
@@ -281,13 +284,8 @@ export default function ChatClient() {
   useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
   useEffect(() => { userRef.current = user; }, [user]);
 
-  // Load chats on mount / when user changes
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
+    if (!user) { setLoading(false); return; }
     setLoading(true);
     getMyChats()
       .then((data) => {
@@ -301,29 +299,21 @@ export default function ChatClient() {
       .finally(() => setLoading(false));
   }, [user, chatIdParam]);
 
-  // Load messages when a chat is selected + mark as read
   useEffect(() => {
-    if (!selectedChat || !user) {
-      setMessages([]);
-      return;
-    }
+    if (!selectedChat || !user) { setMessages([]); return; }
     getMessages(selectedChat.id)
       .then((msgs) => {
         setMessages(msgs);
         const hasUnread = msgs.some((m) => !m.isRead && m.senderId !== user.id);
         if (hasUnread) {
-          markChatRead(selectedChat.id).then(() => {
-            getMyChats().then(setChats).catch(() => {});
-          }).catch(() => {});
+          markChatRead(selectedChat.id).then(() => getMyChats().then(setChats).catch(() => {})).catch(() => {});
         }
       })
       .catch(() => setMessages([]));
   }, [selectedChat?.id, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Polling for real-time messages and chat list updates
   useEffect(() => {
     if (!user) return;
-
     const pollMessages = async () => {
       const current = selectedChatRef.current;
       const currentUser = userRef.current;
@@ -331,46 +321,27 @@ export default function ChatClient() {
       try {
         const msgs = await getMessages(current.id);
         setMessages((prev) => {
-          if (
-            msgs.length !== prev.length ||
-            msgs.some((m, i) => m.id !== prev[i]?.id || m.isRead !== prev[i]?.isRead)
-          ) {
+          if (msgs.length !== prev.length || msgs.some((m, i) => m.id !== prev[i]?.id || m.isRead !== prev[i]?.isRead)) {
             return msgs;
           }
           return prev;
         });
         const hasUnread = msgs.some((m) => !m.isRead && m.senderId !== currentUser.id);
-        if (hasUnread) {
-          markChatRead(current.id).catch(() => {});
-        }
-      } catch {
-        // ignore poll errors
-      }
+        if (hasUnread) markChatRead(current.id).catch(() => {});
+      } catch { /* ignore */ }
     };
-
     const pollChats = async () => {
-      try {
-        const data = await getMyChats();
-        setChats(data);
-      } catch {
-        // ignore
-      }
+      try { const data = await getMyChats(); setChats(data); } catch { /* ignore */ }
     };
-
     const msgInterval = setInterval(pollMessages, 3000);
     const chatInterval = setInterval(pollChats, 10000);
-    return () => {
-      clearInterval(msgInterval);
-      clearInterval(chatInterval);
-    };
+    return () => { clearInterval(msgInterval); clearInterval(chatInterval); };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Determine the interlocutor for a chat (the other person)
   function getInterlocutor(chat: Chat): ChatUser | undefined {
     if (!user) return undefined;
     return user.id === chat.initiatorId ? chat.owner : chat.initiator;
@@ -382,10 +353,7 @@ export default function ChatClient() {
 
   const getReceiverAndListingId = () => {
     if (selectedChat) {
-      const receiverId =
-        user!.id === selectedChat.initiatorId
-          ? selectedChat.ownerId
-          : selectedChat.initiatorId;
+      const receiverId = user!.id === selectedChat.initiatorId ? selectedChat.ownerId : selectedChat.initiatorId;
       return { listingId: selectedChat.listingId, receiverId };
     }
     if (listingIdParam && receiverIdParam) {
@@ -397,30 +365,17 @@ export default function ChatClient() {
   const handleSendMessage = async () => {
     const text = newMessage.trim();
     if (!text) return;
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    if (!user) { router.push("/login"); return; }
 
     setSending(true);
     setSendError(null);
-
     try {
       if (!selectedChat && listingIdParam && receiverIdParam) {
-        await sendMessage({
-          listingId: Number(listingIdParam),
-          receiverId: Number(receiverIdParam),
-          text,
-        });
+        await sendMessage({ listingId: Number(listingIdParam), receiverId: Number(receiverIdParam), text });
         setNewMessage("");
-
         const updatedChats = await getMyChats();
         setChats(updatedChats);
-
-        const newChat = updatedChats.find(
-          (c) => c.listingId === Number(listingIdParam)
-        );
+        const newChat = updatedChats.find((c) => c.listingId === Number(listingIdParam));
         if (newChat) {
           setSelectedChat(newChat);
           const msgs = await getMessages(newChat.id);
@@ -428,24 +383,12 @@ export default function ChatClient() {
         }
         return;
       }
-
       if (!selectedChat) return;
-
-      const receiverId =
-        user.id === selectedChat.initiatorId
-          ? selectedChat.ownerId
-          : selectedChat.initiatorId;
-
-      await sendMessage({
-        listingId: selectedChat.listingId,
-        receiverId,
-        text,
-      });
+      const receiverId = user.id === selectedChat.initiatorId ? selectedChat.ownerId : selectedChat.initiatorId;
+      await sendMessage({ listingId: selectedChat.listingId, receiverId, text });
       setNewMessage("");
-
       const updated = await getMessages(selectedChat.id);
       setMessages(updated);
-
       const updatedChats = await getMyChats();
       setChats(updatedChats);
     } catch (e: any) {
@@ -456,20 +399,13 @@ export default function ChatClient() {
   };
 
   const handleAudioReady = async (audioBlob: Blob, durationSeconds: number) => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
+    if (!user) { router.push("/login"); return; }
     const ids = getReceiverAndListingId();
     if (!ids) return;
-
     setSending(true);
     setSendError(null);
-
     try {
       await sendAudioMessage({ ...ids, audioBlob, durationSeconds });
-
       if (!selectedChat && listingIdParam) {
         const updatedChats = await getMyChats();
         setChats(updatedChats);
@@ -481,44 +417,35 @@ export default function ChatClient() {
         }
         return;
       }
-
       if (selectedChat) {
-        const [updated, updatedChats] = await Promise.all([
-          getMessages(selectedChat.id),
-          getMyChats(),
-        ]);
+        const [updated, updatedChats] = await Promise.all([getMessages(selectedChat.id), getMyChats()]);
         setMessages(updated);
         setChats(updatedChats);
       }
     } catch (e: any) {
-      setSendError(e.message || "Ошибка отправки голосового сообщения");
+      setSendError(e.message || "Ошибка отправки голосового");
     } finally {
       setSending(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
   if (authLoading || loading) {
     return (
-      <div className="card" style={{ textAlign: "center", padding: 40 }}>
-        Загрузка...
+      <div className="card" style={{ textAlign: "center", padding: 48 }}>
+        <div className="muted">Загрузка...</div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="card" style={{ textAlign: "center", padding: 40 }}>
-        <div style={{ marginBottom: 16 }}>Войдите, чтобы видеть чаты</div>
-        <Link className="btn primary" href="/login">
-          Войти
-        </Link>
+      <div className="card" style={{ textAlign: "center", padding: 48 }}>
+        <div style={{ marginBottom: 16, fontWeight: 600 }}>Войдите, чтобы видеть чаты</div>
+        <Link className="btn primary" href="/login">Войти</Link>
       </div>
     );
   }
@@ -527,49 +454,64 @@ export default function ChatClient() {
   const activeListing = selectedChat?.listing;
 
   return (
-    <div className="grid" style={{ alignItems: "stretch" }}>
-      {/* ── Left column: chat list ── */}
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "300px 1fr",
+        gap: 16,
+        height: "calc(100vh - 160px)",
+        minHeight: 500,
+      }}
+    >
+      {/* Chat list */}
       <aside
         className="card"
         style={{
-          gridColumn: "span 4",
           padding: 0,
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          minHeight: "70vh",
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: "16px 20px",
-            borderBottom: "1px solid var(--border)",
-            fontWeight: 700,
-            fontSize: 16,
+            borderBottom: "1px solid var(--line-solid)",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexShrink: 0,
           }}
         >
-          Мои чаты
+          <IconMessage size={18} color="var(--brand)" strokeWidth={2} />
+          <span style={{ fontWeight: 700, fontSize: 16 }}>
+            Чаты
+          </span>
           {chats.length > 0 && (
             <span
-              className="muted"
-              style={{ fontWeight: 400, marginLeft: 8, fontSize: 14 }}
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                background: "var(--brand-light)",
+                color: "var(--brand)",
+                padding: "2px 8px",
+                borderRadius: 999,
+              }}
             >
-              ({chats.length})
+              {chats.length}
             </span>
           )}
         </div>
 
-        {/* Chat list */}
         <div style={{ flex: 1, overflowY: "auto" }}>
           {chats.length === 0 ? (
             <div
               style={{
-                padding: 24,
+                padding: "32px 20px",
                 textAlign: "center",
                 color: "var(--muted)",
-                fontSize: 14,
-                lineHeight: 1.6,
+                fontSize: 13,
+                lineHeight: 1.7,
               }}
             >
               У вас пока нет диалогов.
@@ -590,23 +532,29 @@ export default function ChatClient() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 12,
+                    gap: 11,
                     width: "100%",
                     padding: "12px 16px",
                     textAlign: "left",
                     border: "none",
-                    borderBottom: "1px solid var(--border)",
+                    borderBottom: "1px solid var(--line-solid)",
                     borderRadius: 0,
-                    background: isSelected ? "var(--brand)" : "transparent",
+                    background: isSelected
+                      ? "var(--brand)"
+                      : "transparent",
                     color: isSelected ? "#fff" : "inherit",
                     cursor: "pointer",
                     transition: "background 0.15s",
                   }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.03)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                  }}
                 >
-                  <Avatar user={interlocutor} size={44} />
-
+                  <Avatar user={interlocutor} size={42} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Interlocutor name */}
                     <div
                       style={{
                         fontWeight: unreadCount > 0 && !isSelected ? 700 : 600,
@@ -618,54 +566,47 @@ export default function ChatClient() {
                     >
                       {interlocutor?.name || "Пользователь"}
                     </div>
-
-                    {/* Listing title */}
                     <div
                       style={{
-                        fontSize: 12,
-                        opacity: 0.7,
+                        fontSize: 11,
+                        opacity: 0.65,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        marginTop: 1,
+                        marginTop: 2,
                       }}
                     >
                       {chat.listing?.title || `Объявление #${chat.listingId}`}
                     </div>
-
-                    {/* Last message preview */}
                     {lastMsg && (
                       <div
                         style={{
                           fontSize: 12,
-                          opacity: 0.6,
+                          opacity: 0.55,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
-                          marginTop: 3,
+                          marginTop: 2,
                         }}
                       >
                         {lastMsg.senderId === user.id ? "Вы: " : ""}
-                        {lastMsg.audioUrl ? "🎙 Голосовое сообщение" : lastMsg.text}
+                        {lastMsg.audioUrl ? "Голосовое сообщение" : lastMsg.text}
                       </div>
                     )}
                   </div>
-
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                    {/* Time of last message */}
                     {lastMsg && (
-                      <div style={{ fontSize: 11, opacity: 0.55 }}>
+                      <div style={{ fontSize: 10, opacity: 0.5 }}>
                         {formatTime(lastMsg.createdAt)}
                       </div>
                     )}
-                    {/* Unread badge */}
                     {unreadCount > 0 && !isSelected && (
                       <div
                         style={{
                           background: "#ef4444",
                           color: "#fff",
                           borderRadius: 10,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: 700,
                           minWidth: 18,
                           height: 18,
@@ -685,29 +626,25 @@ export default function ChatClient() {
           )}
         </div>
 
-        {/* Footer */}
-        <div
-          style={{ padding: "12px 16px", borderTop: "1px solid var(--border)" }}
-        >
+        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--line-solid)", flexShrink: 0 }}>
           <Link
             className="btn"
             href="/me"
-            style={{ width: "100%", textAlign: "center", display: "block" }}
+            style={{ width: "100%", justifyContent: "center", gap: 8, fontSize: 13 }}
           >
-            ← В кабинет
+            <IconArrowLeft size={14} strokeWidth={2} />
+            В кабинет
           </Link>
         </div>
       </aside>
 
-      {/* ── Right column: message thread ── */}
+      {/* Message thread */}
       <section
         className="card"
         style={{
-          gridColumn: "span 8",
           padding: 0,
           display: "flex",
           flexDirection: "column",
-          minHeight: "70vh",
           overflow: "hidden",
         }}
       >
@@ -717,18 +654,19 @@ export default function ChatClient() {
             <div
               style={{
                 padding: "14px 20px",
-                borderBottom: "1px solid var(--border)",
+                borderBottom: "1px solid var(--line-solid)",
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
+                flexShrink: 0,
               }}
             >
-              <Avatar user={activeInterlocutor} size={40} />
+              <Avatar user={activeInterlocutor} size={38} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>
                   {activeInterlocutor?.name || "Пользователь"}
                 </div>
-                <div className="muted" style={{ fontSize: 12 }}>
+                <div className="muted" style={{ fontSize: 12, marginTop: 1 }}>
                   {activeListing?.title ||
                     (listingIdParam
                       ? `Объявление #${listingIdParam}`
@@ -737,16 +675,16 @@ export default function ChatClient() {
               </div>
             </div>
 
-            {/* Messages area */}
+            {/* Messages */}
             <div
               style={{
                 flex: 1,
                 overflowY: "auto",
-                padding: 16,
+                padding: 20,
                 display: "flex",
                 flexDirection: "column",
                 gap: 8,
-                background: "var(--soft)",
+                background: "rgba(242,244,248,0.6)",
               }}
             >
               {messages.length === 0 ? (
@@ -756,8 +694,12 @@ export default function ChatClient() {
                     textAlign: "center",
                     color: "var(--muted)",
                     fontSize: 14,
+                    padding: 40,
                   }}
                 >
+                  <div style={{ marginBottom: 10, opacity: 0.4 }}>
+                    <IconMessage size={40} strokeWidth={1.2} />
+                  </div>
                   Нет сообщений. Напишите первым!
                 </div>
               ) : (
@@ -774,23 +716,24 @@ export default function ChatClient() {
                     >
                       <div
                         style={{
-                          padding: m.audioUrl ? "8px 12px" : "10px 14px",
-                          borderRadius: isMine
-                            ? "16px 16px 4px 16px"
-                            : "16px 16px 16px 4px",
-                          background: isMine ? "var(--brand)" : "#fff",
+                          padding: m.audioUrl ? "10px 14px" : "10px 14px",
+                          borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                          background: isMine ? "var(--brand)" : "rgba(255,255,255,0.92)",
                           color: isMine ? "#fff" : "inherit",
-                          maxWidth: "72%",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                          maxWidth: "70%",
+                          boxShadow: isMine
+                            ? "0 4px 12px var(--brand-glow)"
+                            : "0 2px 8px rgba(0,0,0,0.08)",
+                          backdropFilter: isMine ? "none" : "blur(8px)",
+                          WebkitBackdropFilter: isMine ? "none" : "blur(8px)",
+                          border: isMine ? "none" : "1px solid rgba(255,255,255,0.9)",
                           wordBreak: "break-word",
                         }}
                       >
                         {m.audioUrl ? (
                           <AudioPlayer src={m.audioUrl} isMine={isMine} initialDuration={m.audioDuration ?? 0} />
                         ) : (
-                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
-                            {m.text}
-                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>{m.text}</div>
                         )}
                         <div
                           style={{
@@ -804,10 +747,7 @@ export default function ChatClient() {
                             gap: 2,
                           }}
                         >
-                          {new Date(m.createdAt).toLocaleTimeString("ru-RU", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(m.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                           <ReadStatus message={m} isMine={isMine} />
                         </div>
                       </div>
@@ -818,29 +758,21 @@ export default function ChatClient() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Send error */}
             {sendError && (
-              <div
-                style={{
-                  padding: "8px 16px",
-                  background: "#fef2f2",
-                  borderTop: "1px solid #fecaca",
-                  color: "#dc2626",
-                  fontSize: 13,
-                }}
-              >
+              <div className="alert error" style={{ borderRadius: 0, borderLeft: "none", borderRight: "none", borderBottom: "none" }}>
                 {sendError}
               </div>
             )}
 
-            {/* Input area */}
+            {/* Input */}
             <div
               style={{
                 padding: "12px 16px",
-                borderTop: "1px solid var(--border)",
+                borderTop: "1px solid var(--line-solid)",
                 display: "flex",
                 gap: 8,
                 alignItems: "flex-end",
+                flexShrink: 0,
               }}
             >
               <textarea
@@ -851,16 +783,21 @@ export default function ChatClient() {
                   resize: "none",
                   borderRadius: 20,
                   fontSize: 14,
-                  lineHeight: 1.4,
-                  border: "1px solid var(--border)",
+                  lineHeight: 1.5,
+                  border: "1.5px solid var(--line-solid)",
                   outline: "none",
                   fontFamily: "inherit",
-                  background: "var(--soft)",
+                  background: "rgba(255,255,255,0.85)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  transition: "border-color 0.2s",
                 }}
-                placeholder="Введите сообщение... (Enter — отправить)"
+                placeholder="Написать сообщение... (Enter — отправить)"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--brand)"; }}
+                onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--line-solid)"; }}
               />
               <MicButton onAudioReady={handleAudioReady} disabled={sending} />
               <button
@@ -869,13 +806,15 @@ export default function ChatClient() {
                 disabled={sending || !newMessage.trim()}
                 style={{
                   borderRadius: 20,
-                  paddingLeft: 20,
-                  paddingRight: 20,
+                  width: 40,
+                  height: 40,
+                  padding: 0,
                   alignSelf: "flex-end",
-                  opacity: sending || !newMessage.trim() ? 0.6 : 1,
+                  opacity: sending || !newMessage.trim() ? 0.5 : 1,
+                  flexShrink: 0,
                 }}
               >
-                {sending ? "..." : "Отправить"}
+                <IconSend size={16} strokeWidth={1.8} />
               </button>
             </div>
           </>
@@ -888,21 +827,32 @@ export default function ChatClient() {
               alignItems: "center",
               justifyContent: "center",
               color: "var(--muted)",
-              gap: 12,
+              gap: 14,
               padding: 40,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 48 }}>💬</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "inherit" }}>
+            <div style={{ opacity: 0.25 }}>
+              <IconMessage size={56} strokeWidth={1} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "var(--text)" }}>
               Выберите диалог
             </div>
-            <div style={{ fontSize: 14 }}>
+            <div style={{ fontSize: 14, maxWidth: 280 }}>
               Нажмите на чат слева или начните переписку из карточки товара
             </div>
           </div>
         )}
       </section>
+
+      {/* Responsive styles */}
+      <style>{`
+        @media (max-width: 640px) {
+          section[data-chat-layout] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
