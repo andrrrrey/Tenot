@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMe } from "@/hooks/useMe";
 import { useStore } from "@/lib/store";
 import { getMyProfile, uploadAvatar, type UserProfile } from "@/services/users";
-import { getMyListings, type Listing } from "@/services/listings";
+import { getMyListings } from "@/services/listings";
 import { getFavorites } from "@/services/favorites";
 import { AvatarCropModal } from "@/components/AvatarCropModal";
 
