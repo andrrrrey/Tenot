@@ -170,6 +170,17 @@ export default function MeHome() {
 
   return (
     <>
+      <style>{`
+        @media (max-width: 640px) {
+          .me-actions-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .me-actions-section,
+          .me-actions-aside {
+            grid-column: 1 / -1 !important;
+          }
+        }
+      `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* Profile header */}
@@ -341,10 +352,11 @@ export default function MeHome() {
 
         {/* Actions grid */}
         <div className="grid">
-          <section style={{ gridColumn: "span 8" }}>
+          <section className="me-actions-section" style={{ gridColumn: "span 8" }}>
             <div className="card" style={{ padding: "22px 24px" }}>
               <div className="h2" style={{ marginBottom: 16 }}>Управление</div>
               <div
+                className="me-actions-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(2, 1fr)",
@@ -370,7 +382,7 @@ export default function MeHome() {
             </div>
           </section>
 
-          <aside style={{ gridColumn: "span 4" }}>
+          <aside className="me-actions-aside" style={{ gridColumn: "span 4" }}>
             <div
               className="card"
               style={{

@@ -57,10 +57,7 @@ export function FreshList() {
           @media (max-width: 900px) {
             .fresh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           }
-          @media (max-width: 500px) {
-            .fresh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          }
-        `}</style>
+          `}</style>
       </div>
     );
   }
@@ -102,7 +99,7 @@ export function FreshList() {
           .fresh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 500px) {
-          .fresh-grid { grid-template-columns: 1fr; }
+          .fresh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
       `}</style>
     </>

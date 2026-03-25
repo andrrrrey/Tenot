@@ -110,7 +110,16 @@ export function MediaGallery({ media }: Props) {
     const item = sorted[0];
     return (
       <>
+        <style>{`
+          .gallery-main-slot img { height: 340px; }
+          .gallery-main-slot .gallery-video { height: 340px; }
+          @media (max-width: 768px) {
+            .gallery-main-slot img { height: 240px !important; }
+            .gallery-main-slot .gallery-video { height: 240px !important; }
+          }
+        `}</style>
         <div
+          className="gallery-main-slot"
           style={{ borderRadius: 12, overflow: "hidden", cursor: "pointer" }}
           onClick={() => setActiveIndex(0)}
         >
@@ -143,9 +152,18 @@ export function MediaGallery({ media }: Props) {
 
   return (
     <>
+      <style>{`
+        .gallery-main-slot img { height: 340px; }
+        .gallery-main-slot .gallery-video { height: 340px; }
+        @media (max-width: 768px) {
+          .gallery-main-slot img { height: 240px !important; }
+          .gallery-main-slot .gallery-video { height: 240px !important; }
+        }
+      `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {/* Slider main item */}
         <div
+          className="gallery-main-slot"
           style={{
             borderRadius: 12,
             overflow: "hidden",
@@ -418,6 +436,7 @@ function VideoThumb({
 
   return (
     <div
+      className="gallery-video"
       style={{
         position: "relative",
         width: "100%",
