@@ -476,8 +476,6 @@ export default function ChatClient() {
         style={{
           padding: 0,
           overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
         }}
       >
         <div
@@ -633,7 +631,7 @@ export default function ChatClient() {
           )}
         </div>
 
-        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--line-solid)", flexShrink: 0 }}>
+        <div className="chat-cabinet-btn-wrapper" style={{ padding: "12px 16px", borderTop: "1px solid var(--line-solid)", flexShrink: 0 }}>
           <Link
             className="btn"
             href="/me"
@@ -650,8 +648,6 @@ export default function ChatClient() {
         className="card chat-thread-panel"
         style={{
           padding: 0,
-          display: "flex",
-          flexDirection: "column",
           overflow: "hidden",
         }}
       >
