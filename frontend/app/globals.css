@@ -64,6 +64,28 @@ a {
   padding: 0 20px;
 }
 
+/* ── Main content padding (moved from inline style) ── */
+.main-content {
+  padding: 24px 20px 56px;
+}
+
+/* ── Chat layout — desktop ── */
+.chat-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  height: calc(100vh - 160px);
+  min-height: 500px;
+}
+
+/* ── Favorites grid — desktop 3 cols ── */
+.fav-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
 .row {
   display: flex;
   gap: 12px;
@@ -395,59 +417,60 @@ hr {
 }
 
 @media (max-width: 768px) {
+  /* ── Main content: mobile padding ── */
   .main-content {
-    padding-bottom: calc(var(--mobile-nav-height) + 24px) !important;
+    padding: 0 14px calc(var(--mobile-nav-height) + 16px);
   }
 
-  /* ── Chat page: full-width layout ── */
+  /* ── Chat page: zero padding, full-width list ── */
+  .main-content:has(.chat-layout),
   body.has-chat-page .main-content {
-    padding: 0 !important;
+    padding: 0;
   }
 
   .chat-layout {
-    display: block !important;
-    height: auto !important;
-    min-height: 0 !important;
+    display: block;
+    height: auto;
+    min-height: 0;
   }
 
   .chat-layout .chat-list-panel {
-    border-radius: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
+    border-radius: 0;
+    width: 100%;
     min-height: 300px;
   }
 
   .chat-layout.mobile-list-view .chat-thread-panel {
-    display: none !important;
+    display: none;
   }
 
   .chat-layout.mobile-thread-view .chat-list-panel {
-    display: none !important;
+    display: none;
   }
 
   .chat-layout.mobile-thread-view .chat-thread-panel {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 60px !important;
-    height: auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    border-radius: 0 !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 60px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
     z-index: 200;
-    background: var(--card) !important;
-    backdrop-filter: var(--blur) !important;
-    -webkit-backdrop-filter: var(--blur) !important;
+    background: var(--card);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
   }
 
   .chat-back-btn {
-    display: flex !important;
+    display: flex;
   }
 
   /* ── Favorites: 2-column grid ── */
   .fav-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -51,15 +51,7 @@ export default function FavPage() {
         </div>
       )}
 
-      <div
-        className="fav-grid"
-        style={{
-          marginTop: 12,
-          display: "grid",
-          gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-          gap: 16,
-        }}
-      >
+      <div className="fav-grid">
         {loading ? (
           <div className="card" style={{ gridColumn: "1 / -1" }}>
             Загрузка избранного...

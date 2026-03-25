@@ -469,13 +469,6 @@ export default function ChatClient() {
     <>
     <div
       className={`chat-layout ${mobileShowThread ? "mobile-thread-view" : "mobile-list-view"}`}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "300px 1fr",
-        gap: 16,
-        height: "calc(100vh - 160px)",
-        minHeight: 500,
-      }}
     >
       {/* Chat list */}
       <aside

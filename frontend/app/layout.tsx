@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
             <SiteHeader />
-            <main className="container main-content" style={{ padding: "24px 20px 56px", flex: 1 }}>
+            <main className="container main-content" style={{ flex: 1 }}>
               {children}
             </main>
             <SiteFooter />
