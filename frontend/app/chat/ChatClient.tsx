@@ -464,13 +464,20 @@ export default function ChatClient() {
     <>
     <style>{`
       @media (max-width: 768px) {
+        /* Remove container side padding on chat page */
+        .main-content { padding-left: 0 !important; padding-right: 0 !important; padding-top: 0 !important; }
         .chat-layout {
           grid-template-columns: 1fr !important;
-          height: calc(100vh - 180px) !important;
+          gap: 0 !important;
+          height: calc(100vh - var(--mobile-nav-height, 60px) - 60px) !important;
+          min-height: 0 !important;
+          border-radius: 0;
         }
         .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
         .chat-layout.mobile-thread-view .chat-list-panel { display: none !important; }
         .chat-back-btn { display: flex !important; }
+        .chat-list-panel { border-radius: 0 !important; }
+        .chat-thread-panel { border-radius: 0 !important; }
       }
     `}</style>
     <div

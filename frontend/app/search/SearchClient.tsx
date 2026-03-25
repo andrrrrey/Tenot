@@ -107,9 +107,9 @@ export default function SearchClient() {
   return (
     <>
     <style>{`
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
         .search-filters-toggle { display: flex !important; }
-        .search-filters-body { display: none; }
+        .search-filters-body { display: none !important; flex-direction: column; gap: 14px; }
         .search-filters-body.open { display: flex !important; }
         .search-results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
       }
@@ -137,7 +137,7 @@ export default function SearchClient() {
           </button>
         </div>
 
-        <div className={`search-filters-body${filtersOpen ? " open" : ""}`} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className={`search-filters-body${filtersOpen ? " open" : ""}`} style={{ flexDirection: "column", gap: 14 }}>
           <div>
             <div className="field-label">Поиск</div>
             <input

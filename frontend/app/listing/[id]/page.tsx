@@ -79,26 +79,29 @@ export default function ListingPage() {
   return (
     <div>
       <style>{`
-        @media (max-width: 640px) {
-          .listing-card-inner { padding: 16px !important; }
-          .listing-gallery-height { height: 240px !important; }
-          .listing-price { font-size: 24px !important; }
+        @media (max-width: 768px) {
+          .listing-card-inner { padding: 12px !important; }
+          .listing-gallery-height { height: 220px !important; }
+          .listing-price { font-size: 22px !important; }
+          .listing-aside { display: none !important; }
+          .listing-main { padding-bottom: 130px; }
+          .listing-back-btn { padding: 6px 10px !important; font-size: 12px !important; margin-bottom: 10px !important; }
         }
         .listing-mobile-bar { display: none; }
         @media (max-width: 768px) {
           .listing-mobile-bar {
             display: flex;
             position: fixed;
-            bottom: 60px;
+            bottom: var(--mobile-nav-height, 60px);
             left: 0;
             right: 0;
             padding: 10px 16px;
             gap: 10px;
-            background: rgba(242, 244, 248, 0.9);
-            backdrop-filter: blur(16px) saturate(180%);
-            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            background: rgba(242, 244, 248, 0.92);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             border-top: 1px solid rgba(255, 255, 255, 0.72);
-            box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
             z-index: 150;
           }
         }
@@ -106,7 +109,7 @@ export default function ListingPage() {
       {/* Back button */}
       <button
         onClick={() => router.back()}
-        className="btn"
+        className="btn listing-back-btn"
         style={{
           marginBottom: 20,
           gap: 8,
@@ -121,7 +124,7 @@ export default function ListingPage() {
       <div className="grid">
         {/* Main content */}
         <div className="listing-main" style={{ gridColumn: 'span 8' }}>
-          <div className="card listing-card-inner" style={{ padding: '24px 24px' }}>
+          <div className="card listing-card-inner" style={{ padding: '20px' }}>
             {/* Media gallery */}
             <MediaGallery media={listing.images ?? []} />
 
