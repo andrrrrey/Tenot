@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
 
 :root {
-  --mobile-nav-height: 60px;
+  --mobile-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
   --brand: #5E5CF8;
   --brand-dark: #4b49e8;
   --brand-light: rgba(94, 92, 248, 0.1);
@@ -397,6 +397,57 @@ hr {
 @media (max-width: 768px) {
   .main-content {
     padding-bottom: calc(var(--mobile-nav-height) + 24px) !important;
+  }
+
+  /* ── Chat page: full-width layout ── */
+  body.has-chat-page .main-content {
+    padding: 0 !important;
+  }
+
+  .chat-layout {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .chat-layout .chat-list-panel {
+    border-radius: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: 300px;
+  }
+
+  .chat-layout.mobile-list-view .chat-thread-panel {
+    display: none !important;
+  }
+
+  .chat-layout.mobile-thread-view .chat-list-panel {
+    display: none !important;
+  }
+
+  .chat-layout.mobile-thread-view .chat-thread-panel {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 60px !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 0 !important;
+    z-index: 200;
+    background: var(--card) !important;
+    backdrop-filter: var(--blur) !important;
+    -webkit-backdrop-filter: var(--blur) !important;
+  }
+
+  .chat-back-btn {
+    display: flex !important;
+  }
+
+  /* ── Favorites: 2-column grid ── */
+  .fav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
