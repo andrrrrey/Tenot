@@ -83,7 +83,11 @@ export default function ListingPage() {
           .listing-card-inner { padding: 12px !important; overflow: hidden; }
           .listing-price { font-size: 22px !important; }
           .listing-aside { display: none !important; }
-          .listing-main { padding-bottom: 130px; max-width: 100%; overflow: hidden; }
+          .listing-main {
+            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 80px) !important;
+            max-width: 100%;
+            overflow: hidden;
+          }
           .listing-back-btn { padding: 6px 10px !important; font-size: 12px !important; margin-bottom: 10px !important; }
         }
         .listing-mobile-bar { display: none; }
@@ -91,7 +95,7 @@ export default function ListingPage() {
           .listing-mobile-bar {
             display: flex;
             position: fixed;
-            bottom: calc(var(--mobile-nav-height, 60px) + 8px);
+            bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 8px);
             left: 0;
             right: 0;
             padding: 10px 16px;

@@ -286,6 +286,11 @@ export default function ChatClient() {
   useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
+    document.body.classList.add("has-chat-page");
+    return () => document.body.classList.remove("has-chat-page");
+  }, []);
+
+  useEffect(() => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     getMyChats()
@@ -462,45 +467,6 @@ export default function ChatClient() {
 
   return (
     <>
-    <style>{`
-      @media (max-width: 768px) {
-        /* Remove container padding on chat page */
-        .main-content { padding: 0 !important; }
-
-        /* ── Chat list view ── */
-        .chat-layout.mobile-list-view {
-          display: block !important;
-          height: auto !important;
-          min-height: 0 !important;
-        }
-        .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
-        .chat-layout.mobile-list-view .chat-list-panel {
-          border-radius: 0 !important;
-          margin: 0 !important;
-          min-height: 300px;
-        }
-
-        /* ── Chat thread view — full-screen fixed overlay ── */
-        .chat-layout.mobile-thread-view .chat-list-panel { display: none !important; }
-        .chat-layout.mobile-thread-view .chat-thread-panel {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: var(--mobile-nav-height, 60px) !important;
-          height: auto !important;
-          display: flex !important;
-          flex-direction: column !important;
-          border-radius: 0 !important;
-          z-index: 200;
-          background: var(--card);
-          backdrop-filter: var(--blur);
-          -webkit-backdrop-filter: var(--blur);
-        }
-
-        .chat-back-btn { display: flex !important; }
-      }
-    `}</style>
     <div
       className={`chat-layout ${mobileShowThread ? "mobile-thread-view" : "mobile-list-view"}`}
       style={{
