@@ -5,7 +5,70 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { subscribeUnreadCount } from "@/components/ChatWidget";
-import { IconHome, IconMessage, IconPlus, IconUser } from "@/components/Icons";
+import { IconHome, IconHeart, IconPlus, IconMessage, IconUser } from "@/components/Icons";
+
+function NavIcon({
+  active,
+  badge,
+  children,
+}: {
+  active: boolean;
+  badge?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ position: "relative" }}>
+      <div
+        style={{
+          width: 46,
+          height: 46,
+          borderRadius: "50%",
+          background: active
+            ? "var(--brand)"
+            : "rgba(255, 255, 255, 0.6)",
+          backdropFilter: active ? "none" : "blur(12px) saturate(180%)",
+          WebkitBackdropFilter: active ? "none" : "blur(12px) saturate(180%)",
+          border: active
+            ? "1.5px solid rgba(255,255,255,0.25)"
+            : "1.5px solid rgba(255,255,255,0.85)",
+          boxShadow: active
+            ? "0 4px 16px var(--brand-glow), 0 1px 0 rgba(255,255,255,0.3) inset"
+            : "0 2px 8px rgba(0,0,0,0.07), 0 1px 0 rgba(255,255,255,0.9) inset",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s ease",
+          flexShrink: 0,
+        }}
+      >
+        {children}
+      </div>
+      {badge !== undefined && badge > 0 && (
+        <span
+          style={{
+            position: "absolute",
+            top: -2,
+            right: -4,
+            background: "#ef4444",
+            color: "#fff",
+            borderRadius: "50%",
+            fontSize: 9,
+            fontWeight: 700,
+            minWidth: 16,
+            height: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 3px",
+            border: "1.5px solid rgba(242,244,248,0.9)",
+          }}
+        >
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -18,6 +81,26 @@ export function MobileBottomNav() {
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    padding: "8px 2px 6px",
+    textDecoration: "none",
+    color: active ? "var(--brand)" : "var(--muted)",
+    minHeight: 62,
+  });
+
+  const labelStyle = (active: boolean): React.CSSProperties => ({
+    fontSize: 10,
+    fontWeight: active ? 600 : 500,
+    letterSpacing: 0.1,
+    lineHeight: 1,
+  });
 
   return (
     <>
@@ -35,176 +118,87 @@ export function MobileBottomNav() {
           left: 0,
           right: 0,
           zIndex: 200,
-          background: "rgba(242, 244, 248, 0.78)",
+          background: "rgba(238, 241, 248, 0.82)",
           backdropFilter: "blur(32px) saturate(200%)",
           WebkitBackdropFilter: "blur(32px) saturate(200%)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.72)",
-          boxShadow: "0 -1px 0 rgba(0,0,0,0.06), 0 -8px 24px rgba(0,0,0,0.04)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.75)",
+          boxShadow: "0 -1px 0 rgba(0,0,0,0.06), 0 -8px 32px rgba(0,0,0,0.04)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
           alignItems: "stretch",
           justifyContent: "space-around",
         }}
       >
         {/* Главная */}
-        <Link
-          href="/"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 3,
-            padding: "10px 4px 8px",
-            color: isActive("/") ? "var(--brand)" : "var(--muted)",
-            textDecoration: "none",
-            minHeight: 56,
-          }}
-        >
-          <IconHome
-            size={22}
-            strokeWidth={isActive("/") ? 2.2 : 1.8}
-            color={isActive("/") ? "var(--brand)" : "var(--muted)"}
-          />
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: isActive("/") ? 600 : 500,
-              letterSpacing: 0.1,
-            }}
-          >
-            Главная
-          </span>
+        <Link href="/" style={tabStyle(isActive("/"))}>
+          <NavIcon active={isActive("/")}>
+            <IconHome
+              size={20}
+              strokeWidth={isActive("/") ? 2.2 : 1.8}
+              color={isActive("/") ? "#fff" : "var(--muted)"}
+            />
+          </NavIcon>
+          <span style={labelStyle(isActive("/"))}>Главная</span>
         </Link>
 
-        {/* Чаты */}
-        <Link
-          href="/chat"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 3,
-            padding: "10px 4px 8px",
-            color: isActive("/chat") ? "var(--brand)" : "var(--muted)",
-            textDecoration: "none",
-            position: "relative",
-            minHeight: 56,
-          }}
-        >
-          <div style={{ position: "relative" }}>
-            <IconMessage
-              size={22}
-              strokeWidth={isActive("/chat") ? 2.2 : 1.8}
-              color={isActive("/chat") ? "var(--brand)" : "var(--muted)"}
+        {/* Избранное */}
+        <Link href="/me/fav" style={tabStyle(isActive("/me/fav"))}>
+          <NavIcon active={isActive("/me/fav")}>
+            <IconHeart
+              size={20}
+              strokeWidth={isActive("/me/fav") ? 2.2 : 1.8}
+              color={isActive("/me/fav") ? "#fff" : "var(--muted)"}
+              filled={isActive("/me/fav")}
             />
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: -4,
-                  right: -7,
-                  background: "#ef4444",
-                  color: "#fff",
-                  borderRadius: "50%",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  minWidth: 16,
-                  height: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "0 3px",
-                  border: "1.5px solid rgba(242,244,248,0.78)",
-                }}
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </div>
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: isActive("/chat") ? 600 : 500,
-              letterSpacing: 0.1,
-            }}
-          >
-            Чаты
-          </span>
+          </NavIcon>
+          <span style={labelStyle(isActive("/me/fav"))}>Избранное</span>
         </Link>
 
         {/* Добавить — special center button */}
-        <Link
-          href="/add"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 3,
-            padding: "4px 4px 8px",
-            textDecoration: "none",
-            minHeight: 56,
-          }}
-        >
+        <Link href="/add" style={{ ...tabStyle(false), flex: 1 }}>
           <div
             style={{
-              background: isActive("/add") ? "var(--brand-dark)" : "var(--brand)",
+              width: 50,
+              height: 50,
               borderRadius: "50%",
-              width: 42,
-              height: 42,
+              background: "var(--brand)",
+              border: "2px solid rgba(255,255,255,0.3)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px var(--brand-glow)",
+              boxShadow: "0 6px 20px var(--brand-glow), 0 2px 0 rgba(255,255,255,0.25) inset",
               flexShrink: 0,
+              transition: "all 0.2s ease",
             }}
           >
-            <IconPlus size={20} color="#fff" strokeWidth={2.5} />
+            <IconPlus size={22} color="#fff" strokeWidth={2.5} />
           </div>
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 500,
-              color: isActive("/add") ? "var(--brand)" : "var(--muted)",
-              letterSpacing: 0.1,
-            }}
-          >
+          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--brand)", letterSpacing: 0.1, lineHeight: 1 }}>
             Добавить
           </span>
         </Link>
 
-        {/* Аккаунт */}
-        <Link
-          href={user ? "/me" : "/login"}
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 3,
-            padding: "10px 4px 8px",
-            color: isActive("/me") || isActive("/login") ? "var(--brand)" : "var(--muted)",
-            textDecoration: "none",
-            minHeight: 56,
-          }}
-        >
-          <IconUser
-            size={22}
-            strokeWidth={isActive("/me") || isActive("/login") ? 2.2 : 1.8}
-            color={isActive("/me") || isActive("/login") ? "var(--brand)" : "var(--muted)"}
-          />
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: isActive("/me") || isActive("/login") ? 600 : 500,
-              letterSpacing: 0.1,
-            }}
-          >
+        {/* Чаты */}
+        <Link href="/chat" style={tabStyle(isActive("/chat"))}>
+          <NavIcon active={isActive("/chat")} badge={unreadCount}>
+            <IconMessage
+              size={20}
+              strokeWidth={isActive("/chat") ? 2.2 : 1.8}
+              color={isActive("/chat") ? "#fff" : "var(--muted)"}
+            />
+          </NavIcon>
+          <span style={labelStyle(isActive("/chat"))}>Чаты</span>
+        </Link>
+
+        {/* Профиль */}
+        <Link href={user ? "/me" : "/login"} style={tabStyle(isActive("/me") && !isActive("/me/fav") || isActive("/login"))}>
+          <NavIcon active={isActive("/me") && !isActive("/me/fav") || isActive("/login")}>
+            <IconUser
+              size={20}
+              strokeWidth={(isActive("/me") && !isActive("/me/fav") || isActive("/login")) ? 2.2 : 1.8}
+              color={(isActive("/me") && !isActive("/me/fav") || isActive("/login")) ? "#fff" : "var(--muted)"}
+            />
+          </NavIcon>
+          <span style={labelStyle(isActive("/me") && !isActive("/me/fav") || isActive("/login"))}>
             {user ? "Профиль" : "Войти"}
           </span>
         </Link>

@@ -122,8 +122,8 @@ export function SiteHeader() {
             </div>
           </div>
 
-          {/* Right actions */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          {/* Right actions — hidden on mobile (bottom nav handles navigation) */}
+          <div className="header-actions" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
             {user && (
               <Link
                 href="/chat"
@@ -252,6 +252,11 @@ export function SiteHeader() {
         .header-search { display: flex !important; }
         .header-search-mobile { display: none !important; }
         .btn-text-hide { display: inline; }
+        .header-actions { display: flex !important; }
+
+        @media (max-width: 768px) {
+          .header-actions { display: none !important; }
+        }
 
         @media (max-width: 640px) {
           .header-search { display: none !important; }
