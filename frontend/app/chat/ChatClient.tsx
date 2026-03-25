@@ -464,20 +464,41 @@ export default function ChatClient() {
     <>
     <style>{`
       @media (max-width: 768px) {
-        /* Remove container side padding on chat page */
-        .main-content { padding-left: 0 !important; padding-right: 0 !important; padding-top: 0 !important; }
-        .chat-layout {
-          grid-template-columns: 1fr !important;
-          gap: 0 !important;
-          height: calc(100vh - var(--mobile-nav-height, 60px) - 60px) !important;
+        /* Remove container padding on chat page */
+        .main-content { padding: 0 !important; }
+
+        /* ── Chat list view ── */
+        .chat-layout.mobile-list-view {
+          display: block !important;
+          height: auto !important;
           min-height: 0 !important;
-          border-radius: 0;
         }
         .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
+        .chat-layout.mobile-list-view .chat-list-panel {
+          border-radius: var(--radius-lg, 20px) !important;
+          margin: 12px !important;
+          min-height: 300px;
+        }
+
+        /* ── Chat thread view — full-screen fixed overlay ── */
         .chat-layout.mobile-thread-view .chat-list-panel { display: none !important; }
+        .chat-layout.mobile-thread-view .chat-thread-panel {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: var(--mobile-nav-height, 60px) !important;
+          height: auto !important;
+          display: flex !important;
+          flex-direction: column !important;
+          border-radius: 0 !important;
+          z-index: 200;
+          background: var(--card);
+          backdrop-filter: var(--blur);
+          -webkit-backdrop-filter: var(--blur);
+        }
+
         .chat-back-btn { display: flex !important; }
-        .chat-list-panel { border-radius: 0 !important; }
-        .chat-thread-panel { border-radius: 0 !important; }
       }
     `}</style>
     <div

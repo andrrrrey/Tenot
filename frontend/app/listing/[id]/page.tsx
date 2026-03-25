@@ -80,11 +80,10 @@ export default function ListingPage() {
     <div>
       <style>{`
         @media (max-width: 768px) {
-          .listing-card-inner { padding: 12px !important; }
-          .listing-gallery-height { height: 220px !important; }
+          .listing-card-inner { padding: 12px !important; overflow: hidden; }
           .listing-price { font-size: 22px !important; }
           .listing-aside { display: none !important; }
-          .listing-main { padding-bottom: 130px; }
+          .listing-main { padding-bottom: 130px; max-width: 100%; overflow: hidden; }
           .listing-back-btn { padding: 6px 10px !important; font-size: 12px !important; margin-bottom: 10px !important; }
         }
         .listing-mobile-bar { display: none; }
