@@ -14,6 +14,7 @@ import {
   IconMapPin,
   IconArrowLeft,
 } from '@/components/Icons';
+import { openChatForListing } from '@/components/ChatWidget';
 
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +69,13 @@ export default function ListingPage() {
 
   return (
     <div>
+      <style>{`
+        @media (max-width: 640px) {
+          .listing-card-inner { padding: 16px !important; }
+          .listing-gallery-height { height: 240px !important; }
+          .listing-price { font-size: 24px !important; }
+        }
+      `}</style>
       {/* Back button */}
       <button
         onClick={() => router.back()}
@@ -86,7 +94,7 @@ export default function ListingPage() {
       <div className="grid">
         {/* Main content */}
         <div className="listing-main" style={{ gridColumn: 'span 8' }}>
-          <div className="card" style={{ padding: '24px 24px' }}>
+          <div className="card listing-card-inner" style={{ padding: '24px 24px' }}>
             {/* Media gallery */}
             <MediaGallery media={listing.images ?? []} />
 
@@ -142,6 +150,7 @@ export default function ListingPage() {
 
             {/* Price */}
             <div
+              className="listing-price"
               style={{
                 marginTop: 20,
                 fontSize: 32,
@@ -309,7 +318,7 @@ export default function ListingPage() {
                     router.push('/login');
                     return;
                   }
-                  router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
+                  openChatForListing(listing.id, listingOwnerId!);
                 }}
                 style={{ gap: 8 }}
               >

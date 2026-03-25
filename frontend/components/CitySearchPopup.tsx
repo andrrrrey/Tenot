@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { searchCities, getCityDistricts, type City } from "@/services/cities";
 import { IconChevronDown, IconChevronRight, IconX, IconArrowLeft, IconMapPin } from "@/components/Icons";
 
@@ -137,6 +138,9 @@ export function CitySearchPopup({
   const regions = useMemo(() => results.filter((c) => c.type === "REGION"), [results]);
   const settlements = useMemo(() => results.filter((c) => c.type !== "REGION"), [results]);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <div style={{ position: "relative" }}>
       {/* Trigger button */}
@@ -186,8 +190,8 @@ export function CitySearchPopup({
         <IconChevronDown size={14} color="var(--muted-light)" strokeWidth={2} style={{ flexShrink: 0 }} />
       </button>
 
-      {/* Backdrop */}
-      {open && (
+      {/* Backdrop — rendered via portal to escape any stacking context from parent */}
+      {open && mounted && createPortal(
         <div
           style={{
             position: "fixed",
@@ -195,7 +199,7 @@ export function CitySearchPopup({
             background: "rgba(0,0,0,0.35)",
             backdropFilter: "blur(4px)",
             WebkitBackdropFilter: "blur(4px)",
-            zIndex: 1000,
+            zIndex: 9000,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -415,7 +419,8 @@ export function CitySearchPopup({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

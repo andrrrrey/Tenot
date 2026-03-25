@@ -19,11 +19,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
-          <SiteHeader />
-          <main className="container" style={{ padding: "24px 20px 56px" }}>
-            {children}
-          </main>
-          <SiteFooter />
+          <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+            <SiteHeader />
+            <main className="container" style={{ padding: "24px 20px 56px", flex: 1 }}>
+              {children}
+            </main>
+            <SiteFooter />
+          </div>
           <ChatWidget />
         </AuthProvider>
       </body>

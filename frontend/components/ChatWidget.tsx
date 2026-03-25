@@ -245,6 +245,13 @@ function notifyUnread(n: number) {
   _unreadCountListeners.forEach((cb) => cb(n));
 }
 
+// Allow external code to open the chat widget for a specific listing
+type OpenChatRequest = { listingId: number; receiverId: number };
+let _openChatListeners: Array<(req: OpenChatRequest) => void> = [];
+export function openChatForListing(listingId: number, receiverId: number) {
+  _openChatListeners.forEach((cb) => cb({ listingId, receiverId }));
+}
+
 export default function ChatWidget() {
   const { user, loading: authLoading } = useMe();
 
@@ -269,6 +276,30 @@ export default function ChatWidget() {
     if (!user) return;
     getMyChats().then(updateChats).catch(() => {});
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle external request to open chat for a specific listing
+  const chatsRef = useRef<Chat[]>([]);
+  useEffect(() => { chatsRef.current = chats; }, [chats]);
+
+  useEffect(() => {
+    const handler = (req: OpenChatRequest) => {
+      setOpen(true);
+      // Find existing chat for this listing
+      const existing = chatsRef.current.find(c => c.listingId === req.listingId);
+      if (existing) {
+        setSelectedChat(existing);
+      } else {
+        // Load fresh chats then find
+        getMyChats().then((data) => {
+          updateChats(data);
+          const found = data.find(c => c.listingId === req.listingId);
+          if (found) setSelectedChat(found);
+        }).catch(() => {});
+      }
+    };
+    _openChatListeners.push(handler);
+    return () => { _openChatListeners = _openChatListeners.filter(x => x !== handler); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateChats(data: Chat[]) {
     setChats(data);

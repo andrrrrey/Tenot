@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type GalleryMedia = {
   id: number;
@@ -15,6 +16,8 @@ type Props = {
 
 export function MediaGallery({ media }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [currentSlide, setCurrentSlide] = useState(0);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const thumbStripRef = useRef<HTMLDivElement>(null);
@@ -122,13 +125,14 @@ export function MediaGallery({ media }: Props) {
             />
           )}
         </div>
-        {activeIndex !== null && (
+        {activeIndex !== null && mounted && createPortal(
           <Lightbox
             items={sorted}
             index={activeIndex}
             onClose={() => setActiveIndex(null)}
             onChange={setActiveIndex}
-          />
+          />,
+          document.body
         )}
       </>
     );
@@ -342,13 +346,14 @@ export function MediaGallery({ media }: Props) {
         </div>
       </div>
 
-      {activeIndex !== null && (
+      {activeIndex !== null && mounted && createPortal(
         <Lightbox
           items={sorted}
           index={activeIndex}
           onClose={() => setActiveIndex(null)}
           onChange={setActiveIndex}
-        />
+        />,
+        document.body
       )}
     </>
   );

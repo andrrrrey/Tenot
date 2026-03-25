@@ -18,7 +18,7 @@ export function CategoriesGrid() {
 
   if (loading) {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+      <div className="categories-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="skeleton" style={{ height: 72 }} />
         ))}
@@ -35,7 +35,27 @@ export function CategoriesGrid() {
   }
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 640px) {
+        .categories-grid {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          scrollbar-width: none !important;
+          padding-bottom: 4px !important;
+          gap: 10px !important;
+        }
+        .categories-grid::-webkit-scrollbar { display: none; }
+        .categories-grid > * {
+          flex-shrink: 0 !important;
+          width: 180px !important;
+        }
+      }
+    `}</style>
     <div
+      className="categories-grid"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -110,7 +130,7 @@ export function CategoriesGrid() {
           )}
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", lineHeight: 1.3 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {c.name}
             </div>
             {c.children && c.children.length > 0 && (
@@ -135,5 +155,6 @@ export function CategoriesGrid() {
         </Link>
       ))}
     </div>
+    </>
   );
 }
