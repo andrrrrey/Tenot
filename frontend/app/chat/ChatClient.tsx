@@ -276,6 +276,7 @@ export default function ChatClient() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [mobileShowThread, setMobileShowThread] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedChatRef = useRef<Chat | null>(null);
@@ -292,12 +293,17 @@ export default function ChatClient() {
         setChats(data);
         if (chatIdParam) {
           const found = data.find((c) => c.id === Number(chatIdParam));
-          if (found) setSelectedChat(found);
+          if (found) { setSelectedChat(found); setMobileShowThread(true); }
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, chatIdParam]);
+
+  // If opened with listingId+receiverId params, show thread on mobile
+  useEffect(() => {
+    if (listingIdParam && receiverIdParam) setMobileShowThread(true);
+  }, [listingIdParam, receiverIdParam]);
 
   useEffect(() => {
     if (!selectedChat || !user) { setMessages([]); return; }
@@ -349,6 +355,7 @@ export default function ChatClient() {
 
   const handleSelectChat = useCallback((chat: Chat) => {
     setSelectedChat(chat);
+    setMobileShowThread(true);
   }, []);
 
   const getReceiverAndListingId = () => {
@@ -454,7 +461,20 @@ export default function ChatClient() {
   const activeListing = selectedChat?.listing;
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 768px) {
+        .chat-layout {
+          grid-template-columns: 1fr !important;
+          height: calc(100vh - 180px) !important;
+        }
+        .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
+        .chat-layout.mobile-thread-view .chat-list-panel { display: none !important; }
+        .chat-back-btn { display: flex !important; }
+      }
+    `}</style>
     <div
+      className={`chat-layout ${mobileShowThread ? "mobile-thread-view" : "mobile-list-view"}`}
       style={{
         display: "grid",
         gridTemplateColumns: "300px 1fr",
@@ -465,7 +485,7 @@ export default function ChatClient() {
     >
       {/* Chat list */}
       <aside
-        className="card"
+        className="card chat-list-panel"
         style={{
           padding: 0,
           overflow: "hidden",
@@ -640,7 +660,7 @@ export default function ChatClient() {
 
       {/* Message thread */}
       <section
-        className="card"
+        className="card chat-thread-panel"
         style={{
           padding: 0,
           display: "flex",
@@ -661,6 +681,23 @@ export default function ChatClient() {
                 flexShrink: 0,
               }}
             >
+              <button
+                className="chat-back-btn"
+                onClick={() => { setSelectedChat(null); setMobileShowThread(false); }}
+                style={{
+                  display: "none",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "0 4px",
+                  color: "var(--muted)",
+                  alignItems: "center",
+                  flexShrink: 0,
+                }}
+                title="Назад"
+              >
+                <IconArrowLeft size={20} strokeWidth={2} />
+              </button>
               <Avatar user={activeInterlocutor} size={38} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>
@@ -844,15 +881,7 @@ export default function ChatClient() {
           </div>
         )}
       </section>
-
-      {/* Responsive styles */}
-      <style>{`
-        @media (max-width: 640px) {
-          section[data-chat-layout] {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
     </div>
+    </>
   );
 }

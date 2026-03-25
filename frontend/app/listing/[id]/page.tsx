@@ -67,6 +67,15 @@ export default function ListingPage() {
     }
   };
 
+  const handleChat = () => {
+    if (!user) { router.push('/login'); return; }
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      router.push(`/chat?listingId=${listing.id}&receiverId=${listingOwnerId}`);
+    } else {
+      openChatForListing(listing.id, listingOwnerId!, sellerName, listing.title);
+    }
+  };
+
   return (
     <div>
       <style>{`
@@ -74,6 +83,24 @@ export default function ListingPage() {
           .listing-card-inner { padding: 16px !important; }
           .listing-gallery-height { height: 240px !important; }
           .listing-price { font-size: 24px !important; }
+        }
+        .listing-mobile-bar { display: none; }
+        @media (max-width: 768px) {
+          .listing-mobile-bar {
+            display: flex;
+            position: fixed;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            padding: 10px 16px;
+            gap: 10px;
+            background: rgba(242, 244, 248, 0.9);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border-top: 1px solid rgba(255, 255, 255, 0.72);
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+            z-index: 150;
+          }
         }
       `}</style>
       {/* Back button */}
@@ -313,13 +340,7 @@ export default function ListingPage() {
             {(!user || user.id !== listingOwnerId) && (
               <button
                 className="btn primary"
-                onClick={() => {
-                  if (!user) {
-                    router.push('/login');
-                    return;
-                  }
-                  openChatForListing(listing.id, listingOwnerId!);
-                }}
+                onClick={handleChat}
                 style={{ gap: 8 }}
               >
                 <IconMessage size={16} strokeWidth={1.8} />
@@ -339,6 +360,30 @@ export default function ListingPage() {
           </div>
         </aside>
       </div>
+
+      {/* Mobile sticky action bar (shown above bottom nav on mobile) */}
+      {(!user || user.id !== listingOwnerId) && (
+        <div className="listing-mobile-bar">
+          {sellerPhone && (
+            <a
+              href={`tel:${sellerPhone}`}
+              className="btn primary"
+              style={{ flex: 1, textDecoration: 'none', gap: 8, justifyContent: 'center' }}
+            >
+              <IconPhone size={16} strokeWidth={1.8} />
+              Позвонить
+            </a>
+          )}
+          <button
+            className="btn primary"
+            onClick={handleChat}
+            style={{ flex: 1, gap: 8 }}
+          >
+            <IconMessage size={16} strokeWidth={1.8} />
+            Написать
+          </button>
+        </div>
+      )}
     </div>
   );
 }

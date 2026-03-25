@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
 
 :root {
+  --mobile-nav-height: 60px;
   --brand: #5E5CF8;
   --brand-dark: #4b49e8;
   --brand-light: rgba(94, 92, 248, 0.1);
@@ -390,6 +391,12 @@ hr {
 @media (max-width: 420px) {
   .categories-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-bottom: calc(var(--mobile-nav-height) + 24px) !important;
   }
 }
 

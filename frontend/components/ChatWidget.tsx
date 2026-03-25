@@ -246,10 +246,10 @@ function notifyUnread(n: number) {
 }
 
 // Allow external code to open the chat widget for a specific listing
-type OpenChatRequest = { listingId: number; receiverId: number };
+type OpenChatRequest = { listingId: number; receiverId: number; receiverName?: string; listingTitle?: string };
 let _openChatListeners: Array<(req: OpenChatRequest) => void> = [];
-export function openChatForListing(listingId: number, receiverId: number) {
-  _openChatListeners.forEach((cb) => cb({ listingId, receiverId }));
+export function openChatForListing(listingId: number, receiverId: number, receiverName?: string, listingTitle?: string) {
+  _openChatListeners.forEach((cb) => cb({ listingId, receiverId, receiverName, listingTitle }));
 }
 
 export default function ChatWidget() {
@@ -258,6 +258,7 @@ export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [pendingNewChat, setPendingNewChat] = useState<{ listingId: number; receiverId: number; receiverName?: string; listingTitle?: string } | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -288,12 +289,25 @@ export default function ChatWidget() {
       const existing = chatsRef.current.find(c => c.listingId === req.listingId);
       if (existing) {
         setSelectedChat(existing);
+        setPendingNewChat(null);
       } else {
         // Load fresh chats then find
         getMyChats().then((data) => {
           updateChats(data);
           const found = data.find(c => c.listingId === req.listingId);
-          if (found) setSelectedChat(found);
+          if (found) {
+            setSelectedChat(found);
+            setPendingNewChat(null);
+          } else {
+            // No existing chat — show compose view for this listing
+            setSelectedChat(null);
+            setPendingNewChat({
+              listingId: req.listingId,
+              receiverId: req.receiverId,
+              receiverName: req.receiverName,
+              listingTitle: req.listingTitle,
+            });
+          }
         }).catch(() => {});
       }
     };
@@ -386,8 +400,30 @@ export default function ChatWidget() {
 
   const handleSend = async () => {
     const text = newMessage.trim();
-    if (!text || !selectedChat || !user || sending) return;
+    if (!text || !user || sending) return;
 
+    // Sending first message in a new chat
+    if (pendingNewChat && !selectedChat) {
+      setSending(true);
+      try {
+        await sendMessage({ listingId: pendingNewChat.listingId, receiverId: pendingNewChat.receiverId, text });
+        setNewMessage("");
+        const updatedChats = await getMyChats();
+        updateChats(updatedChats);
+        const newChat = updatedChats.find(c => c.listingId === pendingNewChat.listingId);
+        if (newChat) {
+          setSelectedChat(newChat);
+          setPendingNewChat(null);
+          const msgs = await getMessages(newChat.id);
+          setMessages(msgs);
+        }
+      } catch { /* ignore */ } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    if (!selectedChat) return;
     setSending(true);
     try {
       const receiverId = user.id === selectedChat.initiatorId
@@ -409,8 +445,29 @@ export default function ChatWidget() {
   };
 
   const handleAudioReady = async (audioBlob: Blob, durationSeconds: number) => {
-    if (!selectedChat || !user || sending) return;
+    if (!user || sending) return;
 
+    // Sending first audio message in a new chat
+    if (pendingNewChat && !selectedChat) {
+      setSending(true);
+      try {
+        await sendAudioMessage({ listingId: pendingNewChat.listingId, receiverId: pendingNewChat.receiverId, audioBlob, durationSeconds });
+        const updatedChats = await getMyChats();
+        updateChats(updatedChats);
+        const newChat = updatedChats.find(c => c.listingId === pendingNewChat.listingId);
+        if (newChat) {
+          setSelectedChat(newChat);
+          setPendingNewChat(null);
+          const msgs = await getMessages(newChat.id);
+          setMessages(msgs);
+        }
+      } catch { /* ignore */ } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    if (!selectedChat) return;
     setSending(true);
     try {
       const receiverId = user.id === selectedChat.initiatorId
@@ -446,8 +503,14 @@ export default function ChatWidget() {
 
   return (
     <>
+      <style>{`
+        @media (max-width: 768px) {
+          .chat-widget-float { display: none !important; }
+        }
+      `}</style>
       {/* Floating button */}
       <div
+        className="chat-widget-float"
         style={{
           position: "fixed",
           bottom: 24,
@@ -473,7 +536,7 @@ export default function ChatWidget() {
               border: "1px solid var(--line)",
             }}
           >
-            {selectedChat ? (
+            {(selectedChat || pendingNewChat) ? (
               /* ── Thread view ── */
               <>
                 {/* Thread header */}
@@ -488,7 +551,7 @@ export default function ChatWidget() {
                   }}
                 >
                   <button
-                    onClick={() => setSelectedChat(null)}
+                    onClick={() => { setSelectedChat(null); setPendingNewChat(null); }}
                     style={{
                       background: "none",
                       border: "none",
@@ -502,13 +565,21 @@ export default function ChatWidget() {
                   >
                     ←
                   </button>
-                  <Avatar user={getInterlocutor(selectedChat)} size={32} />
+                  {selectedChat ? (
+                    <Avatar user={getInterlocutor(selectedChat)} size={32} />
+                  ) : (
+                    <Avatar user={pendingNewChat?.receiverName ? { id: 0, name: pendingNewChat.receiverName, avatarUrl: null } : undefined} size={32} />
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {getInterlocutor(selectedChat)?.name || "Пользователь"}
+                      {selectedChat
+                        ? (getInterlocutor(selectedChat)?.name || "Пользователь")
+                        : (pendingNewChat?.receiverName || "Продавец")}
                     </div>
                     <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {selectedChat.listing?.title || `Объявление #${selectedChat.listingId}`}
+                      {selectedChat
+                        ? (selectedChat.listing?.title || `Объявление #${selectedChat.listingId}`)
+                        : (pendingNewChat?.listingTitle || `Объявление #${pendingNewChat?.listingId}`)}
                     </div>
                   </div>
                 </div>
