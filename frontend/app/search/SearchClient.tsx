@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getListings, type Listing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
@@ -25,6 +25,21 @@ export default function SearchClient() {
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [sort, setSort] = useState<"default" | "cheap" | "expensive" | "new">("default");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Sync URL params when they change (e.g. user searches from header while on /search)
+  const prevSearchParamsRef = useRef(searchParams.toString());
+  useEffect(() => {
+    const current = searchParams.toString();
+    if (current === prevSearchParamsRef.current) return;
+    prevSearchParamsRef.current = current;
+    setQ(searchParams.get("q") || "");
+    setCategoryId(searchParams.get("category") || "");
+    setCityId(searchParams.get("cityId") || "");
+    setCityName("");
+    setMinPrice(searchParams.get("minPrice") || "");
+    setMaxPrice(searchParams.get("maxPrice") || "");
+  }, [searchParams]);
 
   useEffect(() => {
     getCategories().then(setCategories).catch(() => setCategories([]));
@@ -90,6 +105,15 @@ export default function SearchClient() {
   };
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 640px) {
+        .search-filters-toggle { display: flex !important; }
+        .search-filters-body { display: none; }
+        .search-filters-body.open { display: flex !important; }
+        .search-results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      }
+    `}</style>
     <div className="grid search-layout" style={{ alignItems: "start" }}>
       {/* Sidebar */}
       <aside
@@ -102,9 +126,18 @@ export default function SearchClient() {
           padding: 20,
         }}
       >
-        <div className="h2" style={{ marginBottom: 16 }}>Фильтры</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div className="h2">Фильтры</div>
+          <button
+            className="btn search-filters-toggle"
+            onClick={() => setFiltersOpen(v => !v)}
+            style={{ display: "none", fontSize: 13, padding: "6px 12px" }}
+          >
+            {filtersOpen ? "Скрыть ▲" : "Показать ▼"}
+          </button>
+        </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className={`search-filters-body${filtersOpen ? " open" : ""}`} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div className="field-label">Поиск</div>
             <input
@@ -219,6 +252,7 @@ export default function SearchClient() {
 
         {loading ? (
           <div
+            className="search-results-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -231,6 +265,7 @@ export default function SearchClient() {
           </div>
         ) : (
           <div
+            className="search-results-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -270,5 +305,6 @@ export default function SearchClient() {
         )}
       </section>
     </div>
+    </>
   );
 }
