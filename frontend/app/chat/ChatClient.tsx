@@ -475,8 +475,8 @@ export default function ChatClient() {
         }
         .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
         .chat-layout.mobile-list-view .chat-list-panel {
-          border-radius: var(--radius-lg, 20px) !important;
-          margin: 12px !important;
+          border-radius: 0 !important;
+          margin: 0 !important;
           min-height: 300px;
         }
 

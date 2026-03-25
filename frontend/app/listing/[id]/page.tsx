@@ -91,7 +91,7 @@ export default function ListingPage() {
           .listing-mobile-bar {
             display: flex;
             position: fixed;
-            bottom: var(--mobile-nav-height, 60px);
+            bottom: calc(var(--mobile-nav-height, 60px) + 8px);
             left: 0;
             right: 0;
             padding: 10px 16px;
