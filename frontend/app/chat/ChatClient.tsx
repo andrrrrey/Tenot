@@ -278,6 +278,18 @@ export default function ChatClient() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [mobileShowThread, setMobileShowThread] = useState(false);
 
+  // Directly zero out <main> side padding so the chat list is naturally full-width.
+  // DOM manipulation bypasses all CSS cascade / specificity / media-query issues.
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const prev = main.style.cssText;
+    main.style.paddingLeft = "0";
+    main.style.paddingRight = "0";
+    main.style.paddingTop = "0";
+    return () => { main.style.cssText = prev; };
+  }, []);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedChatRef = useRef<Chat | null>(null);
   const userRef = useRef<{ id: number; role: string } | null>(null);
@@ -463,35 +475,22 @@ export default function ChatClient() {
   return (
     <>
     <style>{`
+      .chat-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; height: calc(100vh - 160px); min-height: 500px; }
+      .chat-layout .chat-list-panel, .chat-layout .chat-thread-panel { display: flex; flex-direction: column; }
+      .chat-cabinet-btn-wrapper { display: block; }
+      .chat-back-btn { display: none; }
       @media (max-width: 768px) {
-        .chat-layout {
-          display: block !important;
-          height: auto !important;
-          min-height: 0 !important;
-          margin-left: -14px !important;
-          margin-right: -14px !important;
-          width: calc(100% + 28px) !important;
-        }
-        .chat-layout .chat-list-panel {
-          display: flex !important;
-          border-radius: 0 !important;
-          width: 100% !important;
-          min-height: 300px;
-        }
-        .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
-        .chat-cabinet-btn-wrapper { display: none !important; }
-        .chat-layout.mobile-thread-view .chat-list-panel { display: none !important; }
+        .chat-layout { display: block; height: auto; min-height: 0; }
+        .chat-layout.mobile-list-view .chat-thread-panel { display: none; }
+        .chat-cabinet-btn-wrapper { display: none; }
+        .chat-layout.mobile-thread-view .chat-list-panel { display: none; }
         .chat-layout.mobile-thread-view .chat-thread-panel {
-          position: fixed !important;
-          top: 0 !important; left: 0 !important; right: 0 !important; bottom: 60px !important;
-          height: auto !important;
-          display: flex !important;
-          flex-direction: column !important;
-          border-radius: 0 !important;
-          z-index: 200;
-          background: var(--card) !important;
+          position: fixed; top: 0; left: 0; right: 0; bottom: 60px;
+          height: auto; display: flex; flex-direction: column;
+          z-index: 200; background: var(--bg);
+          border-radius: 0; border: none;
         }
-        .chat-back-btn { display: flex !important; }
+        .chat-back-btn { display: flex; }
       }
     `}</style>
     <div
@@ -499,10 +498,16 @@ export default function ChatClient() {
     >
       {/* Chat list */}
       <aside
-        className="card chat-list-panel"
+        className="chat-list-panel"
         style={{
           padding: 0,
           overflow: "hidden",
+          background: "var(--card)",
+          backdropFilter: "var(--blur)",
+          WebkitBackdropFilter: "var(--blur)",
+          border: "1px solid rgba(255,255,255,0.85)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow)",
         }}
       >
         <div
@@ -672,9 +677,15 @@ export default function ChatClient() {
 
       {/* Message thread */}
       <section
-        className="card chat-thread-panel"
+        className="chat-thread-panel"
         style={{
           padding: 0,
+          background: "var(--card)",
+          backdropFilter: "var(--blur)",
+          WebkitBackdropFilter: "var(--blur)",
+          border: "1px solid rgba(255,255,255,0.85)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow)",
           overflow: "hidden",
         }}
       >
