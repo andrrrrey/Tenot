@@ -78,6 +78,13 @@ a {
   min-height: 500px;
 }
 
+/* Panels always flex — no inline style needed */
+.chat-layout .chat-list-panel,
+.chat-layout .chat-thread-panel {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Favorites grid — desktop 3 cols ── */
 .fav-grid {
   display: grid;
@@ -429,48 +436,56 @@ hr {
   }
 
   .chat-layout {
-    display: block;
-    height: auto;
-    min-height: 0;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .chat-layout .chat-list-panel {
-    border-radius: 0;
-    width: 100%;
+    display: flex !important;
+    border-radius: 0 !important;
+    width: 100% !important;
     min-height: 300px;
   }
 
+  /* Hide thread panel and cabinet button in list view */
   .chat-layout.mobile-list-view .chat-thread-panel {
-    display: none;
+    display: none !important;
   }
 
+  .chat-cabinet-btn-wrapper {
+    display: none !important;
+  }
+
+  /* Hide list panel in thread view */
   .chat-layout.mobile-thread-view .chat-list-panel {
-    display: none;
+    display: none !important;
   }
 
+  /* Full-screen thread overlay */
   .chat-layout.mobile-thread-view .chat-thread-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    border-radius: 0;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 60px !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 0 !important;
     z-index: 200;
-    background: var(--card);
+    background: var(--card) !important;
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
   }
 
   .chat-back-btn {
-    display: flex;
+    display: flex !important;
   }
 
   /* ── Favorites: 2-column grid ── */
   .fav-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
