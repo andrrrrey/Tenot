@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { getFavorites, removeFavorite, type Favorite } from "@/services/favorites";
+import { getFavorites, type Favorite } from "@/services/favorites";
 import { ListingCard } from "@/components/ListingCard";
 
 export default function FavPage() {
@@ -14,7 +14,6 @@ export default function FavPage() {
 
   useEffect(() => {
     if (!user) return;
-
     setLoading(true);
     getFavorites()
       .then((data) => {
@@ -38,57 +37,53 @@ export default function FavPage() {
 
   return (
     <div>
-      <style>{`
-        @media (max-width: 768px) {
-          .fav-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            margin-left: -14px !important;
-            margin-right: -14px !important;
-            width: calc(100% + 28px) !important;
-          }
-        }
-      `}</style>
-      <div className="row" style={{ justifyContent: "space-between" }}>
+      <div className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
         <h1 className="h2">Избранное</h1>
-        <Link className="btn" href="/search">
-          К поиску
-        </Link>
+        <Link className="btn" href="/search">К поиску</Link>
       </div>
 
       {error && (
-        <div className="card" style={{ marginTop: 12, color: "red" }}>
-          {error}
+        <div className="card" style={{ marginBottom: 12, color: "red" }}>{error}</div>
+      )}
+
+      {loading ? (
+        <div className="fresh-grid">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton" style={{ height: 280, borderRadius: "var(--radius-lg)" }} />
+          ))}
+        </div>
+      ) : favorites.length === 0 ? (
+        <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--muted)" }}>
+          Пока пусто. Откройте{" "}
+          <Link href="/search" style={{ color: "var(--brand)", fontWeight: 700 }}>поиск</Link>
+          {" "}и добавьте объявления в избранное.
+        </div>
+      ) : (
+        <div className="fresh-grid">
+          {favorites.map((f) => (
+            <ListingCard
+              key={f.id}
+              listing={f.listing}
+              isFavorite={true}
+              onFavoriteChange={handleFavoriteChange}
+            />
+          ))}
         </div>
       )}
 
-      <div className="fav-grid">
-        {loading ? (
-          <div className="card" style={{ gridColumn: "1 / -1" }}>
-            Загрузка избранного...
-          </div>
-        ) : (
-          <>
-            {favorites.map((f) => (
-              <ListingCard
-                key={f.id}
-                listing={f.listing}
-                isFavorite={true}
-                onFavoriteChange={handleFavoriteChange}
-              />
-            ))}
-
-            {favorites.length === 0 && (
-              <div className="card" style={{ gridColumn: "1 / -1" }}>
-                Пока пусто. Откройте{" "}
-                <Link href="/search" style={{ color: "var(--brand)", fontWeight: 700 }}>
-                  поиск
-                </Link>{" "}
-                и добавьте объявления в избранное.
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <style>{`
+        .fresh-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 900px) {
+          .fresh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 500px) {
+          .fresh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+      `}</style>
     </div>
   );
 }
