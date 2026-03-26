@@ -483,9 +483,12 @@ hr {
     display: flex !important;
   }
 
-  /* ── Favorites: 2-column grid (same proportions as search page) ── */
+  /* ── Favorites: 2-column grid, full viewport width ── */
   .fav-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    margin-left: -14px !important;
+    margin-right: -14px !important;
+    width: calc(100% + 28px) !important;
   }
 }
 
