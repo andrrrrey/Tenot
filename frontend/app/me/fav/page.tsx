@@ -38,6 +38,16 @@ export default function FavPage() {
 
   return (
     <div>
+      <style>{`
+        @media (max-width: 768px) {
+          .fav-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            margin-left: -14px !important;
+            margin-right: -14px !important;
+            width: calc(100% + 28px) !important;
+          }
+        }
+      `}</style>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h1 className="h2">Избранное</h1>
         <Link className="btn" href="/search">

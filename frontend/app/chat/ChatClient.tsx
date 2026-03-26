@@ -462,6 +462,38 @@ export default function ChatClient() {
 
   return (
     <>
+    <style>{`
+      @media (max-width: 768px) {
+        .chat-layout {
+          display: block !important;
+          height: auto !important;
+          min-height: 0 !important;
+          margin-left: -14px !important;
+          margin-right: -14px !important;
+          width: calc(100% + 28px) !important;
+        }
+        .chat-layout .chat-list-panel {
+          display: flex !important;
+          border-radius: 0 !important;
+          width: 100% !important;
+          min-height: 300px;
+        }
+        .chat-layout.mobile-list-view .chat-thread-panel { display: none !important; }
+        .chat-cabinet-btn-wrapper { display: none !important; }
+        .chat-layout.mobile-thread-view .chat-list-panel { display: none !important; }
+        .chat-layout.mobile-thread-view .chat-thread-panel {
+          position: fixed !important;
+          top: 0 !important; left: 0 !important; right: 0 !important; bottom: 60px !important;
+          height: auto !important;
+          display: flex !important;
+          flex-direction: column !important;
+          border-radius: 0 !important;
+          z-index: 200;
+          background: var(--card) !important;
+        }
+        .chat-back-btn { display: flex !important; }
+      }
+    `}</style>
     <div
       className={`chat-layout ${mobileShowThread ? "mobile-thread-view" : "mobile-list-view"}`}
     >
