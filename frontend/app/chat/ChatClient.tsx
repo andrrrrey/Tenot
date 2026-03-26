@@ -278,8 +278,7 @@ export default function ChatClient() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [mobileShowThread, setMobileShowThread] = useState(false);
 
-  // Directly zero out <main> side padding so the chat list is naturally full-width.
-  // DOM manipulation bypasses all CSS cascade / specificity / media-query issues.
+  // Remove main padding so chat fills the full content width
   useEffect(() => {
     const main = document.querySelector("main");
     if (!main) return;
@@ -312,7 +311,6 @@ export default function ChatClient() {
       .finally(() => setLoading(false));
   }, [user, chatIdParam]);
 
-  // If opened with listingId+receiverId params, show thread on mobile
   useEffect(() => {
     if (listingIdParam && receiverIdParam) setMobileShowThread(true);
   }, [listingIdParam, receiverIdParam]);
@@ -454,17 +452,19 @@ export default function ChatClient() {
 
   if (authLoading || loading) {
     return (
-      <div className="card" style={{ textAlign: "center", padding: 48 }}>
-        <div className="muted">Загрузка...</div>
+      <div style={{ padding: "48px 20px", textAlign: "center", color: "var(--muted)" }}>
+        Загрузка...
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="card" style={{ textAlign: "center", padding: 48 }}>
-        <div style={{ marginBottom: 16, fontWeight: 600 }}>Войдите, чтобы видеть чаты</div>
-        <Link className="btn primary" href="/login">Войти</Link>
+      <div style={{ padding: "48px 20px", textAlign: "center" }}>
+        <div className="card" style={{ display: "inline-block", padding: "40px 48px" }}>
+          <div style={{ marginBottom: 16, fontWeight: 600, fontSize: 16 }}>Войдите, чтобы видеть чаты</div>
+          <Link className="btn primary" href="/login">Войти</Link>
+        </div>
       </div>
     );
   }
@@ -474,172 +474,252 @@ export default function ChatClient() {
 
   return (
     <>
-    <style>{`
-      .chat-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; height: calc(100vh - 160px); min-height: 500px; }
-      .chat-layout .chat-list-panel, .chat-layout .chat-thread-panel { display: flex; flex-direction: column; }
-      .chat-cabinet-btn-wrapper { display: block; }
-      .chat-back-btn { display: none; }
-      @media (max-width: 768px) {
-        .chat-layout { display: block; height: auto; min-height: 0; }
-        .chat-layout.mobile-list-view .chat-thread-panel { display: none; }
-        .chat-cabinet-btn-wrapper { display: none; }
-        .chat-layout.mobile-thread-view .chat-list-panel { display: none; }
-        .chat-layout.mobile-thread-view .chat-thread-panel {
-          position: fixed; top: 0; left: 0; right: 0; bottom: 60px;
-          height: auto; display: flex; flex-direction: column;
-          z-index: 200; background: var(--bg);
-          border-radius: 0; border: none;
+      <style>{`
+        .chat-wrap {
+          display: grid;
+          grid-template-columns: 320px 1fr;
+          height: calc(100vh - 72px);
+          min-height: 500px;
+          gap: 0;
+          background: var(--card);
+          backdrop-filter: var(--blur);
+          -webkit-backdrop-filter: var(--blur);
+          border: 1px solid rgba(255,255,255,0.85);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-lg);
+          overflow: hidden;
         }
-        .chat-back-btn { display: flex; }
-      }
-    `}</style>
-    <div
-      className={`chat-layout ${mobileShowThread ? "mobile-thread-view" : "mobile-list-view"}`}
-    >
-      {/* Chat list */}
-      <aside
-        className="chat-list-panel"
-        style={{
-          padding: 0,
-          overflow: "hidden",
-          background: "var(--card)",
-          backdropFilter: "var(--blur)",
-          WebkitBackdropFilter: "var(--blur)",
-          border: "1px solid rgba(255,255,255,0.85)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow)",
-        }}
-      >
-        <div
-          style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid var(--line-solid)",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexShrink: 0,
-          }}
-        >
-          <IconMessage size={18} color="var(--brand)" strokeWidth={2} />
-          <span style={{ fontWeight: 700, fontSize: 16 }}>
-            Чаты
-          </span>
-          {chats.length > 0 && (
-            <span
-              style={{
+
+        /* ── Chat list panel ── */
+        .chat-list-panel {
+          display: flex;
+          flex-direction: column;
+          border-right: 1px solid var(--line-solid);
+          background: rgba(255,255,255,0.6);
+          overflow: hidden;
+        }
+        .chat-list-header {
+          padding: 18px 20px;
+          border-bottom: 1px solid var(--line-solid);
+          display: flex;
+          align-items: center;
+          gap: 10;
+          flex-shrink: 0;
+          background: rgba(255,255,255,0.8);
+        }
+        .chat-list-scroll {
+          flex: 1;
+          overflow-y: auto;
+        }
+        .chat-list-footer {
+          padding: 12px 16px;
+          border-top: 1px solid var(--line-solid);
+          flex-shrink: 0;
+          background: rgba(255,255,255,0.8);
+        }
+
+        /* ── Thread panel ── */
+        .chat-thread-panel {
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          background: rgba(248,249,252,0.8);
+        }
+        .chat-thread-header {
+          padding: 14px 20px;
+          border-bottom: 1px solid var(--line-solid);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+          background: rgba(255,255,255,0.8);
+        }
+        .chat-messages {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .chat-input-bar {
+          padding: 12px 16px;
+          border-top: 1px solid var(--line-solid);
+          display: flex;
+          gap: 8px;
+          align-items: flex-end;
+          flex-shrink: 0;
+          background: rgba(255,255,255,0.9);
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 768px) {
+          .chat-wrap {
+            display: block;
+            height: auto;
+            min-height: 0;
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+          }
+
+          /* List view */
+          .chat-wrap.mobile-list .chat-list-panel {
+            display: flex;
+            background: var(--card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid rgba(255,255,255,0.85);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+          }
+          .chat-wrap.mobile-list .chat-thread-panel {
+            display: none;
+          }
+
+          /* Thread view */
+          .chat-wrap.mobile-thread .chat-list-panel {
+            display: none;
+          }
+          .chat-wrap.mobile-thread .chat-thread-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100%;
+            z-index: 200;
+            background: var(--bg);
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+          }
+          .chat-wrap.mobile-thread .chat-messages {
+            padding-bottom: calc(var(--mobile-nav-height) + 12px);
+          }
+
+          .chat-back-btn { display: flex !important; }
+          .chat-cabinet-link { display: none !important; }
+        }
+      `}</style>
+
+      <div className={`chat-wrap ${mobileShowThread ? "mobile-thread" : "mobile-list"}`}>
+
+        {/* ── Chat list panel ── */}
+        <aside className="chat-list-panel">
+          <div className="chat-list-header">
+            <IconMessage size={18} color="var(--brand)" strokeWidth={2} />
+            <span style={{ fontWeight: 700, fontSize: 16, flex: 1 }}>Чаты</span>
+            {chats.length > 0 && (
+              <span style={{
                 fontSize: 12,
                 fontWeight: 600,
                 background: "var(--brand-light)",
                 color: "var(--brand)",
                 padding: "2px 8px",
                 borderRadius: 999,
-              }}
-            >
-              {chats.length}
-            </span>
-          )}
-        </div>
+                border: "1px solid rgba(94,92,248,0.15)",
+              }}>
+                {chats.length}
+              </span>
+            )}
+          </div>
 
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {chats.length === 0 ? (
-            <div
-              style={{
-                padding: "32px 20px",
+          <div className="chat-list-scroll">
+            {chats.length === 0 ? (
+              <div style={{
+                padding: "40px 20px",
                 textAlign: "center",
                 color: "var(--muted)",
                 fontSize: 13,
-                lineHeight: 1.7,
-              }}
-            >
-              У вас пока нет диалогов.
-              <br />
-              Напишите продавцу из карточки товара.
-            </div>
-          ) : (
-            chats.map((chat) => {
-              const interlocutor = getInterlocutor(chat);
-              const lastMsg = chat.messages?.[0];
-              const isSelected = selectedChat?.id === chat.id;
-              const unreadCount = chat._count?.messages ?? 0;
+                lineHeight: 1.8,
+              }}>
+                <div style={{ marginBottom: 12, opacity: 0.3 }}>
+                  <IconMessage size={36} strokeWidth={1} />
+                </div>
+                У вас пока нет диалогов.<br />
+                Напишите продавцу из карточки товара.
+              </div>
+            ) : (
+              chats.map((chat) => {
+                const interlocutor = getInterlocutor(chat);
+                const lastMsg = chat.messages?.[0];
+                const isSelected = selectedChat?.id === chat.id;
+                const unreadCount = chat._count?.messages ?? 0;
 
-              return (
-                <button
-                  key={chat.id}
-                  onClick={() => handleSelectChat(chat)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 11,
-                    width: "100%",
-                    padding: "12px 16px",
-                    textAlign: "left",
-                    border: "none",
-                    borderBottom: "1px solid var(--line-solid)",
-                    borderRadius: 0,
-                    background: isSelected
-                      ? "var(--brand)"
-                      : "transparent",
-                    color: isSelected ? "#fff" : "inherit",
-                    cursor: "pointer",
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.03)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                  }}
-                >
-                  <Avatar user={interlocutor} size={42} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
+                return (
+                  <button
+                    key={chat.id}
+                    onClick={() => handleSelectChat(chat)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      width: "100%",
+                      padding: "13px 16px",
+                      textAlign: "left",
+                      border: "none",
+                      borderBottom: "1px solid var(--line-solid)",
+                      borderRadius: 0,
+                      background: isSelected ? "var(--brand)" : "transparent",
+                      color: isSelected ? "#fff" : "inherit",
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.03)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    }}
+                  >
+                    <Avatar user={interlocutor} size={44} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
                         fontWeight: unreadCount > 0 && !isSelected ? 700 : 600,
                         fontSize: 14,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                      }}
-                    >
-                      {interlocutor?.name || "Пользователь"}
-                    </div>
-                    <div
-                      style={{
+                      }}>
+                        {interlocutor?.name || "Пользователь"}
+                      </div>
+                      <div style={{
                         fontSize: 11,
                         opacity: 0.65,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         marginTop: 2,
-                      }}
-                    >
-                      {chat.listing?.title || `Объявление #${chat.listingId}`}
-                    </div>
-                    {lastMsg && (
-                      <div
-                        style={{
+                      }}>
+                        {chat.listing?.title || `Объявление #${chat.listingId}`}
+                      </div>
+                      {lastMsg && (
+                        <div style={{
                           fontSize: 12,
                           opacity: 0.55,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           marginTop: 2,
-                        }}
-                      >
-                        {lastMsg.senderId === user.id ? "Вы: " : ""}
-                        {lastMsg.audioUrl ? "Голосовое сообщение" : lastMsg.text}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                    {lastMsg && (
-                      <div style={{ fontSize: 10, opacity: 0.5 }}>
-                        {formatTime(lastMsg.createdAt)}
-                      </div>
-                    )}
-                    {unreadCount > 0 && !isSelected && (
-                      <div
-                        style={{
+                        }}>
+                          {lastMsg.senderId === user.id ? "Вы: " : ""}
+                          {lastMsg.audioUrl ? "Голосовое сообщение" : lastMsg.text}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
+                      {lastMsg && (
+                        <div style={{ fontSize: 10, opacity: 0.5 }}>
+                          {formatTime(lastMsg.createdAt)}
+                        </div>
+                      )}
+                      {unreadCount > 0 && !isSelected && (
+                        <div style={{
                           background: "#ef4444",
                           color: "#fff",
                           borderRadius: 10,
@@ -651,150 +731,115 @@ export default function ChatClient() {
                           alignItems: "center",
                           justifyContent: "center",
                           padding: "0 5px",
-                        }}
-                      >
-                        {unreadCount}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
+                        }}>
+                          {unreadCount}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
 
-        <div className="chat-cabinet-btn-wrapper" style={{ padding: "12px 16px", borderTop: "1px solid var(--line-solid)", flexShrink: 0 }}>
-          <Link
-            className="btn"
-            href="/me"
-            style={{ width: "100%", justifyContent: "center", gap: 8, fontSize: 13 }}
-          >
-            <IconArrowLeft size={14} strokeWidth={2} />
-            В кабинет
-          </Link>
-        </div>
-      </aside>
-
-      {/* Message thread */}
-      <section
-        className="chat-thread-panel"
-        style={{
-          padding: 0,
-          background: "var(--card)",
-          backdropFilter: "var(--blur)",
-          WebkitBackdropFilter: "var(--blur)",
-          border: "1px solid rgba(255,255,255,0.85)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow)",
-          overflow: "hidden",
-        }}
-      >
-        {selectedChat || (listingIdParam && receiverIdParam) ? (
-          <>
-            {/* Thread header */}
-            <div
-              style={{
-                padding: "14px 20px",
-                borderBottom: "1px solid var(--line-solid)",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flexShrink: 0,
-              }}
+          <div className="chat-list-footer chat-cabinet-link">
+            <Link
+              className="btn"
+              href="/me"
+              style={{ width: "100%", justifyContent: "center", gap: 8, fontSize: 13 }}
             >
-              <button
-                className="chat-back-btn"
-                onClick={() => { setSelectedChat(null); setMobileShowThread(false); }}
-                style={{
-                  display: "none",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "0 4px",
-                  color: "var(--muted)",
-                  alignItems: "center",
-                  flexShrink: 0,
-                }}
-                title="Назад"
-              >
-                <IconArrowLeft size={20} strokeWidth={2} />
-              </button>
-              <Avatar user={activeInterlocutor} size={38} />
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>
-                  {activeInterlocutor?.name || "Пользователь"}
-                </div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 1 }}>
-                  {activeListing?.title ||
-                    (listingIdParam
-                      ? `Объявление #${listingIdParam}`
-                      : `Объявление #${selectedChat?.listingId}`)}
+              <IconArrowLeft size={14} strokeWidth={2} />
+              В кабинет
+            </Link>
+          </div>
+        </aside>
+
+        {/* ── Message thread panel ── */}
+        <section className="chat-thread-panel">
+          {selectedChat || (listingIdParam && receiverIdParam) ? (
+            <>
+              {/* Thread header */}
+              <div className="chat-thread-header">
+                <button
+                  className="chat-back-btn"
+                  onClick={() => { setSelectedChat(null); setMobileShowThread(false); }}
+                  style={{
+                    display: "none",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "0 4px",
+                    color: "var(--muted)",
+                    alignItems: "center",
+                    flexShrink: 0,
+                  }}
+                  title="Назад"
+                >
+                  <IconArrowLeft size={20} strokeWidth={2} />
+                </button>
+                <Avatar user={activeInterlocutor} size={40} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>
+                    {activeInterlocutor?.name || "Пользователь"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {activeListing?.title ||
+                      (listingIdParam
+                        ? `Объявление #${listingIdParam}`
+                        : `Объявление #${selectedChat?.listingId}`)}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Messages */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: 20,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                background: "rgba(242,244,248,0.6)",
-              }}
-            >
-              {messages.length === 0 ? (
-                <div
-                  style={{
+              {/* Messages */}
+              <div className="chat-messages">
+                {messages.length === 0 ? (
+                  <div style={{
                     margin: "auto",
                     textAlign: "center",
                     color: "var(--muted)",
                     fontSize: 14,
                     padding: 40,
-                  }}
-                >
-                  <div style={{ marginBottom: 10, opacity: 0.4 }}>
-                    <IconMessage size={40} strokeWidth={1.2} />
+                  }}>
+                    <div style={{ marginBottom: 12, opacity: 0.3 }}>
+                      <IconMessage size={44} strokeWidth={1} />
+                    </div>
+                    Нет сообщений. Напишите первым!
                   </div>
-                  Нет сообщений. Напишите первым!
-                </div>
-              ) : (
-                messages.map((m) => {
-                  const isMine = user.id === m.senderId;
-                  return (
-                    <div
-                      key={m.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: isMine ? "flex-end" : "flex-start",
-                      }}
-                    >
+                ) : (
+                  messages.map((m) => {
+                    const isMine = user.id === m.senderId;
+                    return (
                       <div
+                        key={m.id}
                         style={{
-                          padding: m.audioUrl ? "10px 14px" : "10px 14px",
-                          borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                          background: isMine ? "var(--brand)" : "rgba(255,255,255,0.92)",
-                          color: isMine ? "#fff" : "inherit",
-                          maxWidth: "70%",
-                          boxShadow: isMine
-                            ? "0 4px 12px var(--brand-glow)"
-                            : "0 2px 8px rgba(0,0,0,0.08)",
-                          backdropFilter: isMine ? "none" : "blur(8px)",
-                          WebkitBackdropFilter: isMine ? "none" : "blur(8px)",
-                          border: isMine ? "none" : "1px solid rgba(255,255,255,0.9)",
-                          wordBreak: "break-word",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: isMine ? "flex-end" : "flex-start",
                         }}
                       >
-                        {m.audioUrl ? (
-                          <AudioPlayer src={m.audioUrl} isMine={isMine} initialDuration={m.audioDuration ?? 0} />
-                        ) : (
-                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>{m.text}</div>
-                        )}
                         <div
                           style={{
+                            padding: "10px 14px",
+                            borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                            background: isMine ? "var(--brand)" : "rgba(255,255,255,0.92)",
+                            color: isMine ? "#fff" : "inherit",
+                            maxWidth: "70%",
+                            boxShadow: isMine
+                              ? "0 4px 12px var(--brand-glow)"
+                              : "0 2px 8px rgba(0,0,0,0.08)",
+                            backdropFilter: isMine ? "none" : "blur(8px)",
+                            WebkitBackdropFilter: isMine ? "none" : "blur(8px)",
+                            border: isMine ? "none" : "1px solid rgba(255,255,255,0.9)",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {m.audioUrl ? (
+                            <AudioPlayer src={m.audioUrl} isMine={isMine} initialDuration={m.audioDuration ?? 0} />
+                          ) : (
+                            <div style={{ fontSize: 14, lineHeight: 1.5 }}>{m.text}</div>
+                          )}
+                          <div style={{
                             fontSize: 10,
                             marginTop: 4,
                             opacity: 0.65,
@@ -803,82 +848,73 @@ export default function ChatClient() {
                             alignItems: "center",
                             justifyContent: "flex-end",
                             gap: 2,
-                          }}
-                        >
-                          {new Date(m.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                          <ReadStatus message={m} isMine={isMine} />
+                          }}>
+                            {new Date(m.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                            <ReadStatus message={m} isMine={isMine} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {sendError && (
-              <div className="alert error" style={{ borderRadius: 0, borderLeft: "none", borderRight: "none", borderBottom: "none" }}>
-                {sendError}
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            )}
 
-            {/* Input */}
-            <div
-              style={{
-                padding: "12px 16px",
-                borderTop: "1px solid var(--line-solid)",
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-end",
-                flexShrink: 0,
-              }}
-            >
-              <textarea
-                rows={1}
-                style={{
-                  flex: 1,
-                  padding: "10px 14px",
-                  resize: "none",
-                  borderRadius: 20,
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  border: "1.5px solid var(--line-solid)",
-                  outline: "none",
-                  fontFamily: "inherit",
-                  background: "rgba(255,255,255,0.85)",
-                  backdropFilter: "blur(8px)",
-                  WebkitBackdropFilter: "blur(8px)",
-                  transition: "border-color 0.2s",
-                }}
-                placeholder="Написать сообщение... (Enter — отправить)"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--brand)"; }}
-                onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--line-solid)"; }}
-              />
-              <MicButton onAudioReady={handleAudioReady} disabled={sending} />
-              <button
-                className="btn primary"
-                onClick={handleSendMessage}
-                disabled={sending || !newMessage.trim()}
-                style={{
-                  borderRadius: 20,
-                  width: 40,
-                  height: 40,
-                  padding: 0,
-                  alignSelf: "flex-end",
-                  opacity: sending || !newMessage.trim() ? 0.5 : 1,
-                  flexShrink: 0,
-                }}
-              >
-                <IconSend size={16} strokeWidth={1.8} />
-              </button>
-            </div>
-          </>
-        ) : (
-          <div
-            style={{
+              {sendError && (
+                <div className="alert error" style={{ borderRadius: 0, borderLeft: "none", borderRight: "none", borderBottom: "none" }}>
+                  {sendError}
+                </div>
+              )}
+
+              {/* Input */}
+              <div className="chat-input-bar">
+                <textarea
+                  rows={1}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    resize: "none",
+                    borderRadius: 20,
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    border: "1.5px solid var(--line-solid)",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    background: "rgba(255,255,255,0.85)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                    transition: "border-color 0.2s",
+                    minHeight: 40,
+                    maxHeight: 120,
+                  }}
+                  placeholder="Написать сообщение... (Enter — отправить)"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--brand)"; }}
+                  onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--line-solid)"; }}
+                />
+                <MicButton onAudioReady={handleAudioReady} disabled={sending} />
+                <button
+                  className="btn primary"
+                  onClick={handleSendMessage}
+                  disabled={sending || !newMessage.trim()}
+                  style={{
+                    borderRadius: 20,
+                    width: 40,
+                    height: 40,
+                    padding: 0,
+                    alignSelf: "flex-end",
+                    opacity: sending || !newMessage.trim() ? 0.5 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  <IconSend size={16} strokeWidth={1.8} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{
               flex: 1,
               display: "flex",
               flexDirection: "column",
@@ -888,21 +924,20 @@ export default function ChatClient() {
               gap: 14,
               padding: 40,
               textAlign: "center",
-            }}
-          >
-            <div style={{ opacity: 0.25 }}>
-              <IconMessage size={56} strokeWidth={1} />
+            }}>
+              <div style={{ opacity: 0.2 }}>
+                <IconMessage size={60} strokeWidth={1} />
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)" }}>
+                Выберите диалог
+              </div>
+              <div style={{ fontSize: 14, maxWidth: 260, lineHeight: 1.7 }}>
+                Нажмите на чат слева или начните переписку из карточки товара
+              </div>
             </div>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "var(--text)" }}>
-              Выберите диалог
-            </div>
-            <div style={{ fontSize: 14, maxWidth: 280 }}>
-              Нажмите на чат слева или начните переписку из карточки товара
-            </div>
-          </div>
-        )}
-      </section>
-    </div>
+          )}
+        </section>
+      </div>
     </>
   );
 }
