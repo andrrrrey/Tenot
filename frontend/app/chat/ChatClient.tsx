@@ -286,11 +286,6 @@ export default function ChatClient() {
   useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
-    document.body.classList.add("has-chat-page");
-    return () => document.body.classList.remove("has-chat-page");
-  }, []);
-
-  useEffect(() => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     getMyChats()

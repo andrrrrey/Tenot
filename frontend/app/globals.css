@@ -429,16 +429,16 @@ hr {
     padding: 0 14px calc(var(--mobile-nav-height) + 16px);
   }
 
-  /* ── Chat page: zero padding, full-width list ── */
-  .main-content:has(.chat-layout),
-  body.has-chat-page .main-content {
-    padding: 0;
-  }
-
+  /* ── Chat layout: full viewport width via negative margins ── */
+  /* This technique cancels the 14px container side padding reliably,
+     regardless of CSS cascade or !important conflicts */
   .chat-layout {
     display: block !important;
     height: auto !important;
     min-height: 0 !important;
+    margin-left: -14px !important;
+    margin-right: -14px !important;
+    width: calc(100% + 28px) !important;
   }
 
   .chat-layout .chat-list-panel {
@@ -483,7 +483,7 @@ hr {
     display: flex !important;
   }
 
-  /* ── Favorites: 2-column grid ── */
+  /* ── Favorites: 2-column grid (same proportions as search page) ── */
   .fav-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
