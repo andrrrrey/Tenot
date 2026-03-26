@@ -17,88 +17,90 @@ export default function FavPage() {
     if (!user) return;
     setLoading(true);
     getFavorites()
-      .then((data) => {
-        setFavorites(data.sort((a, b) => b.id - a.id));
-      })
-      .catch((e) => {
-        setError(e.message || "Ошибка загрузки избранного");
-      })
+      .then((data) => setFavorites(data.sort((a, b) => b.id - a.id)))
+      .catch((e) => setError(e.message || "Ошибка загрузки избранного"))
       .finally(() => setLoading(false));
   }, [user]);
 
   const handleFavoriteChange = async (listingId: number, isFav: boolean) => {
-    if (!isFav) {
-      setFavorites((prev) => prev.filter((f) => f.listingId !== listingId));
-    }
+    if (!isFav) setFavorites((prev) => prev.filter((f) => f.listingId !== listingId));
   };
 
   if (authLoading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-        <div className="card" style={{ padding: "32px 48px", textAlign: "center", color: "var(--muted)" }}>
-          Загрузка...
-        </div>
-      </div>
-    );
+    return <div style={{ padding: "48px 0", textAlign: "center", color: "var(--muted)" }}>Загрузка...</div>;
   }
 
-  const countLabel = () => {
-    const n = favorites.length;
-    if (n === 1) return "1 объявление";
-    if (n >= 2 && n <= 4) return `${n} объявления`;
-    return `${n} объявлений`;
-  };
-
   return (
-    <div>
-      {/* Page header */}
-      <div className="fav-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="fav-icon-box">
+    <>
+      {/* ── Page header ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{
+            width: 48, height: 48,
+            borderRadius: "var(--radius-sm)",
+            background: "var(--brand-light)",
+            border: "1px solid rgba(94,92,248,0.18)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
             <IconHeart size={22} color="var(--brand)" filled />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>Избранное</h1>
-            {!loading && favorites.length > 0 && (
-              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 3 }}>
-                {countLabel()}
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em" }}>Избранное</h1>
+            {!loading && (
+              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
+                {favorites.length === 0 ? "Пока ничего нет" : `${favorites.length} объявл${favorites.length === 1 ? "ение" : favorites.length < 5 ? "ения" : "ений"}`}
               </div>
             )}
           </div>
         </div>
-        <Link className="btn" href="/search" style={{ gap: 6, flexShrink: 0 }}>
+        <Link className="btn" href="/search" style={{ gap: 7 }}>
           <IconSearch size={14} strokeWidth={2} />
           К поиску
         </Link>
       </div>
 
-      {error && (
-        <div className="alert error" style={{ marginBottom: 16 }}>{error}</div>
-      )}
+      {error && <div className="alert error" style={{ marginBottom: 16 }}>{error}</div>}
 
       {loading ? (
+        /* Loading skeletons */
         <div className="fav-grid">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="skeleton" style={{ height: 280, borderRadius: "var(--radius-lg)" }} />
+            <div key={i} className="skeleton" style={{ height: 300, borderRadius: "var(--radius-lg)" }} />
           ))}
         </div>
       ) : favorites.length === 0 ? (
-        <div className="fav-empty">
-          <div className="fav-empty-icon">
-            <IconHeart size={56} color="var(--brand)" strokeWidth={1.2} />
+        /* Empty state */
+        <div style={{
+          background: "var(--card)",
+          backdropFilter: "var(--blur)",
+          WebkitBackdropFilter: "var(--blur)",
+          border: "1px solid rgba(255,255,255,0.85)",
+          borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow)",
+          padding: "72px 32px",
+          textAlign: "center",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
+        }}>
+          <div style={{
+            width: 96, height: 96, borderRadius: "50%",
+            background: "var(--brand-light)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 4,
+          }}>
+            <IconHeart size={44} color="var(--brand)" strokeWidth={1.2} />
           </div>
-          <div style={{ fontWeight: 700, fontSize: 20, color: "var(--text)" }}>
-            Список избранного пуст
+          <div style={{ fontWeight: 700, fontSize: 20 }}>Список избранного пуст</div>
+          <div style={{ color: "var(--muted)", fontSize: 14, maxWidth: 300, lineHeight: 1.7 }}>
+            Открывайте объявления и нажимайте ❤️ — они появятся здесь
           </div>
-          <div style={{ color: "var(--muted)", fontSize: 14, maxWidth: 280, lineHeight: 1.6 }}>
-            Открывайте объявления и нажимайте на сердечко, чтобы сохранить их здесь
-          </div>
-          <Link className="btn primary" href="/search" style={{ gap: 8, marginTop: 8, padding: "12px 24px" }}>
-            <IconSearch size={16} strokeWidth={2} />
+          <Link className="btn primary" href="/search" style={{ marginTop: 8, gap: 8, padding: "12px 28px" }}>
+            <IconSearch size={15} strokeWidth={2} />
             Найти объявления
           </Link>
         </div>
       ) : (
+        /* Listings grid */
         <div className="fav-grid">
           {favorites.map((f) => (
             <ListingCard
@@ -112,65 +114,24 @@ export default function FavPage() {
       )}
 
       <style>{`
-        .fav-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .fav-icon-box {
-          width: 44px;
-          height: 44px;
-          border-radius: var(--radius-sm);
-          background: var(--brand-light);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          border: 1px solid rgba(94, 92, 248, 0.15);
-        }
         .fav-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
           gap: 16px;
+          align-items: start;
         }
-        .fav-empty {
-          background: var(--card);
-          backdrop-filter: var(--blur);
-          -webkit-backdrop-filter: var(--blur);
-          border: 1px solid rgba(255,255,255,0.85);
-          border-radius: var(--radius-xl);
-          box-shadow: var(--shadow);
-          padding: 64px 32px;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 14px;
+        @media (max-width: 640px) {
+          .fav-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
         }
-        .fav-empty-icon {
-          width: 88px;
-          height: 88px;
-          border-radius: 50%;
-          background: var(--brand-light);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 8px;
-        }
-        @media (max-width: 1024px) {
-          .fav-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        }
-        @media (max-width: 768px) {
-          .fav-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-          .fav-header { margin-bottom: 16px; }
-          .fav-empty { padding: 48px 24px; }
-        }
-        @media (max-width: 480px) {
-          .fav-grid { gap: 10px; }
+        @media (max-width: 360px) {
+          .fav-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
-    </div>
+    </>
   );
 }
