@@ -156,12 +156,15 @@ export default function ChatClient() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [mobileShowThread, setMobileShowThread] = useState(false);
 
-  // Remove main container padding so chat fills the full width
+  // Remove container constraints so chat fills the full screen width
   useEffect(() => {
     const main = document.querySelector("main");
     if (!main) return;
     const prev = main.style.cssText;
     main.style.padding = "0";
+    main.style.marginLeft = "0";
+    main.style.marginRight = "0";
+    main.style.maxWidth = "none";
     return () => { main.style.cssText = prev; };
   }, []);
 
@@ -424,12 +427,13 @@ export default function ChatClient() {
           .chat-shell.mob-thread .chat-thread {
             position: fixed;
             inset: 0;
+            bottom: var(--mobile-nav-height);
             z-index: 200;
             background: #ffffff;
             border-radius: 0;
           }
           .chat-shell.mob-thread .chat-thread-messages {
-            padding-bottom: calc(var(--mobile-nav-height) + 12px);
+            padding-bottom: 8px;
           }
 
           .chat-back-btn { display: flex !important; }
@@ -561,7 +565,7 @@ export default function ChatClient() {
               <div className="chat-thread-input">
                 <textarea
                   rows={1}
-                  style={{ flex: 1, padding: "10px 14px", resize: "none", borderRadius: 20, fontSize: 14, lineHeight: 1.5, border: "1.5px solid var(--line-solid)", outline: "none", fontFamily: "inherit", background: "#f8f9fb", transition: "border-color 0.2s", minHeight: 40, maxHeight: 120 }}
+                  style={{ flex: 1, padding: "10px 14px", resize: "none", borderRadius: 20, fontSize: 14, lineHeight: 1.5, border: "1.5px solid var(--line-solid)", outline: "none", fontFamily: "inherit", background: "#f8f9fb", transition: "border-color 0.2s", height: 40, overflowY: "hidden" }}
                   placeholder="Написать сообщение... (Enter — отправить)"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}

@@ -13,6 +13,15 @@ export default function FavPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Left-align the container on desktop
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const prev = main.style.marginLeft;
+    main.style.marginLeft = "0";
+    return () => { main.style.marginLeft = prev; };
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     setLoading(true);
