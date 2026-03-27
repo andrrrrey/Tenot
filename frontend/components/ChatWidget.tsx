@@ -672,6 +672,8 @@ export default function ChatWidget() {
                       outline: "none",
                       fontFamily: "inherit",
                       background: "var(--soft)",
+                      height: 36,
+                      overflowY: "hidden",
                     }}
                     placeholder="Сообщение..."
                     value={newMessage}

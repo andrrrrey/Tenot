@@ -113,6 +113,15 @@ export default function SearchClient() {
         .search-filters-body.open { display: flex !important; }
         .search-results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
       }
+      @media (max-width: 900px) {
+        .search-layout > aside,
+        .search-layout > section {
+          width: 100% !important;
+          min-width: 0 !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+      }
     `}</style>
     <div className="grid search-layout" style={{ alignItems: "start" }}>
       {/* Sidebar */}
