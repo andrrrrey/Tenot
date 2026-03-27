@@ -49,7 +49,8 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers || {}),
       'content-type': 'application/json',
     },
-    cache: 'no-store',
+    // Mutations always bypass cache; GETs use browser's HTTP cache by default
+    cache: init?.cache ?? (init?.method && init.method !== 'GET' ? 'no-store' : 'default'),
   });
 
   if (!res.ok) {
