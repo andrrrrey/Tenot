@@ -66,32 +66,18 @@ export function CategoriesGrid() {
         <Link
           key={c.id}
           href={`/search?category=${c.id}`}
+          className="cat-card"
           style={{
             display: "flex",
             alignItems: "center",
             gap: 12,
             padding: "14px 16px",
-            background: "var(--card)",
-            backdropFilter: "var(--blur)",
-            WebkitBackdropFilter: "var(--blur)",
-            border: "1px solid rgba(255,255,255,0.85)",
+            background: "var(--card-solid)",
+            border: "1px solid var(--line-solid)",
             borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-sm)",
             textDecoration: "none",
             color: "inherit",
-            transition: "transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            const el = e.currentTarget as HTMLAnchorElement;
-            el.style.transform = "translateY(-2px)";
-            el.style.boxShadow = "var(--shadow)";
-            el.style.background = "rgba(255,255,255,0.92)";
-          }}
-          onMouseLeave={(e) => {
-            const el = e.currentTarget as HTMLAnchorElement;
-            el.style.transform = "translateY(0)";
-            el.style.boxShadow = "var(--shadow-sm)";
-            el.style.background = "var(--card)";
           }}
         >
           {c.imageUrl ? (

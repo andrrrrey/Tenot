@@ -10,10 +10,8 @@ export default function HomePage() {
       {/* Hero section */}
       <section
         style={{
-          background: "var(--card)",
-          backdropFilter: "var(--blur)",
-          WebkitBackdropFilter: "var(--blur)",
-          border: "1px solid rgba(255,255,255,0.85)",
+          background: "var(--card-solid)",
+          border: "1px solid var(--line-solid)",
           borderRadius: "var(--radius-xl)",
           padding: "40px 40px 36px",
           boxShadow: "var(--shadow)",
@@ -82,10 +80,8 @@ export default function HomePage() {
             className="hero-how"
             style={{
               gridColumn: "span 5",
-              background: "rgba(255,255,255,0.6)",
-              backdropFilter: "var(--blur-sm)",
-              WebkitBackdropFilter: "var(--blur-sm)",
-              border: "1px solid rgba(255,255,255,0.9)",
+              background: "var(--soft-solid)",
+              border: "1px solid var(--line-solid)",
               borderRadius: "var(--radius-lg)",
               padding: "24px 26px",
               boxShadow: "var(--shadow-sm)",

@@ -71,10 +71,8 @@ export default function LoginForm() {
         style={{
           width: "100%",
           maxWidth: 440,
-          background: "var(--card)",
-          backdropFilter: "var(--blur)",
-          WebkitBackdropFilter: "var(--blur)",
-          border: "1px solid rgba(255,255,255,0.85)",
+          background: "var(--card-solid)",
+          border: "1px solid var(--line-solid)",
           borderRadius: "var(--radius-xl)",
           padding: "36px 36px 32px",
           boxShadow: "var(--shadow-lg)",

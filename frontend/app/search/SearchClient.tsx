@@ -240,12 +240,10 @@ export default function SearchClient() {
               fontSize: 13,
               color: "var(--muted)",
               fontWeight: 500,
-              background: "var(--card)",
-              backdropFilter: "var(--blur-sm)",
-              WebkitBackdropFilter: "var(--blur-sm)",
+              background: "var(--card-solid)",
               padding: "6px 14px",
               borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.8)",
+              border: "1px solid var(--line-solid)",
               boxShadow: "var(--shadow-xs)",
             }}
           >

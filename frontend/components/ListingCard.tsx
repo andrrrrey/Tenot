@@ -51,26 +51,15 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   const coverUrl = getCoverUrl(listing.images);
 
   return (
-    <div
+    <div className="listing-card"
       style={{
-        background: "var(--card)",
-        backdropFilter: "var(--blur)",
-        WebkitBackdropFilter: "var(--blur)",
-        border: "1px solid rgba(255,255,255,0.85)",
+        background: "var(--card-solid)",
+        border: "1px solid var(--line-solid)",
         borderRadius: "var(--radius-lg)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
         boxShadow: "var(--shadow)",
-        transition: "transform 0.22s ease, box-shadow 0.22s ease",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-lg)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)";
       }}
     >
       <Link href={`/listing/${listing.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
@@ -90,6 +79,8 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
             <img
               src={coverUrl}
               alt={listing.title}
+              loading="lazy"
+              decoding="async"
               style={{
                 position: "absolute",
                 inset: 0,
@@ -129,9 +120,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
                 width: 34,
                 height: 34,
                 borderRadius: "50%",
-                background: "rgba(255,255,255,0.9)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(255,255,255,0.95)",
                 border: "1px solid rgba(255,255,255,0.8)",
                 display: "flex",
                 alignItems: "center",

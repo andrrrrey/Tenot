@@ -100,10 +100,8 @@ export default function ListingPage() {
             right: 0;
             padding: 10px 16px;
             gap: 10px;
-            background: rgba(242, 244, 248, 0.92);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-top: 1px solid rgba(255, 255, 255, 0.72);
+            background: rgba(242, 244, 248, 0.98);
+            border-top: 1px solid rgba(0, 0, 0, 0.07);
             box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
             z-index: 150;
           }
