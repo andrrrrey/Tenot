@@ -13,15 +13,6 @@ export default function FavPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Left-align the container on desktop
-  useEffect(() => {
-    const main = document.querySelector("main");
-    if (!main) return;
-    const prev = main.style.marginLeft;
-    main.style.marginLeft = "0";
-    return () => { main.style.marginLeft = prev; };
-  }, []);
-
   useEffect(() => {
     if (!user) return;
     setLoading(true);
@@ -125,9 +116,14 @@ export default function FavPage() {
       <style>{`
         .fav-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          grid-template-columns: repeat(3, 1fr);
           gap: 16px;
           align-items: start;
+        }
+        @media (max-width: 900px) {
+          .fav-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
         @media (max-width: 640px) {
           .fav-grid {

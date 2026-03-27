@@ -277,7 +277,7 @@ export default function ChatClient() {
     finally { setSending(false); }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleSendMessage(); } };
 
   if (authLoading || loading) {
     return <div style={{ padding: "64px 20px", textAlign: "center", color: "var(--muted)", fontSize: 14 }}>Загрузка...</div>;
@@ -563,15 +563,15 @@ export default function ChatClient() {
               {sendError && <div className="alert error" style={{ borderRadius: 0, border: "none", borderTop: "1px solid #fca5a5" }}>{sendError}</div>}
 
               <div className="chat-thread-input">
-                <textarea
-                  rows={1}
-                  style={{ flex: 1, padding: "10px 14px", resize: "none", borderRadius: 20, fontSize: 14, lineHeight: 1.5, border: "1.5px solid var(--line-solid)", outline: "none", fontFamily: "inherit", background: "#f8f9fb", transition: "border-color 0.2s", height: 40, overflowY: "hidden" }}
-                  placeholder="Написать сообщение... (Enter — отправить)"
+                <input
+                  type="text"
+                  style={{ flex: 1, padding: "0 14px", borderRadius: 20, fontSize: 14, border: "1.5px solid var(--line-solid)", outline: "none", fontFamily: "inherit", background: "#f8f9fb", transition: "border-color 0.2s", height: 40, boxSizing: "border-box" }}
+                  placeholder="Написать сообщение..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--brand)"; (e.target as HTMLTextAreaElement).style.background = "#fff"; }}
-                  onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "var(--line-solid)"; (e.target as HTMLTextAreaElement).style.background = "#f8f9fb"; }}
+                  onFocus={(e) => { e.target.style.borderColor = "var(--brand)"; e.target.style.background = "#fff"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "var(--line-solid)"; e.target.style.background = "#f8f9fb"; }}
                 />
                 <MicButton onAudioReady={handleAudioReady} disabled={sending} />
                 <button className="btn primary" onClick={handleSendMessage} disabled={sending || !newMessage.trim()} style={{ borderRadius: 20, width: 40, height: 40, padding: 0, alignSelf: "flex-end", opacity: sending || !newMessage.trim() ? 0.5 : 1, flexShrink: 0 }}>
