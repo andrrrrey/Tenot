@@ -25,9 +25,7 @@ function NavIcon({
           borderRadius: "50%",
           background: active
             ? "var(--brand)"
-            : "rgba(255, 255, 255, 0.6)",
-          backdropFilter: active ? "none" : "blur(12px) saturate(180%)",
-          WebkitBackdropFilter: active ? "none" : "blur(12px) saturate(180%)",
+            : "rgba(255, 255, 255, 0.85)",
           border: active
             ? "1.5px solid rgba(255,255,255,0.25)"
             : "1.5px solid rgba(255,255,255,0.85)",
@@ -118,10 +116,8 @@ export function MobileBottomNav() {
           left: 0,
           right: 0,
           zIndex: 200,
-          background: "rgba(238, 241, 248, 0.82)",
-          backdropFilter: "blur(32px) saturate(200%)",
-          WebkitBackdropFilter: "blur(32px) saturate(200%)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.75)",
+          background: "rgba(238, 241, 248, 0.97)",
+          borderTop: "1px solid rgba(0, 0, 0, 0.07)",
           boxShadow: "0 -1px 0 rgba(0,0,0,0.06), 0 -8px 32px rgba(0,0,0,0.04)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
           alignItems: "stretch",

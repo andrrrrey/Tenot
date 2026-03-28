@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
-
 :root {
   --mobile-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
   --brand: #5E5CF8;
@@ -40,14 +38,9 @@ html, body {
 }
 
 body {
-  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter, 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif);
   color: var(--text);
   background: #eef1f8;
-  background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(94, 92, 248, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 100%, rgba(120, 100, 255, 0.06) 0%, transparent 60%),
-    linear-gradient(160deg, #f5f7ff 0%, #edf0f8 50%, #f0f2f6 100%);
-  background-attachment: fixed;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -85,13 +78,11 @@ a {
   padding: 10px 16px;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.7);
-  background: var(--card);
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
+  background: var(--card-solid);
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
-  font-family: 'Inter', inherit;
+  font-family: inherit;
   color: var(--text);
   transition: all var(--transition);
   box-shadow: var(--shadow-sm);
@@ -156,11 +147,9 @@ textarea {
   padding: 11px 14px;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--line-solid);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: #ffffff;
   outline: none;
-  font-family: 'Inter', inherit;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text);
   transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
@@ -188,10 +177,8 @@ textarea {
 
 /* ── Cards ── */
 .card {
-  background: var(--card);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: var(--card-solid);
+  border: 1px solid var(--line-solid);
   border-radius: var(--radius-lg);
   padding: 16px;
   box-shadow: var(--shadow);
@@ -255,10 +242,8 @@ hr {
   padding: 10px 14px;
   border: 1px solid var(--line-solid);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--soft-solid);
   font-size: 13px;
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
 }
 
 /* ── Loading skeleton ── */
@@ -408,6 +393,24 @@ hr {
 
   /* Chat and fav mobile styles are injected via <style> tags in their components
      (same pattern as SearchClient / MobileBottomNav — more reliable in Next.js) */
+}
+
+/* ── Listing card hover ── */
+.listing-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Category card hover ── */
+.cat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.cat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 /* ── Scrollbar ── */

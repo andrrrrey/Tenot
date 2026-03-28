@@ -72,10 +72,8 @@ export default function FavPage() {
       ) : favorites.length === 0 ? (
         /* Empty state */
         <div style={{
-          background: "var(--card)",
-          backdropFilter: "var(--blur)",
-          WebkitBackdropFilter: "var(--blur)",
-          border: "1px solid rgba(255,255,255,0.85)",
+          background: "var(--card-solid)",
+          border: "1px solid var(--line-solid)",
           borderRadius: "var(--radius-xl)",
           boxShadow: "var(--shadow)",
           padding: "72px 32px",
