@@ -12,6 +12,7 @@ import {
   type ListingImage,
 } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
+import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { MediaUpload, type ExistingMedia, type NewMediaFile } from "@/components/MediaUpload";
 
@@ -27,6 +28,15 @@ export default function EditPage() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+
+  // Car fields
+  const [carMakes, setCarMakes] = useState<CarMake[]>([]);
+  const [carModels, setCarModels] = useState<CarModel[]>([]);
+  const [carMakeId, setCarMakeId] = useState<string>("");
+  const [carModelId, setCarModelId] = useState<string>("");
+  const [carYear, setCarYear] = useState<string>("");
+  // Tracks whether the listing was loaded (so we can pre-populate car fields)
+  const [listingLoaded, setListingLoaded] = useState(false);
 
   // Media state
   const [existingMedia, setExistingMedia] = useState<ExistingMedia[]>([]);
@@ -44,6 +54,7 @@ export default function EditPage() {
     getCategories()
       .then(setCategories)
       .catch(() => setCategories([]));
+    getCarMakes().then(setCarMakes).catch(() => setCarMakes([]));
   }, []);
 
   useEffect(() => {
@@ -64,6 +75,9 @@ export default function EditPage() {
         setCategoryId(String(listing.category.id));
         setCityId(listing.cityId ? String(listing.cityId) : "");
         setCityName(listing.city?.name || "");
+        if (listing.carMakeId) setCarMakeId(String(listing.carMakeId));
+        if (listing.carModelId) setCarModelId(String(listing.carModelId));
+        if (listing.carYear) setCarYear(String(listing.carYear));
         setExistingMedia(
           listing.images.map((img: ListingImage) => ({
             id: img.id,
@@ -72,10 +86,47 @@ export default function EditPage() {
             isCover: img.isCover,
           }))
         );
+        setListingLoaded(true);
       })
       .catch(() => setError("Ошибка загрузки объявления"))
       .finally(() => setInitialLoading(false));
   }, [id, user]);
+
+  // Load models when make changes (skip resetting carModelId on initial load)
+  const [initialMakeLoad, setInitialMakeLoad] = useState(true);
+  useEffect(() => {
+    if (carMakeId) {
+      getCarModels(Number(carMakeId))
+        .then(setCarModels)
+        .catch(() => setCarModels([]));
+      if (!initialMakeLoad) {
+        setCarModelId("");
+      }
+    } else {
+      setCarModels([]);
+      if (!initialMakeLoad) {
+        setCarModelId("");
+      }
+    }
+    if (listingLoaded) {
+      setInitialMakeLoad(false);
+    }
+  }, [carMakeId, listingLoaded]);
+
+  // Check if selected category has car filter
+  const selectedCategoryHasCarFilter = useMemo(() => {
+    if (!categoryId) return false;
+    const id = Number(categoryId);
+    for (const cat of categories) {
+      if (cat.id === id && cat.hasCarFilter) return true;
+      if (cat.children) {
+        for (const sub of cat.children) {
+          if (sub.id === id && sub.hasCarFilter) return true;
+        }
+      }
+    }
+    return false;
+  }, [categoryId, categories]);
 
   const canSave = useMemo(() => {
     return (
@@ -148,7 +199,6 @@ export default function EditPage() {
   };
 
   const handleSetCoverExisting = (mediaId: number) => {
-    // Unset all covers in existing, unset new cover
     setExistingMedia((prev) =>
       prev.map((m) => ({ ...m, isCover: m.id === mediaId }))
     );
@@ -178,6 +228,9 @@ export default function EditPage() {
         price: Number(price),
         categoryId: Number(categoryId),
         cityId: cityId ? Number(cityId) : null,
+        carMakeId: selectedCategoryHasCarFilter && carMakeId ? Number(carMakeId) : null,
+        carModelId: selectedCategoryHasCarFilter && carModelId ? Number(carModelId) : null,
+        carYear: selectedCategoryHasCarFilter && carYear ? Number(carYear) : null,
       });
 
       // 2. Delete removed media
@@ -300,6 +353,67 @@ export default function EditPage() {
               )}
             </select>
           </div>
+
+          {/* Car fields — shown when category has hasCarFilter */}
+          {selectedCategoryHasCarFilter && (
+            <div
+              style={{
+                background: "rgba(94,92,248,0.04)",
+                border: "1px solid rgba(94,92,248,0.12)",
+                borderRadius: "var(--radius-lg)",
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--brand)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Параметры автомобиля
+              </div>
+
+              <div>
+                <div className="field-label">Марка</div>
+                <select
+                  value={carMakeId}
+                  onChange={(e) => setCarMakeId(e.target.value)}
+                  style={{ padding: "12px 14px" }}
+                >
+                  <option value="">Выберите марку</option>
+                  {carMakes.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="field-label">Модель</div>
+                <select
+                  value={carModelId}
+                  onChange={(e) => setCarModelId(e.target.value)}
+                  disabled={!carMakeId}
+                  style={{ padding: "12px 14px" }}
+                >
+                  <option value="">Выберите модель</option>
+                  {carModels.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="field-label">Год выпуска</div>
+                <input
+                  type="number"
+                  placeholder="Например: 2019"
+                  min={1900}
+                  max={new Date().getFullYear()}
+                  value={carYear}
+                  onChange={(e) => setCarYear(e.target.value)}
+                  style={{ padding: "12px 14px" }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* City */}
           <div>

@@ -16,7 +16,14 @@ export class ListingsService {
 
     return this.prisma.listing.create({
       data: { ...dto, userId },
-      include: { images: true, category: true, city: true, user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } } },
+      include: {
+        images: true,
+        category: true,
+        city: true,
+        carMake: { select: { id: true, name: true } },
+        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
+      },
     });
   }
 
@@ -26,6 +33,10 @@ export class ListingsService {
     maxPrice?: number;
     search?: string;
     cityId?: number;
+    carMakeId?: number;
+    carModelId?: number;
+    carYearFrom?: number;
+    carYearTo?: number;
   }) {
     let categoryFilter: any = undefined;
     if (filters.categoryId) {
@@ -69,6 +80,11 @@ export class ListingsService {
           gte: filters.minPrice,
           lte: filters.maxPrice,
         },
+        ...(filters.carMakeId ? { carMakeId: filters.carMakeId } : {}),
+        ...(filters.carModelId ? { carModelId: filters.carModelId } : {}),
+        ...(filters.carYearFrom || filters.carYearTo
+          ? { carYear: { gte: filters.carYearFrom, lte: filters.carYearTo } }
+          : {}),
         OR: filters.search
           ? [
               { title: { contains: filters.search, mode: 'insensitive' } },
@@ -81,6 +97,8 @@ export class ListingsService {
         user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
         category: true,
         city: true,
+        carMake: { select: { id: true, name: true } },
+        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -94,6 +112,8 @@ export class ListingsService {
         user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
         category: true,
         city: true,
+        carMake: { select: { id: true, name: true } },
+        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
       },
     });
   }
@@ -105,7 +125,13 @@ export class ListingsService {
     return this.prisma.listing.update({
       where: { id },
       data: dto,
-      include: { images: true, category: true, city: true },
+      include: {
+        images: true,
+        category: true,
+        city: true,
+        carMake: { select: { id: true, name: true } },
+        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+      },
     });
   }
 

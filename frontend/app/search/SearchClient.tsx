@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { getListings, type Listing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { getFavorites } from "@/services/favorites";
+import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { ListingCard } from "@/components/ListingCard";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { useMe } from "@/hooks/useMe";
@@ -27,6 +28,14 @@ export default function SearchClient() {
   const [sort, setSort] = useState<"default" | "cheap" | "expensive" | "new">("default");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // Car filter state
+  const [carMakes, setCarMakes] = useState<CarMake[]>([]);
+  const [carModels, setCarModels] = useState<CarModel[]>([]);
+  const [carMakeId, setCarMakeId] = useState<string>("");
+  const [carModelId, setCarModelId] = useState<string>("");
+  const [carYearFrom, setCarYearFrom] = useState<string>("");
+  const [carYearTo, setCarYearTo] = useState<string>("");
+
   // Sync URL params when they change (e.g. user searches from header while on /search)
   const prevSearchParamsRef = useRef(searchParams.toString());
   useEffect(() => {
@@ -43,6 +52,7 @@ export default function SearchClient() {
 
   useEffect(() => {
     getCategories().then(setCategories).catch(() => setCategories([]));
+    getCarMakes().then(setCarMakes).catch(() => setCarMakes([]));
   }, []);
 
   useEffect(() => {
@@ -52,6 +62,43 @@ export default function SearchClient() {
         .catch(() => {});
     }
   }, [user]);
+
+  // Load models when make is selected
+  useEffect(() => {
+    if (carMakeId) {
+      getCarModels(Number(carMakeId))
+        .then(setCarModels)
+        .catch(() => setCarModels([]));
+    } else {
+      setCarModels([]);
+    }
+    setCarModelId("");
+  }, [carMakeId]);
+
+  // Determine if selected category has car filter enabled
+  const selectedCategoryHasCarFilter = useMemo(() => {
+    if (!categoryId) return false;
+    const id = Number(categoryId);
+    for (const cat of categories) {
+      if (cat.id === id && cat.hasCarFilter) return true;
+      if (cat.children) {
+        for (const sub of cat.children) {
+          if (sub.id === id && sub.hasCarFilter) return true;
+        }
+      }
+    }
+    return false;
+  }, [categoryId, categories]);
+
+  // Reset car filters when switching to non-car category
+  useEffect(() => {
+    if (!selectedCategoryHasCarFilter) {
+      setCarMakeId("");
+      setCarModelId("");
+      setCarYearFrom("");
+      setCarYearTo("");
+    }
+  }, [selectedCategoryHasCarFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,6 +111,10 @@ export default function SearchClient() {
         maxPrice?: number;
         search?: string;
         cityId?: number;
+        carMakeId?: number;
+        carModelId?: number;
+        carYearFrom?: number;
+        carYearTo?: number;
       } = {};
 
       if (categoryId) params.categoryId = Number(categoryId);
@@ -71,6 +122,13 @@ export default function SearchClient() {
       if (minPrice && !isNaN(Number(minPrice))) params.minPrice = Number(minPrice);
       if (maxPrice && !isNaN(Number(maxPrice))) params.maxPrice = Number(maxPrice);
       if (q.trim()) params.search = q.trim();
+
+      if (selectedCategoryHasCarFilter) {
+        if (carMakeId) params.carMakeId = Number(carMakeId);
+        if (carModelId) params.carModelId = Number(carModelId);
+        if (carYearFrom && !isNaN(Number(carYearFrom))) params.carYearFrom = Number(carYearFrom);
+        if (carYearTo && !isNaN(Number(carYearTo))) params.carYearTo = Number(carYearTo);
+      }
 
       getListings(params)
         .then(setListings)
@@ -82,7 +140,7 @@ export default function SearchClient() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [q, categoryId, cityId, minPrice, maxPrice]);
+  }, [q, categoryId, cityId, minPrice, maxPrice, carMakeId, carModelId, carYearFrom, carYearTo, selectedCategoryHasCarFilter]);
 
   const sortedListings = useMemo(() => {
     if (sort === "default") return listings;
@@ -189,6 +247,76 @@ export default function SearchClient() {
               )}
             </select>
           </div>
+
+          {/* Car filters — shown only when selected category has hasCarFilter=true */}
+          {selectedCategoryHasCarFilter && (
+            <>
+              <div
+                style={{
+                  borderTop: "1px solid var(--line-solid)",
+                  paddingTop: 14,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 14,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Параметры авто
+                </div>
+
+                <div>
+                  <div className="field-label">Марка</div>
+                  <select
+                    value={carMakeId}
+                    onChange={(e) => setCarMakeId(e.target.value)}
+                  >
+                    <option value="">Все марки</option>
+                    {carMakes.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="field-label">Модель</div>
+                  <select
+                    value={carModelId}
+                    onChange={(e) => setCarModelId(e.target.value)}
+                    disabled={!carMakeId}
+                  >
+                    <option value="">Все модели</option>
+                    {carModels.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="field-label">Год выпуска</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      className="input"
+                      placeholder="от"
+                      type="number"
+                      min={1900}
+                      max={new Date().getFullYear()}
+                      value={carYearFrom}
+                      onChange={(e) => setCarYearFrom(e.target.value)}
+                    />
+                    <input
+                      className="input"
+                      placeholder="до"
+                      type="number"
+                      min={1900}
+                      max={new Date().getFullYear()}
+                      value={carYearTo}
+                      onChange={(e) => setCarYearTo(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           <div>
             <div className="field-label">Цена</div>

@@ -78,11 +78,12 @@ export class CategoriesController {
   update(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { name?: string },
+    @Body() body: { name?: string; hasCarFilter?: string },
   ) {
-    const data: { name?: string; imageUrl?: string } = {};
+    const data: { name?: string; imageUrl?: string; hasCarFilter?: boolean } = {};
     if (body.name) data.name = body.name;
     if (file) data.imageUrl = `/uploads/categories/${file.filename}`;
+    if (body.hasCarFilter !== undefined) data.hasCarFilter = body.hasCarFilter === 'true';
     return this.service.update(+id, data);
   }
 

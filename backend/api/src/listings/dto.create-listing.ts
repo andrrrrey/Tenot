@@ -20,4 +20,16 @@ export class CreateListingDto {
   @IsOptional()
   @IsNumber()
   cityId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  carMakeId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  carModelId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  carYear?: number;
 }

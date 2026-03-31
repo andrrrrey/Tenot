@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import { createListing, uploadListingMedia } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
+import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { MediaUpload, type NewMediaFile } from "@/components/MediaUpload";
 import { IconPlus, IconCheck } from "@/components/Icons";
@@ -21,6 +22,13 @@ export default function AddPage() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
 
+  // Car fields
+  const [carMakes, setCarMakes] = useState<CarMake[]>([]);
+  const [carModels, setCarModels] = useState<CarModel[]>([]);
+  const [carMakeId, setCarMakeId] = useState<string>("");
+  const [carModelId, setCarModelId] = useState<string>("");
+  const [carYear, setCarYear] = useState<string>("");
+
   const [newFiles, setNewFiles] = useState<NewMediaFile[]>([]);
   const [newCoverIndex, setNewCoverIndex] = useState<number | null>(null);
 
@@ -36,7 +44,44 @@ export default function AddPage() {
         }
       })
       .catch(() => setCategories([]));
+    getCarMakes().then(setCarMakes).catch(() => setCarMakes([]));
   }, []);
+
+  // Load models when make changes
+  useEffect(() => {
+    if (carMakeId) {
+      getCarModels(Number(carMakeId))
+        .then(setCarModels)
+        .catch(() => setCarModels([]));
+    } else {
+      setCarModels([]);
+    }
+    setCarModelId("");
+  }, [carMakeId]);
+
+  // Check if selected category has car filter
+  const selectedCategoryHasCarFilter = useMemo(() => {
+    if (!categoryId) return false;
+    const id = Number(categoryId);
+    for (const cat of categories) {
+      if (cat.id === id && cat.hasCarFilter) return true;
+      if (cat.children) {
+        for (const sub of cat.children) {
+          if (sub.id === id && sub.hasCarFilter) return true;
+        }
+      }
+    }
+    return false;
+  }, [categoryId, categories]);
+
+  // Reset car fields when switching to non-car category
+  useEffect(() => {
+    if (!selectedCategoryHasCarFilter) {
+      setCarMakeId("");
+      setCarModelId("");
+      setCarYear("");
+    }
+  }, [selectedCategoryHasCarFilter]);
 
   const canPublish = useMemo(() => {
     return (
@@ -87,6 +132,9 @@ export default function AddPage() {
         price: Number(price),
         categoryId: Number(categoryId),
         ...(cityId ? { cityId: Number(cityId) } : {}),
+        ...(selectedCategoryHasCarFilter && carMakeId ? { carMakeId: Number(carMakeId) } : {}),
+        ...(selectedCategoryHasCarFilter && carModelId ? { carModelId: Number(carModelId) } : {}),
+        ...(selectedCategoryHasCarFilter && carYear ? { carYear: Number(carYear) } : {}),
       });
 
       if (newFiles.length > 0) {
@@ -178,6 +226,62 @@ export default function AddPage() {
               )}
             </select>
           </div>
+
+          {/* Car fields — shown when category has hasCarFilter */}
+          {selectedCategoryHasCarFilter && (
+            <div
+              style={{
+                background: "rgba(94,92,248,0.04)",
+                border: "1px solid rgba(94,92,248,0.12)",
+                borderRadius: "var(--radius-lg)",
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--brand)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Параметры автомобиля
+              </div>
+
+              <div>
+                <div className="field-label">Марка</div>
+                <select value={carMakeId} onChange={(e) => setCarMakeId(e.target.value)}>
+                  <option value="">Выберите марку</option>
+                  {carMakes.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="field-label">Модель</div>
+                <select
+                  value={carModelId}
+                  onChange={(e) => setCarModelId(e.target.value)}
+                  disabled={!carMakeId}
+                >
+                  <option value="">Выберите модель</option>
+                  {carModels.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="field-label">Год выпуска</div>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Например: 2019"
+                  min={1900}
+                  max={new Date().getFullYear()}
+                  value={carYear}
+                  onChange={(e) => setCarYear(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           {/* City */}
           <div>
