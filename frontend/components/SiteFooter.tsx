@@ -13,7 +13,7 @@ export function SiteFooter() {
         boxShadow: "0 -1px 0 rgba(0,0,0,0.05)",
       }}
     >
-      <div className="container" style={{ padding: "20px 20px" }}>
+      <div className="container" style={{ paddingTop: 20, paddingBottom: 20 }}>
         <div
           style={{
             display: "flex",
