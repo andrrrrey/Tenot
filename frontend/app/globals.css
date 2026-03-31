@@ -57,9 +57,6 @@ a {
   padding: 0 20px;
 }
 
-.container.container-full {
-  max-width: 100%;
-}
 
 /* ── Main content padding (moved from inline style) ── */
 .main-content {
