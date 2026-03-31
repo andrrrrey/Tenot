@@ -16,11 +16,16 @@ export type Listing = {
   price: number;
   isActive: boolean;
   createdAt: string;
-  category: { id: number; name: string };
+  category: { id: number; name: string; hasCarFilter?: boolean };
   images: ListingImage[];
   user: { id: number; email: string; name?: string; phone?: string; avatarUrl?: string | null; cityId?: number; city?: { id: number; name: string } | null };
   cityId: number | null;
   city: { id: number; name: string } | null;
+  carMakeId?: number | null;
+  carModelId?: number | null;
+  carYear?: number | null;
+  carMake?: { id: number; name: string } | null;
+  carModel?: { id: number; name: string; yearFrom: number; yearTo: number | null } | null;
 };
 
 export const getListings = (params?: {
@@ -29,6 +34,10 @@ export const getListings = (params?: {
   maxPrice?: number;
   search?: string;
   cityId?: number;
+  carMakeId?: number;
+  carModelId?: number;
+  carYearFrom?: number;
+  carYearTo?: number;
 }) => {
   const qs = new URLSearchParams();
   if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
@@ -36,6 +45,10 @@ export const getListings = (params?: {
   if (params?.maxPrice !== undefined) qs.set('maxPrice', String(params.maxPrice));
   if (params?.search) qs.set('search', params.search);
   if (params?.cityId) qs.set('cityId', String(params.cityId));
+  if (params?.carMakeId) qs.set('carMakeId', String(params.carMakeId));
+  if (params?.carModelId) qs.set('carModelId', String(params.carModelId));
+  if (params?.carYearFrom) qs.set('carYearFrom', String(params.carYearFrom));
+  if (params?.carYearTo) qs.set('carYearTo', String(params.carYearTo));
   const q = qs.toString();
   return api.get<Listing[]>(`/listings${q ? `?${q}` : ''}`);
 };
@@ -50,11 +63,23 @@ export const createListing = (payload: {
   price: number;
   categoryId: number;
   cityId?: number;
+  carMakeId?: number;
+  carModelId?: number;
+  carYear?: number;
 }) => api.post<Listing>('/listings', payload);
 
 export const updateListing = (
   id: number,
-  payload: { title?: string; description?: string; price?: number; categoryId?: number; cityId?: number | null },
+  payload: {
+    title?: string;
+    description?: string;
+    price?: number;
+    categoryId?: number;
+    cityId?: number | null;
+    carMakeId?: number | null;
+    carModelId?: number | null;
+    carYear?: number | null;
+  },
 ) => api.patch<Listing>(`/listings/${id}`, payload);
 
 export const toggleListing = (id: number, isActive: boolean) =>

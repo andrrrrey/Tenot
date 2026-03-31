@@ -60,6 +60,10 @@ export class ListingsController {
     @Query('maxPrice') maxPrice?: string,
     @Query('search') search?: string,
     @Query('cityId') cityId?: string,
+    @Query('carMakeId') carMakeId?: string,
+    @Query('carModelId') carModelId?: string,
+    @Query('carYearFrom') carYearFrom?: string,
+    @Query('carYearTo') carYearTo?: string,
   ) {
     return this.service.findAll({
       categoryId: categoryId ? +categoryId : undefined,
@@ -67,6 +71,10 @@ export class ListingsController {
       maxPrice: maxPrice ? +maxPrice : undefined,
       search,
       cityId: cityId ? +cityId : undefined,
+      carMakeId: carMakeId ? +carMakeId : undefined,
+      carModelId: carModelId ? +carModelId : undefined,
+      carYearFrom: carYearFrom ? +carYearFrom : undefined,
+      carYearTo: carYearTo ? +carYearTo : undefined,
     });
   }
 

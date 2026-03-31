@@ -57,10 +57,31 @@ model User {
   favorites Favorite[]
 }
 
-model Category {
-  id       Int       @id @default(autoincrement())
+model CarMake {
+  id       Int        @id @default(autoincrement())
+  name     String     @unique
+  models   CarModel[]
+  listings Listing[]
+}
+
+model CarModel {
+  id       Int      @id @default(autoincrement())
   name     String
-  imageUrl String?
+  makeId   Int
+  yearFrom Int
+  yearTo   Int?
+
+  make     CarMake  @relation(fields: [makeId], references: [id])
+  listings Listing[]
+
+  @@unique([name, makeId])
+}
+
+model Category {
+  id           Int       @id @default(autoincrement())
+  name         String
+  imageUrl     String?
+  hasCarFilter Boolean   @default(false)
 
   parentId Int?
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
@@ -81,10 +102,15 @@ model Listing {
   userId     Int
   categoryId Int
   cityId     Int?
+  carMakeId  Int?
+  carModelId Int?
+  carYear    Int?
 
-  user     User     @relation(fields: [userId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
-  city     City?    @relation(fields: [cityId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  category Category  @relation(fields: [categoryId], references: [id])
+  city     City?     @relation(fields: [cityId], references: [id])
+  carMake  CarMake?  @relation(fields: [carMakeId], references: [id])
+  carModel CarModel? @relation(fields: [carModelId], references: [id])
 
   images    ListingImage[]
   chats     Chat[]

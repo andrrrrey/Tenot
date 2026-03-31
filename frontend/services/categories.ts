@@ -5,6 +5,7 @@ export type Category = {
   name: string;
   imageUrl?: string | null;
   parentId?: number | null;
+  hasCarFilter?: boolean;
   children?: Category[];
 };
 

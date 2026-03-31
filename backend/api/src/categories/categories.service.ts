@@ -28,7 +28,7 @@ export class CategoriesService {
     });
   }
 
-  async update(id: number, data: { name?: string; imageUrl?: string }) {
+  async update(id: number, data: { name?: string; imageUrl?: string; hasCarFilter?: boolean }) {
     const exists = await this.prisma.category.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Category not found');
     return this.prisma.category.update({
