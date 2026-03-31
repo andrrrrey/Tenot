@@ -41,7 +41,7 @@ export function SiteHeader() {
         boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
       }}
     >
-      <div className="container" style={{ padding: "0 20px" }}>
+      <div className="container">
         {/* Desktop layout */}
         <div
           style={{

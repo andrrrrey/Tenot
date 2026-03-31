@@ -58,9 +58,10 @@ a {
 }
 
 
-/* ── Main content padding (moved from inline style) ── */
+/* ── Main content vertical padding ── */
 .main-content {
-  padding: 24px 20px 56px;
+  padding-top: 24px;
+  padding-bottom: 56px;
 }
 
 
@@ -398,9 +399,10 @@ hr {
 }
 
 @media (max-width: 768px) {
-  /* ── Main content: mobile padding ── */
+  /* ── Main content: mobile vertical padding ── */
   .main-content {
-    padding: 0 14px calc(var(--mobile-nav-height) + 16px);
+    padding-top: 0;
+    padding-bottom: calc(var(--mobile-nav-height) + 16px);
   }
 
   /* Chat and fav mobile styles are injected via <style> tags in their components
