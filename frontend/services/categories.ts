@@ -25,4 +25,8 @@ export const updateCategoryImage = (id: number, image: File) => {
   return api.upload<Category>(`/categories/${id}`, formData, 'PATCH');
 };
 
-export const deleteCategory = (id: number) => api.del<any>(`/categories/${id}`);
+export const updateCategoryCarFilter = (id: number, hasCarFilter: boolean) => {
+  const formData = new FormData();
+  formData.append('hasCarFilter', String(hasCarFilter));
+  return api.upload<Category>(`/categories/${id}`, formData, 'PATCH');
+};

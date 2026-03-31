@@ -6,6 +6,7 @@ import {
   getCategories,
   createCategory,
   updateCategoryImage,
+  updateCategoryCarFilter,
   deleteCategory,
   type Category,
 } from '@/services/categories';
@@ -56,6 +57,11 @@ export default function AdminCategories() {
   const remove = async (id: number) => {
     if (!confirm('Удалить категорию?')) return;
     await deleteCategory(id);
+    await reload();
+  };
+
+  const toggleCarFilter = async (cat: Category) => {
+    await updateCategoryCarFilter(cat.id, !cat.hasCarFilter);
     await reload();
   };
 
@@ -194,7 +200,31 @@ export default function AdminCategories() {
                     )}
                     <div style={{ fontWeight: 600 }}>{cat.name}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 13,
+                        color: cat.hasCarFilter ? 'var(--brand)' : 'var(--muted)',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        border: `1px solid ${cat.hasCarFilter ? 'var(--brand)' : 'var(--line-solid)'}`,
+                        background: cat.hasCarFilter ? 'rgba(94,92,248,0.06)' : undefined,
+                        fontWeight: cat.hasCarFilter ? 600 : 400,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!cat.hasCarFilter}
+                        onChange={() => toggleCarFilter(cat)}
+                        style={{ accentColor: 'var(--brand)', width: 14, height: 14 }}
+                      />
+                      Авто
+                    </label>
                     <button className="btn" onClick={() => startEditImage(cat)}>
                       Изображение
                     </button>
@@ -241,13 +271,39 @@ export default function AdminCategories() {
                       <div className="muted" style={{ fontSize: 14 }}>
                         ↳ {sub.name}
                       </div>
-                      <button
-                        className="btn"
-                        style={{ color: '#dc2626', borderColor: '#fecaca', fontSize: 12 }}
-                        onClick={() => remove(sub.id)}
-                      >
-                        Удалить
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <label
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontSize: 12,
+                            color: sub.hasCarFilter ? 'var(--brand)' : 'var(--muted)',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            padding: '3px 7px',
+                            borderRadius: 6,
+                            border: `1px solid ${sub.hasCarFilter ? 'var(--brand)' : 'var(--line-solid)'}`,
+                            background: sub.hasCarFilter ? 'rgba(94,92,248,0.06)' : undefined,
+                            fontWeight: sub.hasCarFilter ? 600 : 400,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!sub.hasCarFilter}
+                            onChange={() => toggleCarFilter(sub)}
+                            style={{ accentColor: 'var(--brand)', width: 13, height: 13 }}
+                          />
+                          Авто
+                        </label>
+                        <button
+                          className="btn"
+                          style={{ color: '#dc2626', borderColor: '#fecaca', fontSize: 12 }}
+                          onClick={() => remove(sub.id)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
