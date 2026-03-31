@@ -262,7 +262,7 @@ export default function EditPage() {
 
   if (authLoading || initialLoading) {
     return (
-      <div style={{ maxWidth: 720, margin: "40px auto", padding: "0 16px" }}>
+      <div style={{ margin: "40px 0", padding: "0 16px" }}>
         <div className="card" style={{ textAlign: "center", padding: 40 }}>
           Загрузка...
         </div>
@@ -280,7 +280,7 @@ export default function EditPage() {
   );
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 className="h2" style={{ marginBottom: 4 }}>

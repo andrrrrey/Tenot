@@ -143,17 +143,17 @@ export default function MyItemsPage() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                   <Link
                     className="btn"
                     href={`/edit/${listing.id}`}
-                    style={{ flex: 1, textAlign: "center", textDecoration: "none" }}
+                    style={{ flex: "1 1 100%", textAlign: "center", textDecoration: "none" }}
                   >
                     Редактировать
                   </Link>
                   <button
                     className="btn"
-                    style={{ flexShrink: 0 }}
+                    style={{ flex: 1 }}
                     onClick={() => handleToggle(listing.id, listing.isActive)}
                   >
                     {listing.isActive ? "Скрыть" : "Показать"}
@@ -161,9 +161,9 @@ export default function MyItemsPage() {
                   <button
                     className="btn"
                     style={{
+                      flex: 1,
                       color: "#dc2626",
                       borderColor: "#fecaca",
-                      flexShrink: 0,
                     }}
                     onClick={() => handleDelete(listing.id)}
                   >
