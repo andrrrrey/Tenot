@@ -10,7 +10,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
 
   return (
     <main
-      className={`container main-content${isFullWidth ? " container-full" : ""}`}
+      className={`main-content${isFullWidth ? "" : " container"}`}
       style={{ flex: 1 }}
     >
       {children}
