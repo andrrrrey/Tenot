@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { AuthProvider } from "@/components/AuthProvider";
 import ChatWidget from "@/components/ChatWidget";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { MainContent } from "@/components/MainContent";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -28,9 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
             <SiteHeader />
-            <main className="container main-content" style={{ flex: 1 }}>
-              {children}
-            </main>
+            <MainContent>{children}</MainContent>
             <SiteFooter />
           </div>
           <ChatWidget />

@@ -155,7 +155,7 @@ export default function AddPage() {
 
   if (authLoading) {
     return (
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+      <div>
         <div className="card" style={{ textAlign: "center", padding: 48 }}>
           <div className="muted">Загрузка...</div>
         </div>
@@ -166,7 +166,7 @@ export default function AddPage() {
   if (!user) return null;
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
