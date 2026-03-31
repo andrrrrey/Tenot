@@ -33,4 +33,4 @@ RUN mkdir -p uploads/categories
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back 20260101000000_init 2>/dev/null || true; npx prisma migrate deploy && node dist/main.js"]
