@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
 import {
   getMyChats,
@@ -565,23 +566,37 @@ export default function ChatWidget() {
                   >
                     ←
                   </button>
-                  {selectedChat ? (
-                    <Avatar user={getInterlocutor(selectedChat)} size={32} />
-                  ) : (
-                    <Avatar user={pendingNewChat?.receiverName ? { id: 0, name: pendingNewChat.receiverName, avatarUrl: null } : undefined} size={32} />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {selectedChat
-                        ? (getInterlocutor(selectedChat)?.name || "Пользователь")
-                        : (pendingNewChat?.receiverName || "Продавец")}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {selectedChat
-                        ? (selectedChat.listing?.title || `Объявление #${selectedChat.listingId}`)
-                        : (pendingNewChat?.listingTitle || `Объявление #${pendingNewChat?.listingId}`)}
-                    </div>
-                  </div>
+                  {(() => {
+                    const interlocutor = selectedChat ? getInterlocutor(selectedChat) : undefined;
+                    const profileId = interlocutor?.id || (pendingNewChat?.receiverId);
+                    const avatarNode = selectedChat ? (
+                      <Avatar user={interlocutor} size={32} />
+                    ) : (
+                      <Avatar user={pendingNewChat?.receiverName ? { id: 0, name: pendingNewChat.receiverName, avatarUrl: null } : undefined} size={32} />
+                    );
+                    const nameNode = (
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {selectedChat
+                            ? (interlocutor?.name || "Пользователь")
+                            : (pendingNewChat?.receiverName || "Продавец")}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {selectedChat
+                            ? (selectedChat.listing?.title || `Объявление #${selectedChat.listingId}`)
+                            : (pendingNewChat?.listingTitle || `Объявление #${pendingNewChat?.listingId}`)}
+                        </div>
+                      </div>
+                    );
+                    return profileId ? (
+                      <Link href={`/profile/${profileId}`} style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0, textDecoration: "none", color: "inherit" }}>
+                        {avatarNode}
+                        {nameNode}
+                      </Link>
+                    ) : (
+                      <>{avatarNode}{nameNode}</>
+                    );
+                  })()}
                 </div>
 
                 {/* Messages */}

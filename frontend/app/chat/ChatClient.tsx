@@ -515,13 +515,27 @@ export default function ChatClient() {
                 >
                   <IconArrowLeft size={20} strokeWidth={2} />
                 </button>
-                <Avatar user={activeInterlocutor} size={40} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{activeInterlocutor?.name || "Пользователь"}</div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {activeListing?.title || (listingIdParam ? `Объявление #${listingIdParam}` : `Объявление #${selectedChat?.listingId}`)}
-                  </div>
-                </div>
+                {activeInterlocutor ? (
+                  <Link href={`/profile/${activeInterlocutor.id}`} style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit", flex: 1, minWidth: 0 }}>
+                    <Avatar user={activeInterlocutor} size={40} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{activeInterlocutor.name || "Пользователь"}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {activeListing?.title || (listingIdParam ? `Объявление #${listingIdParam}` : `Объявление #${selectedChat?.listingId}`)}
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    <Avatar user={activeInterlocutor} size={40} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>Пользователь</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {activeListing?.title || (listingIdParam ? `Объявление #${listingIdParam}` : `Объявление #${selectedChat?.listingId}`)}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="chat-thread-messages">
