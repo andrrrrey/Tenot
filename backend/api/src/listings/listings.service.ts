@@ -143,6 +143,21 @@ export class ListingsService {
     });
   }
 
+  findByUserId(userId: number) {
+    return this.prisma.listing.findMany({
+      where: { userId, isActive: true },
+      include: {
+        images: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
+        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
+        category: true,
+        city: true,
+        carMake: { select: { id: true, name: true } },
+        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   getMyListings(userId: number) {
     return this.prisma.listing.findMany({
       where: { userId },

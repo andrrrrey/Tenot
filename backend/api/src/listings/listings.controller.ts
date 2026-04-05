@@ -53,6 +53,12 @@ export class ListingsController {
   }
 
   @Public()
+  @Get('user/:userId')
+  findByUser(@Param('userId') userId: string) {
+    return this.service.findByUserId(+userId);
+  }
+
+  @Public()
   @Get()
   findAll(
     @Query('categoryId') categoryId?: string,

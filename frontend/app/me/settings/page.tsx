@@ -158,8 +158,8 @@ export default function SettingsPage() {
             <div
               style={{
                 padding: "12px 16px",
-                background: "rgba(94,92,248,0.06)",
-                border: "1px solid rgba(94,92,248,0.12)",
+                background: "rgba(37,99,235,0.06)",
+                border: "1px solid rgba(37,99,235,0.12)",
                 borderRadius: "var(--radius-sm)",
                 fontSize: 13,
                 color: "var(--muted)",

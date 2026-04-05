@@ -28,7 +28,7 @@ export default function HomePage() {
             width: 300,
             height: 300,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(94,92,248,0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />

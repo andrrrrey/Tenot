@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCategories, type Category } from "@/services/categories";
-import { IconChevronRight } from "@/components/Icons";
 
 export function CategoriesGrid() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -18,9 +17,9 @@ export function CategoriesGrid() {
 
   if (loading) {
     return (
-      <div className="categories-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="skeleton" style={{ height: 72 }} />
+      <div className="categories-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="skeleton" style={{ height: 90 }} />
         ))}
       </div>
     );
@@ -37,6 +36,11 @@ export function CategoriesGrid() {
   return (
     <>
     <style>{`
+      @media (max-width: 900px) {
+        .categories-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        }
+      }
       @media (max-width: 640px) {
         .categories-grid {
           display: flex !important;
@@ -50,7 +54,7 @@ export function CategoriesGrid() {
         .categories-grid::-webkit-scrollbar { display: none; }
         .categories-grid > * {
           flex-shrink: 0 !important;
-          width: 180px !important;
+          width: 150px !important;
         }
       }
     `}</style>
@@ -58,8 +62,8 @@ export function CategoriesGrid() {
       className="categories-grid"
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-        gap: 10,
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gap: 12,
       }}
     >
       {categories.map((c) => (
@@ -68,45 +72,67 @@ export function CategoriesGrid() {
           href={`/search?category=${c.id}`}
           className="cat-card"
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "14px 16px",
+            display: "block",
+            position: "relative",
+            overflow: "hidden",
+            padding: "16px 16px 16px 16px",
+            minHeight: 90,
             background: "var(--card-solid)",
             border: "1px solid var(--line-solid)",
             borderRadius: "var(--radius-lg)",
-            boxShadow: "var(--shadow-sm)",
+            boxShadow: "var(--shadow-xs)",
             textDecoration: "none",
             color: "inherit",
+            transition: "box-shadow 0.2s, transform 0.2s",
           }}
         >
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              fontWeight: 700,
+              fontSize: 14,
+              color: "var(--text)",
+              lineHeight: 1.3,
+              maxWidth: "65%",
+            }}
+          >
+            {c.name}
+          </div>
+
           {c.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={c.imageUrl}
               alt={c.name}
               style={{
-                width: 42,
-                height: 42,
+                position: "absolute",
+                bottom: -6,
+                right: -6,
+                width: 72,
+                height: 72,
                 objectFit: "cover",
-                borderRadius: 10,
-                flexShrink: 0,
+                borderRadius: 12,
+                opacity: 0.95,
               }}
             />
           ) : (
             <div
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 10,
+                position: "absolute",
+                bottom: -4,
+                right: -4,
+                width: 64,
+                height: 64,
+                borderRadius: 12,
                 background: "var(--brand-light)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                flexShrink: 0,
+                opacity: 0.7,
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.8">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5">
                 <rect x="3" y="3" width="7" height="7" />
                 <rect x="14" y="3" width="7" height="7" />
                 <rect x="14" y="14" width="7" height="7" />
@@ -114,30 +140,6 @@ export function CategoriesGrid() {
               </svg>
             </div>
           )}
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {c.name}
-            </div>
-            {c.children && c.children.length > 0 && (
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--muted)",
-                  marginTop: 3,
-                  lineHeight: 1.3,
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: "vertical",
-                }}
-              >
-                {c.children.map((s) => s.name).join(", ")}
-              </div>
-            )}
-          </div>
-
-          <IconChevronRight size={16} color="var(--muted-light)" strokeWidth={1.8} style={{ flexShrink: 0 }} />
         </Link>
       ))}
     </div>

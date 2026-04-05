@@ -20,6 +20,7 @@ export default function SearchClient() {
   const [error, setError] = useState<string | null>(null);
 
   const [q, setQ] = useState(searchParams.get("q") || "");
+  const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>(searchParams.get("category") || "");
   const [cityId, setCityId] = useState<string>(searchParams.get("cityId") || "");
   const [cityName, setCityName] = useState("");
@@ -43,7 +44,9 @@ export default function SearchClient() {
     if (current === prevSearchParamsRef.current) return;
     prevSearchParamsRef.current = current;
     setQ(searchParams.get("q") || "");
-    setCategoryId(searchParams.get("category") || "");
+    const newCat = searchParams.get("category") || "";
+    setCategoryId(newCat);
+    setParentCategoryId(""); // will be synced by the category sync effect
     setCityId(searchParams.get("cityId") || "");
     setCityName("");
     setMinPrice(searchParams.get("minPrice") || "");
@@ -74,6 +77,35 @@ export default function SearchClient() {
     }
     setCarModelId("");
   }, [carMakeId]);
+
+  // Sync parentCategoryId from URL category param when categories load
+  useEffect(() => {
+    if (!categoryId || categories.length === 0) return;
+    const id = Number(categoryId);
+    // Check if it's a root category
+    const root = categories.find((c) => c.id === id);
+    if (root) {
+      setParentCategoryId(String(root.id));
+      return;
+    }
+    // Check if it's a subcategory
+    for (const cat of categories) {
+      if (cat.children?.some((sub) => sub.id === id)) {
+        setParentCategoryId(String(cat.id));
+        return;
+      }
+    }
+  }, [categories]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Get subcategories for selected parent category
+  const selectedParentCategory = useMemo(() => {
+    if (!parentCategoryId) return null;
+    return categories.find((c) => c.id === Number(parentCategoryId)) || null;
+  }, [parentCategoryId, categories]);
+
+  const subcategories = useMemo(() => {
+    return selectedParentCategory?.children || [];
+  }, [selectedParentCategory]);
 
   // Determine if selected category has car filter enabled
   const selectedCategoryHasCarFilter = useMemo(() => {
@@ -227,26 +259,38 @@ export default function SearchClient() {
 
           <div>
             <div className="field-label">Категория</div>
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <select
+              value={parentCategoryId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setParentCategoryId(val);
+                setCategoryId(val); // default to parent category (all)
+              }}
+            >
               <option value="">Все категории</option>
-              {categories.map((c) =>
-                c.children && c.children.length > 0 ? (
-                  <optgroup key={c.id} label={c.name}>
-                    <option value={c.id}>{c.name} (все)</option>
-                    {c.children.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                )
-              )}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
+
+          {subcategories.length > 0 && (
+            <div>
+              <div className="field-label">Подкатегория</div>
+              <select
+                value={categoryId === parentCategoryId ? "" : categoryId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCategoryId(val || parentCategoryId);
+                }}
+              >
+                <option value="">Все в «{selectedParentCategory?.name}»</option>
+                {subcategories.map((sub) => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Car filters — shown only when selected category has hasCarFilter=true */}
           {selectedCategoryHasCarFilter && (

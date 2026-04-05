@@ -181,7 +181,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
               paddingTop: 8,
               fontWeight: 800,
               fontSize: 18,
-              color: "var(--brand)",
+              color: "var(--price)",
               letterSpacing: "-0.02em",
             }}
           >

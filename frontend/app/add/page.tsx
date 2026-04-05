@@ -15,6 +15,7 @@ export default function AddPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
   const [cityName, setCityName] = useState<string>("");
@@ -39,7 +40,8 @@ export default function AddPage() {
     getCategories()
       .then((cats) => {
         setCategories(cats);
-        if (cats.length > 0 && !categoryId) {
+        if (cats.length > 0 && !parentCategoryId) {
+          setParentCategoryId(String(cats[0].id));
           setCategoryId(String(cats[0].id));
         }
       })
@@ -58,6 +60,16 @@ export default function AddPage() {
     }
     setCarModelId("");
   }, [carMakeId]);
+
+  // Get subcategories for selected parent
+  const selectedParentCategory = useMemo(() => {
+    if (!parentCategoryId) return null;
+    return categories.find((c) => c.id === Number(parentCategoryId)) || null;
+  }, [parentCategoryId, categories]);
+
+  const subcategories = useMemo(() => {
+    return selectedParentCategory?.children || [];
+  }, [selectedParentCategory]);
 
   // Check if selected category has car filter
   const selectedCategoryHasCarFilter = useMemo(() => {
@@ -208,31 +220,44 @@ export default function AddPage() {
           <div>
             <div className="field-label">Категория</div>
             <select
-              value={categoryId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => setCategoryId(e.target.value)}
+              value={parentCategoryId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                const val = e.target.value;
+                setParentCategoryId(val);
+                setCategoryId(val);
+              }}
             >
               <option value="">Выберите категорию</option>
-              {categories.map((c) =>
-                c.children && c.children.length > 0 ? (
-                  <optgroup key={c.id} label={c.name}>
-                    <option value={c.id}>{c.name} (все)</option>
-                    {c.children.map((sub) => (
-                      <option key={sub.id} value={sub.id}>{sub.name}</option>
-                    ))}
-                  </optgroup>
-                ) : (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                )
-              )}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
+
+          {subcategories.length > 0 && (
+            <div>
+              <div className="field-label">Подкатегория</div>
+              <select
+                value={categoryId === parentCategoryId ? "" : categoryId}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                  const val = e.target.value;
+                  setCategoryId(val || parentCategoryId);
+                }}
+              >
+                <option value="">Все в «{selectedParentCategory?.name}»</option>
+                {subcategories.map((sub) => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Car fields — shown when category has hasCarFilter */}
           {selectedCategoryHasCarFilter && (
             <div
               style={{
-                background: "rgba(94,92,248,0.04)",
-                border: "1px solid rgba(94,92,248,0.12)",
+                background: "rgba(37,99,235,0.04)",
+                border: "1px solid rgba(37,99,235,0.12)",
                 borderRadius: "var(--radius-lg)",
                 padding: "18px 20px",
                 display: "flex",
@@ -403,8 +428,8 @@ export default function AddPage() {
         style={{
           marginTop: 16,
           padding: "18px 24px",
-          background: "rgba(94,92,248,0.04)",
-          border: "1px solid rgba(94,92,248,0.1)",
+          background: "rgba(37,99,235,0.04)",
+          border: "1px solid rgba(37,99,235,0.1)",
         }}
       >
         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, color: "var(--brand)" }}>

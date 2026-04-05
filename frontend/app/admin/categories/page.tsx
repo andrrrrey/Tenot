@@ -213,7 +213,7 @@ export default function AdminCategories() {
                         padding: '4px 8px',
                         borderRadius: 6,
                         border: `1px solid ${cat.hasCarFilter ? 'var(--brand)' : 'var(--line-solid)'}`,
-                        background: cat.hasCarFilter ? 'rgba(94,92,248,0.06)' : undefined,
+                        background: cat.hasCarFilter ? 'rgba(37,99,235,0.06)' : undefined,
                         fontWeight: cat.hasCarFilter ? 600 : 400,
                       }}
                     >
@@ -284,7 +284,7 @@ export default function AdminCategories() {
                             padding: '3px 7px',
                             borderRadius: 6,
                             border: `1px solid ${sub.hasCarFilter ? 'var(--brand)' : 'var(--line-solid)'}`,
-                            background: sub.hasCarFilter ? 'rgba(94,92,248,0.06)' : undefined,
+                            background: sub.hasCarFilter ? 'rgba(37,99,235,0.06)' : undefined,
                             fontWeight: sub.hasCarFilter ? 600 : 400,
                           }}
                         >

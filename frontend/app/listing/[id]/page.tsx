@@ -100,7 +100,7 @@ export default function ListingPage() {
             right: 0;
             padding: 10px 16px;
             gap: 10px;
-            background: rgba(242, 244, 248, 0.98);
+            background: rgba(248, 249, 251, 0.98);
             border-top: 1px solid rgba(0, 0, 0, 0.07);
             box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
             z-index: 150;
@@ -186,7 +186,7 @@ export default function ListingPage() {
                 marginTop: 20,
                 fontSize: 32,
                 fontWeight: 800,
-                color: 'var(--brand)',
+                color: 'var(--price)',
                 letterSpacing: '-0.03em',
               }}
             >
@@ -268,8 +268,11 @@ export default function ListingPage() {
           >
             <div style={{ fontWeight: 700, fontSize: 15 }}>Продавец</div>
 
-            {/* Avatar + name */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Avatar + name — clickable link to public profile */}
+            <Link
+              href={`/profile/${listing.user?.id}`}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit' }}
+            >
               {listing.user?.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -309,7 +312,7 @@ export default function ListingPage() {
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{sellerName}</div>
                 <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Продавец</div>
               </div>
-            </div>
+            </Link>
 
             {/* Phone */}
             {sellerPhone && (

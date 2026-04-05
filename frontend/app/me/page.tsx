@@ -203,7 +203,7 @@ export default function MeHome() {
                     borderRadius: "50%",
                     objectFit: "cover",
                     border: "3px solid rgba(255,255,255,0.9)",
-                    boxShadow: "0 4px 16px rgba(94,92,248,0.25)",
+                    boxShadow: "0 4px 16px rgba(37,99,235,0.25)",
                   }}
                 />
               ) : (

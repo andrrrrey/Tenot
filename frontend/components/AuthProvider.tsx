@@ -39,8 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.user) {
           setUser({
             id: String(data.user.id),
-            name: data.user.email || "",
+            name: data.user.name || data.user.email || "",
             role: data.user.role,
+            avatarUrl: data.user.avatarUrl || null,
           });
         }
       })

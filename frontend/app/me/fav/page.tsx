@@ -39,7 +39,7 @@ export default function FavPage() {
             width: 48, height: 48,
             borderRadius: "var(--radius-sm)",
             background: "var(--brand-light)",
-            border: "1px solid rgba(94,92,248,0.18)",
+            border: "1px solid rgba(37,99,235,0.18)",
             display: "flex", alignItems: "center", justifyContent: "center",
             flexShrink: 0,
           }}>

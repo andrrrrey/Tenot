@@ -10,6 +10,7 @@ export type User = {
   city?: string;
   phone?: string;
   role?: "USER" | "ADMIN";
+  avatarUrl?: string | null;
 };
 
 export type Item = {
