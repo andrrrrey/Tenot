@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     });
     if (res.ok) {
       const profile = await res.json();
-      return NextResponse.json({ user: { id: profile.id, role: profile.role } }, { status: 200 });
+      return NextResponse.json({ user: { id: profile.id, role: profile.role, avatarUrl: profile.avatarUrl || null, name: profile.name || profile.email || null } }, { status: 200 });
     }
   } catch {
     // Backend unavailable — fall through to JWT decode
