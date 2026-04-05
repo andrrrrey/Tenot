@@ -22,6 +22,7 @@ export default function EditPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
   const [cityName, setCityName] = useState<string>("");
@@ -112,6 +113,32 @@ export default function EditPage() {
       setInitialMakeLoad(false);
     }
   }, [carMakeId, listingLoaded]);
+
+  // Sync parentCategoryId from listing's category
+  useEffect(() => {
+    if (!categoryId || categories.length === 0) return;
+    const id = Number(categoryId);
+    const root = categories.find((c) => c.id === id);
+    if (root) {
+      setParentCategoryId(String(root.id));
+      return;
+    }
+    for (const cat of categories) {
+      if (cat.children?.some((sub) => sub.id === id)) {
+        setParentCategoryId(String(cat.id));
+        return;
+      }
+    }
+  }, [categoryId, categories]);
+
+  const selectedParentCategory = useMemo(() => {
+    if (!parentCategoryId) return null;
+    return categories.find((c) => c.id === Number(parentCategoryId)) || null;
+  }, [parentCategoryId, categories]);
+
+  const subcategories = useMemo(() => {
+    return selectedParentCategory?.children || [];
+  }, [selectedParentCategory]);
 
   // Check if selected category has car filter
   const selectedCategoryHasCarFilter = useMemo(() => {
@@ -328,38 +355,56 @@ export default function EditPage() {
               Категория
             </label>
             <select
-              value={categoryId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                setCategoryId(e.target.value)
-              }
+              value={parentCategoryId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                const val = e.target.value;
+                setParentCategoryId(val);
+                setCategoryId(val);
+              }}
               style={{ padding: "12px 14px" }}
             >
               <option value="">Выберите категорию</option>
-              {categories.map((c) =>
-                c.children && c.children.length > 0 ? (
-                  <optgroup key={c.id} label={c.name}>
-                    <option value={c.id}>{c.name} (все)</option>
-                    {c.children.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                )
-              )}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
+
+          {subcategories.length > 0 && (
+            <div>
+              <label
+                className="muted"
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                Подкатегория
+              </label>
+              <select
+                value={categoryId === parentCategoryId ? "" : categoryId}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                  const val = e.target.value;
+                  setCategoryId(val || parentCategoryId);
+                }}
+                style={{ padding: "12px 14px" }}
+              >
+                <option value="">Все в «{selectedParentCategory?.name}»</option>
+                {subcategories.map((sub) => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Car fields — shown when category has hasCarFilter */}
           {selectedCategoryHasCarFilter && (
             <div
               style={{
-                background: "rgba(94,92,248,0.04)",
-                border: "1px solid rgba(94,92,248,0.12)",
+                background: "rgba(37,99,235,0.04)",
+                border: "1px solid rgba(37,99,235,0.12)",
                 borderRadius: "var(--radius-lg)",
                 padding: "18px 20px",
                 display: "flex",

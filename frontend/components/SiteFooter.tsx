@@ -6,7 +6,7 @@ export function SiteFooter() {
   return (
     <footer
       style={{
-        background: "rgba(242, 244, 248, 0.82)",
+        background: "rgba(248, 249, 251, 0.82)",
         backdropFilter: "blur(20px) saturate(160%)",
         WebkitBackdropFilter: "blur(20px) saturate(160%)",
         borderTop: "1px solid rgba(255, 255, 255, 0.7)",

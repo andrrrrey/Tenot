@@ -57,6 +57,9 @@ export const getListing = (id: number) => api.get<Listing>(`/listings/${id}`);
 
 export const getMyListings = () => api.get<Listing[]>('/listings/my');
 
+export const getUserListings = (userId: number) =>
+  api.get<Listing[]>(`/listings/user/${userId}`);
+
 export const createListing = (payload: {
   title: string;
   description: string;

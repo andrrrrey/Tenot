@@ -58,7 +58,7 @@ function NavIcon({
             alignItems: "center",
             justifyContent: "center",
             padding: "0 3px",
-            border: "1.5px solid rgba(242,244,248,0.9)",
+            border: "1.5px solid rgba(248,249,251,0.9)",
           }}
         >
           {badge > 9 ? "9+" : badge}
@@ -116,7 +116,7 @@ export function MobileBottomNav() {
           left: 0,
           right: 0,
           zIndex: 200,
-          background: "rgba(238, 241, 248, 0.97)",
+          background: "rgba(248, 249, 251, 0.97)",
           borderTop: "1px solid rgba(0, 0, 0, 0.07)",
           boxShadow: "0 -1px 0 rgba(0,0,0,0.06), 0 -8px 32px rgba(0,0,0,0.04)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -187,13 +187,36 @@ export function MobileBottomNav() {
 
         {/* Профиль */}
         <Link href={user ? "/me" : "/login"} style={tabStyle(isActive("/me") && !isActive("/me/fav") || isActive("/login"))}>
-          <NavIcon active={isActive("/me") && !isActive("/me/fav") || isActive("/login")}>
-            <IconUser
-              size={20}
-              strokeWidth={(isActive("/me") && !isActive("/me/fav") || isActive("/login")) ? 2.2 : 1.8}
-              color={(isActive("/me") && !isActive("/me/fav") || isActive("/login")) ? "#fff" : "var(--muted)"}
-            />
-          </NavIcon>
+          {user?.avatarUrl ? (
+            <div style={{ position: "relative" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={user.avatarUrl}
+                alt="Профиль"
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: (isActive("/me") && !isActive("/me/fav"))
+                    ? "2.5px solid var(--brand)"
+                    : "2px solid rgba(255,255,255,0.85)",
+                  boxShadow: (isActive("/me") && !isActive("/me/fav"))
+                    ? "0 4px 16px var(--brand-glow)"
+                    : "0 2px 8px rgba(0,0,0,0.07)",
+                  transition: "all 0.2s ease",
+                }}
+              />
+            </div>
+          ) : (
+            <NavIcon active={isActive("/me") && !isActive("/me/fav") || isActive("/login")}>
+              <IconUser
+                size={20}
+                strokeWidth={(isActive("/me") && !isActive("/me/fav") || isActive("/login")) ? 2.2 : 1.8}
+                color={(isActive("/me") && !isActive("/me/fav") || isActive("/login")) ? "#fff" : "var(--muted)"}
+              />
+            </NavIcon>
+          )}
           <span style={labelStyle(isActive("/me") && !isActive("/me/fav") || isActive("/login"))}>
             {user ? "Профиль" : "Войти"}
           </span>

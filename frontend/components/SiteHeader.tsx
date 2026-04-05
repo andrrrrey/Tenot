@@ -34,7 +34,7 @@ export function SiteHeader() {
         position: "sticky",
         top: 0,
         zIndex: 100,
-        background: "rgba(242, 244, 248, 0.82)",
+        background: "rgba(248, 249, 251, 0.82)",
         backdropFilter: "blur(24px) saturate(180%)",
         WebkitBackdropFilter: "blur(24px) saturate(180%)",
         borderBottom: "1px solid rgba(255, 255, 255, 0.7)",
@@ -157,7 +157,7 @@ export function SiteHeader() {
                       height: 18,
                       borderRadius: "50%",
                       background: "#ef4444",
-                      border: "2px solid #eef1f8",
+                      border: "2px solid #F8F9FB",
                       fontSize: 10,
                       fontWeight: 700,
                       color: "#fff",
@@ -185,9 +185,24 @@ export function SiteHeader() {
             <Link
               className="btn"
               href={user ? "/me" : "/login"}
-              style={{ gap: 6, paddingLeft: 12, paddingRight: 14 }}
+              style={{ gap: 6, paddingLeft: user?.avatarUrl ? 6 : 12, paddingRight: 14 }}
             >
-              <IconUser size={16} strokeWidth={1.8} />
+              {user?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt="Профиль"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <IconUser size={16} strokeWidth={1.8} />
+              )}
               <span className="btn-text-hide">{user ? "Профиль" : "Войти"}</span>
             </Link>
           </div>
