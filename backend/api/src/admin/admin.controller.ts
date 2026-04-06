@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { ReviewStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { Roles } from '../auth/roles.decorator';
 
@@ -40,5 +41,23 @@ export class AdminController {
   @Get('stats')
   stats() {
     return this.service.getStats();
+  }
+
+  @Get('reviews')
+  reviews(@Query('status') status?: string) {
+    const validStatus = status && ['PENDING', 'APPROVED', 'REJECTED'].includes(status)
+      ? (status as ReviewStatus)
+      : undefined;
+    return this.service.getReviews(validStatus);
+  }
+
+  @Patch('reviews/:id/approve')
+  approveReview(@Param('id') id: string) {
+    return this.service.approveReview(+id);
+  }
+
+  @Patch('reviews/:id/reject')
+  rejectReview(@Param('id') id: string) {
+    return this.service.rejectReview(+id);
   }
 }

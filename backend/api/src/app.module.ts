@@ -13,6 +13,7 @@ import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
 import { CitiesModule } from './cities/cities.module';
 import { CarMakesModule } from './car-makes/car-makes.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CarMakesModule } from './car-makes/car-makes.module';
     UsersModule,
     CitiesModule,
     CarMakesModule,
+    ReviewsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
