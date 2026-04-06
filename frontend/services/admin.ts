@@ -2,7 +2,23 @@ import { api } from '@/lib/api';
 import type { Listing } from './listings';
 
 export type AdminUser = { id: number; email: string; name?: string; role: 'USER' | 'ADMIN'; createdAt: string };
-export type Stats = { users: number; listings: number; chats: number; messages: number };
+export type Stats = { users: number; listings: number; chats: number; messages: number; reviews: number; pendingReviews: number };
+
+export type AdminReview = {
+  id: number;
+  authorId: number;
+  targetId: number;
+  rating: number;
+  satisfaction: string;
+  liked: string;
+  disliked: string;
+  listingId: number | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  author: { id: number; email: string; name: string | null; avatarUrl: string | null };
+  target: { id: number; email: string; name: string | null };
+  listing?: { id: number; title: string } | null;
+};
 
 export const adminGetUsers = () => api.get<AdminUser[]>('/admin/users');
 export const adminSetUserRole = (id: number, role: AdminUser['role']) =>
@@ -27,3 +43,12 @@ export const adminToggleListing = (id: number, isActive: boolean) =>
   api.patch<Listing>(`/admin/listings/${id}/toggle`, { isActive });
 
 export const adminGetStats = () => api.get<Stats>('/admin/stats');
+
+export const adminGetReviews = (status?: string) =>
+  api.get<AdminReview[]>(`/admin/reviews${status ? `?status=${status}` : ''}`);
+
+export const adminApproveReview = (id: number) =>
+  api.patch<AdminReview>(`/admin/reviews/${id}/approve`);
+
+export const adminRejectReview = (id: number) =>
+  api.patch<AdminReview>(`/admin/reviews/${id}/reject`);

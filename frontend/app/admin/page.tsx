@@ -22,6 +22,7 @@ export default function AdminHome() {
         <Link className="btn" href="/admin/users">Пользователи</Link>
         <Link className="btn" href="/admin/listings">Объявления</Link>
         <Link className="btn" href="/admin/categories">Категории</Link>
+        <Link className="btn" href="/admin/reviews">Отзывы{stats?.pendingReviews ? ` (${stats.pendingReviews})` : ''}</Link>
       </div>
 
       <hr style={{ margin: '16px 0' }} />
@@ -35,6 +36,7 @@ export default function AdminHome() {
           <li>Объявления: {stats.listings}</li>
           <li>Чаты: {stats.chats}</li>
           <li>Сообщения: {stats.messages}</li>
+          <li>Отзывы: {stats.reviews} (на модерации: {stats.pendingReviews})</li>
         </ul>
       )}
     </div>

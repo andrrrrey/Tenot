@@ -13,6 +13,12 @@ enum Role {
   ADMIN
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum CityType {
   REGION
   CITY
@@ -55,6 +61,9 @@ model User {
   receivedChats  Chat[] @relation("OwnerChats")
 
   favorites Favorite[]
+
+  authoredReviews Review[] @relation("AuthoredReviews")
+  receivedReviews Review[] @relation("ReceivedReviews")
 }
 
 model CarMake {
@@ -115,6 +124,7 @@ model Listing {
   images    ListingImage[]
   chats     Chat[]
   favorites Favorite[]
+  reviews   Review[]
 }
 
 model ListingImage {
@@ -165,4 +175,23 @@ model Favorite {
   listing Listing @relation(fields: [listingId], references: [id])
 
   @@unique([userId, listingId])
+}
+
+model Review {
+  id           Int          @id @default(autoincrement())
+  authorId     Int
+  targetId     Int
+  rating       Int
+  satisfaction String
+  liked        String
+  disliked     String
+  listingId    Int?
+  status       ReviewStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+
+  author  User     @relation("AuthoredReviews", fields: [authorId], references: [id])
+  target  User     @relation("ReceivedReviews", fields: [targetId], references: [id])
+  listing Listing? @relation(fields: [listingId], references: [id])
+
+  @@unique([authorId, targetId])
 }

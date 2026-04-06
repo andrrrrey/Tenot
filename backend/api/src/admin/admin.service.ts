@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ReviewStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -79,12 +80,43 @@ export class AdminService {
   }
 
   async getStats() {
-    const [users, listings, chats, messages] = await Promise.all([
+    const [users, listings, chats, messages, reviews, pendingReviews] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.listing.count(),
       this.prisma.chat.count(),
       this.prisma.message.count(),
+      this.prisma.review.count(),
+      this.prisma.review.count({ where: { status: 'PENDING' } }),
     ]);
-    return { users, listings, chats, messages };
+    return { users, listings, chats, messages, reviews, pendingReviews };
+  }
+
+  getReviews(status?: ReviewStatus) {
+    const where: any = {};
+    if (status) where.status = status;
+
+    return this.prisma.review.findMany({
+      where,
+      include: {
+        author: { select: { id: true, email: true, name: true, avatarUrl: true } },
+        target: { select: { id: true, email: true, name: true } },
+        listing: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  approveReview(id: number) {
+    return this.prisma.review.update({
+      where: { id },
+      data: { status: 'APPROVED' },
+    });
+  }
+
+  rejectReview(id: number) {
+    return this.prisma.review.update({
+      where: { id },
+      data: { status: 'REJECTED' },
+    });
   }
 }
