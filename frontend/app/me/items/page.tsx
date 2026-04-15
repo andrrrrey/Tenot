@@ -74,14 +74,7 @@ export default function MyItemsPage() {
         </div>
       )}
 
-      <div
-        style={{
-          marginTop: 12,
-          display: "grid",
-          gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-          gap: 16,
-        }}
-      >
+      <div className="my-items-grid" style={{ marginTop: 12 }}>
         {loading ? (
           <div className="card" style={{ gridColumn: "1 / -1" }}>
             Загрузка объявлений...
@@ -184,6 +177,31 @@ export default function MyItemsPage() {
           </>
         )}
       </div>
+
+      <style>{`
+        .my-items-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          align-items: start;
+        }
+        @media (max-width: 900px) {
+          .my-items-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 640px) {
+          .my-items-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
+        }
+        @media (max-width: 360px) {
+          .my-items-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }
