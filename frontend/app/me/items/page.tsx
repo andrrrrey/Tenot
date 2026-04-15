@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { getMyListings, toggleListing, deleteListing, type Listing } from "@/services/listings";
+import { getMyListings, toggleListing, deleteListing, getCoverUrl, type Listing } from "@/services/listings";
 
 export default function MyItemsPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
@@ -81,7 +81,9 @@ export default function MyItemsPage() {
           </div>
         ) : (
           <>
-            {listings.map((listing) => (
+            {listings.map((listing) => {
+              const coverUrl = getCoverUrl(listing.images);
+              return (
               <div
                 key={listing.id}
                 className="card"
@@ -94,10 +96,10 @@ export default function MyItemsPage() {
                   href={`/listing/${listing.id}`}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  {listing.images?.[0] && (
+                  {coverUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={listing.images[0].url}
+                      src={coverUrl}
                       alt={listing.title}
                       style={{
                         width: "100%",
@@ -164,7 +166,8 @@ export default function MyItemsPage() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {listings.length === 0 && (
               <div className="card" style={{ gridColumn: "1 / -1" }}>
