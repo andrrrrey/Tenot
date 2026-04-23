@@ -4,7 +4,18 @@ import { CreateListingDto } from './dto.create-listing';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
 
-const IMAGE_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n];
+}
 
 @Injectable()
 export class ListingsService {
@@ -45,10 +56,70 @@ export class ListingsService {
       },
       select: { title: true },
       distinct: ['title'],
-      take: 6,
+      take: 8,
       orderBy: { createdAt: 'desc' },
     });
     return results.map((r) => r.title);
+  }
+
+  async getFuzzyCorrection(q: string): Promise<{ correction: string | null; suggestions: string[] }> {
+    const trimmed = q.trim();
+    if (!trimmed) return { correction: null, suggestions: [] };
+
+    // 1. Try exact contains first — if results exist, no correction needed
+    const exactCount = await this.prisma.listing.count({
+      where: { isActive: true, status: 'PUBLISHED', title: { contains: trimmed, mode: 'insensitive' } },
+    });
+    if (exactCount > 0) return { correction: null, suggestions: [] };
+
+    // 2. Fetch recent distinct titles to build a word vocabulary
+    const recentListings = await this.prisma.listing.findMany({
+      where: { isActive: true, status: 'PUBLISHED' },
+      select: { title: true },
+      take: 300,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Build word frequency map
+    const wordFreq = new Map<string, number>();
+    for (const { title } of recentListings) {
+      for (const raw of title.split(/\s+/)) {
+        const w = raw.toLowerCase().replace(/[^а-яёa-z0-9]/gi, '');
+        if (w.length > 1) wordFreq.set(w, (wordFreq.get(w) || 0) + 1);
+      }
+    }
+
+    // For each query word, find the closest vocabulary word
+    const queryWords = trimmed.toLowerCase().split(/\s+/);
+    const correctedWords = queryWords.map((qw) => {
+      const maxDist = Math.min(3, Math.floor(qw.length / 3) + 1);
+      let bestWord = qw;
+      let bestScore = Infinity; // lower = better (dist first, then freq desc)
+      for (const [vw, freq] of wordFreq) {
+        if (Math.abs(vw.length - qw.length) > maxDist) continue; // quick reject
+        const dist = levenshtein(qw, vw);
+        if (dist === 0) return qw; // exact match for this word
+        if (dist <= maxDist) {
+          const score = dist * 1000 - freq; // prefer smaller dist, higher freq
+          if (score < bestScore) {
+            bestScore = score;
+            bestWord = vw;
+          }
+        }
+      }
+      return bestWord;
+    });
+
+    const correctedQuery = correctedWords.join(' ');
+    if (correctedQuery === trimmed.toLowerCase()) return { correction: null, suggestions: [] };
+
+    // 3. Verify correction actually returns results
+    const correctedCount = await this.prisma.listing.count({
+      where: { isActive: true, status: 'PUBLISHED', title: { contains: correctedQuery, mode: 'insensitive' } },
+    });
+
+    if (correctedCount === 0) return { correction: null, suggestions: [] };
+    return { correction: correctedQuery, suggestions: [] };
   }
 
   async findAll(filters: {

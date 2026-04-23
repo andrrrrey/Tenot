@@ -67,7 +67,8 @@ export class ListingsController {
 
   @Public()
   @Get('suggestions')
-  getSuggestions(@Query('q') q: string) {
+  getSuggestions(@Query('q') q: string, @Query('fuzzy') fuzzy?: string) {
+    if (fuzzy === 'true') return this.service.getFuzzyCorrection(q || '');
     return this.service.getSearchSuggestions(q || '');
   }
 

@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { subscribeUnreadCount } from "@/components/ChatWidget";
 import { IconSearch, IconMessage, IconUser, IconPlus } from "@/components/Icons";
+import { SearchInput, saveSearchTerm } from "@/components/SearchInput";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -88,15 +89,19 @@ export function SiteHeader() {
               />
             </div>
             <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
-              <input
-                className="input"
+              <SearchInput
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Поиск объявлений..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
+                onChange={setQ}
+                onSubmit={(v) => {
+                  saveSearchTerm(v);
+                  const params = new URLSearchParams();
+                  if (v.trim()) params.set("q", v.trim());
+                  if (cityId) params.set("cityId", cityId);
+                  router.push(`/search?${params.toString()}`);
                 }}
-                style={{ paddingRight: 44 }}
+                placeholder="Поиск объявлений..."
+                style={{ flex: 1 }}
+                inputStyle={{ paddingRight: 44 }}
               />
               <button
                 onClick={handleSearch}
@@ -115,6 +120,7 @@ export function SiteHeader() {
                   color: "#fff",
                   flexShrink: 0,
                   transition: "background 0.2s",
+                  zIndex: 1,
                 }}
               >
                 <IconSearch size={15} strokeWidth={2.2} />
