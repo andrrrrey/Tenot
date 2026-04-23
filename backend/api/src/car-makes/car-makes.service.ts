@@ -16,7 +16,7 @@ export class CarMakesService {
     return this.prisma.carModel.findMany({
       where: { makeId },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, yearFrom: true, yearTo: true },
+      select: { id: true, name: true, generation: true, yearFrom: true, yearTo: true },
     });
   }
 }

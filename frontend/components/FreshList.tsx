@@ -18,7 +18,7 @@ export function FreshList() {
       .then((data) => {
         const sorted = data
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 6);
+          .slice(0, 8);
         setListings(sorted);
       })
       .catch(() => setListings([]))
@@ -45,7 +45,7 @@ export function FreshList() {
   if (loading) {
     return (
       <div className="fresh-grid">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="skeleton" style={{ height: 280, borderRadius: "var(--radius-lg)" }} />
         ))}
         <style>{`

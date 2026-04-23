@@ -15,6 +15,7 @@ export type Listing = {
   description: string;
   price: number;
   isActive: boolean;
+  status: 'PUBLISHED' | 'DRAFT';
   createdAt: string;
   category: { id: number; name: string; hasCarFilter?: boolean };
   images: ListingImage[];
@@ -60,6 +61,9 @@ export const getMyListings = () => api.get<Listing[]>('/listings/my');
 export const getUserListings = (userId: number) =>
   api.get<Listing[]>(`/listings/user/${userId}`);
 
+export const getAveragePrice = (categoryId: number) =>
+  api.get<{ avg: number | null }>(`/listings/average-price?categoryId=${categoryId}`);
+
 export const createListing = (payload: {
   title: string;
   description: string;
@@ -69,6 +73,7 @@ export const createListing = (payload: {
   carMakeId?: number;
   carModelId?: number;
   carYear?: number;
+  status?: 'PUBLISHED' | 'DRAFT';
 }) => api.post<Listing>('/listings', payload);
 
 export const updateListing = (

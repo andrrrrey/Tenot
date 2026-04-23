@@ -19,6 +19,11 @@ enum ReviewStatus {
   REJECTED
 }
 
+enum ListingStatus {
+  PUBLISHED
+  DRAFT
+}
+
 enum CityType {
   REGION
   CITY
@@ -74,11 +79,12 @@ model CarMake {
 }
 
 model CarModel {
-  id       Int      @id @default(autoincrement())
-  name     String
-  makeId   Int
-  yearFrom Int
-  yearTo   Int?
+  id         Int      @id @default(autoincrement())
+  name       String
+  generation String?
+  makeId     Int
+  yearFrom   Int
+  yearTo     Int?
 
   make     CarMake  @relation(fields: [makeId], references: [id])
   listings Listing[]
@@ -100,13 +106,14 @@ model Category {
 }
 
 model Listing {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   title       String
-  article     String   @default("")
+  article     String        @default("")
   description String
   price       Float
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  isActive    Boolean       @default(true)
+  status      ListingStatus @default(PUBLISHED)
+  createdAt   DateTime      @default(now())
 
   userId     Int
   categoryId Int

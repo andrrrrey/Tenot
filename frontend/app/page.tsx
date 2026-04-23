@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CategoriesGrid } from "@/components/CategoriesGrid";
 import { FreshList } from "@/components/FreshList";
-import { SearchBar } from "@/components/SearchBar";
+import { RecommendedList } from "@/components/RecommendedList";
 
 export default function HomePage() {
   return (
@@ -54,26 +54,9 @@ export default function HomePage() {
               Найди или продай<br />
               <span style={{ color: "var(--brand)" }}>быстро</span> и просто
             </h1>
-            <p className="muted" style={{ marginTop: 14, marginBottom: 24, fontSize: 15, lineHeight: 1.7, maxWidth: 480 }}>
+            <p className="muted" style={{ marginTop: 14, marginBottom: 0, fontSize: 15, lineHeight: 1.7, maxWidth: 480 }}>
               Размести объявление за минуту или найди нужное — без перегруза и лишних шагов.
             </p>
-            <SearchBar />
-            <div className="row" style={{ marginTop: 16, flexWrap: "wrap", gap: 10 }}>
-              <Link
-                className="btn primary"
-                href="/add"
-                style={{ padding: "12px 20px", fontSize: 15 }}
-              >
-                Разместить объявление
-              </Link>
-              <Link
-                className="btn"
-                href="/search"
-                style={{ padding: "12px 20px", fontSize: 15 }}
-              >
-                Смотреть все
-              </Link>
-            </div>
           </div>
 
           <div
@@ -140,25 +123,19 @@ export default function HomePage() {
 
       {/* Fresh listings section */}
       <section>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h2 className="h2">Свежие объявления</h2>
-          <Link
-            className="btn"
-            href="/search"
-            style={{ fontSize: 13, padding: "8px 14px" }}
-          >
-            Смотреть все
-          </Link>
         </div>
         <FreshList />
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <Link className="btn" href="/search" style={{ fontSize: 14, padding: "12px 28px" }}>
+            Посмотреть все объявления
+          </Link>
+        </div>
       </section>
+
+      {/* Recommended section */}
+      <RecommendedList />
     </div>
   );
 }

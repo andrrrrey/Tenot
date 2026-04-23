@@ -415,18 +415,22 @@ hr {
 .listing-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.listing-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+@media (hover: hover) {
+  .listing-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 /* ── Category card hover ── */
 .cat-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.cat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+@media (hover: hover) {
+  .cat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
 }
 
 /* ── Scrollbar ── */

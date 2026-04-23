@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { getListings, type Listing } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
@@ -8,7 +8,42 @@ import { getFavorites } from "@/services/favorites";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { ListingCard } from "@/components/ListingCard";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
+import { SearchInput, saveSearchTerm, getSearchHistory } from "@/components/SearchInput";
 import { useMe } from "@/hooks/useMe";
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n];
+}
+
+function TypoSuggestion({ query, onSelect }: { query: string; onSelect: (v: string) => void }) {
+  if (!query.trim()) return null;
+  const history = getSearchHistory();
+  const lower = query.toLowerCase();
+  const best = history
+    .map((h) => ({ h, dist: levenshtein(lower, h.toLowerCase()) }))
+    .filter(({ dist, h }) => dist > 0 && dist <= 3 && h.toLowerCase() !== lower)
+    .sort((a, b) => a.dist - b.dist)[0];
+  if (!best) return null;
+  return (
+    <div style={{ marginTop: 14, fontSize: 13 }}>
+      Возможно, вы имели в виду:{" "}
+      <button
+        className="btn ghost"
+        onClick={() => onSelect(best.h)}
+        style={{ fontSize: 13, padding: "2px 8px", color: "var(--brand)", fontWeight: 600 }}
+      >
+        {best.h}
+      </button>
+    </div>
+  );
+}
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
@@ -162,6 +197,8 @@ export default function SearchClient() {
         if (carYearTo && !isNaN(Number(carYearTo))) params.carYearTo = Number(carYearTo);
       }
 
+      if (q.trim()) saveSearchTerm(q.trim());
+
       getListings(params)
         .then(setListings)
         .catch((e) => {
@@ -239,11 +276,11 @@ export default function SearchClient() {
         <div className={`search-filters-body${filtersOpen ? " open" : ""}`} style={{ flexDirection: "column", gap: 14 }}>
           <div>
             <div className="field-label">Поиск</div>
-            <input
-              className="input"
-              placeholder="Название товара..."
+            <SearchInput
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={setQ}
+              onSubmit={(v) => saveSearchTerm(v)}
+              placeholder="Название товара..."
             />
           </div>
 
@@ -330,7 +367,9 @@ export default function SearchClient() {
                   >
                     <option value="">Все модели</option>
                     {carModels.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                      <option key={m.id} value={m.id}>
+                        {m.name}{m.generation ? ` (${m.generation})` : ""}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -478,6 +517,7 @@ export default function SearchClient() {
                 </div>
                 <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>Ничего не найдено</div>
                 <div style={{ fontSize: 14 }}>Попробуйте изменить фильтры</div>
+                <TypoSuggestion query={q} onSelect={setQ} />
               </div>
             )}
           </div>

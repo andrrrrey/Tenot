@@ -8,6 +8,7 @@ export type CarMake = {
 export type CarModel = {
   id: number;
   name: string;
+  generation: string | null;
   yearFrom: number;
   yearTo: number | null;
 };
