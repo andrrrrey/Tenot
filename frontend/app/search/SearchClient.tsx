@@ -8,38 +8,33 @@ import { getFavorites } from "@/services/favorites";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { ListingCard } from "@/components/ListingCard";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
-import { SearchInput, saveSearchTerm, getSearchHistory } from "@/components/SearchInput";
+import { SearchInput, saveSearchTerm } from "@/components/SearchInput";
+import { getFuzzyCorrection } from "@/services/listings";
 import { useMe } from "@/hooks/useMe";
 
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-  return dp[m][n];
-}
-
 function TypoSuggestion({ query, onSelect }: { query: string; onSelect: (v: string) => void }) {
-  if (!query.trim()) return null;
-  const history = getSearchHistory();
-  const lower = query.toLowerCase();
-  const best = history
-    .map((h) => ({ h, dist: levenshtein(lower, h.toLowerCase()) }))
-    .filter(({ dist, h }) => dist > 0 && dist <= 3 && h.toLowerCase() !== lower)
-    .sort((a, b) => a.dist - b.dist)[0];
-  if (!best) return null;
+  const [correction, setCorrection] = useState<string | null>(null);
+  const [checked, setChecked] = useState("");
+
+  useEffect(() => {
+    if (!query.trim() || query === checked) return;
+    setChecked(query);
+    setCorrection(null);
+    getFuzzyCorrection(query.trim())
+      .then((r) => setCorrection(r.correction))
+      .catch(() => {});
+  }, [query, checked]);
+
+  if (!correction) return null;
   return (
     <div style={{ marginTop: 14, fontSize: 13 }}>
       Возможно, вы имели в виду:{" "}
       <button
         className="btn ghost"
-        onClick={() => onSelect(best.h)}
+        onClick={() => onSelect(correction)}
         style={{ fontSize: 13, padding: "2px 8px", color: "var(--brand)", fontWeight: 600 }}
       >
-        {best.h}
+        {correction}
       </button>
     </div>
   );

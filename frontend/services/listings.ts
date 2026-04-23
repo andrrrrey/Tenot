@@ -64,6 +64,14 @@ export const getUserListings = (userId: number) =>
 export const getAveragePrice = (categoryId: number) =>
   api.get<{ avg: number | null }>(`/listings/average-price?categoryId=${categoryId}`);
 
+export const getSearchSuggestions = (q: string) =>
+  api.get<string[]>(`/listings/suggestions?q=${encodeURIComponent(q)}`);
+
+export const getFuzzyCorrection = (q: string) =>
+  api.get<{ correction: string | null; suggestions: string[] }>(
+    `/listings/suggestions?q=${encodeURIComponent(q)}&fuzzy=true`,
+  );
+
 export const createListing = (payload: {
   title: string;
   description: string;

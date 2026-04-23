@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getSearchSuggestions } from "@/services/listings";
 
 const HISTORY_KEY = "search_history";
 const MAX_HISTORY = 10;
@@ -35,20 +36,7 @@ export function removeSearchTerm(term: string) {
   } catch {}
 }
 
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-  return dp[m][n];
-}
+type SuggestionItem = { text: string; kind: "history" | "listing" };
 
 type Props = {
   value: string;
@@ -62,35 +50,55 @@ type Props = {
 export function SearchInput({ value, onChange, onSubmit, placeholder = "Поиск...", style, inputStyle }: Props) {
   const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const [apiSuggestions, setApiSuggestions] = useState<string[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Load history whenever dropdown opens
   useEffect(() => {
-    setHistory(getSearchHistory());
+    if (open) setHistory(getSearchHistory());
   }, [open]);
 
+  // Fetch live suggestions from backend as user types
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim() || value.trim().length < 2) {
+      setApiSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      getSearchSuggestions(value.trim())
+        .then(setApiSuggestions)
+        .catch(() => setApiSuggestions([]));
+    }, 200);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [value]);
+
+  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const suggestions: string[] = (() => {
-    if (!value.trim()) return history.slice(0, 8);
+  // Build merged suggestion list: history items first, then unique API results
+  const items: SuggestionItem[] = (() => {
+    if (!value.trim()) {
+      return history.slice(0, 8).map((t) => ({ text: t, kind: "history" as const }));
+    }
     const lower = value.toLowerCase();
-    const exact = history.filter((h) => h.toLowerCase().includes(lower));
-    if (exact.length >= 3) return exact.slice(0, 6);
-    // fuzzy: allow 1-2 character edits for suggestions from history
-    const fuzzy = history
-      .filter((h) => !exact.includes(h))
-      .map((h) => ({ h, dist: levenshtein(lower, h.toLowerCase().slice(0, lower.length + 2)) }))
-      .filter(({ dist }) => dist <= 2)
-      .sort((a, b) => a.dist - b.dist)
-      .map(({ h }) => h);
-    return [...exact, ...fuzzy].slice(0, 6);
+    const historyMatches = history
+      .filter((h) => h.toLowerCase().includes(lower))
+      .slice(0, 3)
+      .map((t) => ({ text: t, kind: "history" as const }));
+    const historyTexts = new Set(historyMatches.map((h) => h.text.toLowerCase()));
+    const apiItems = apiSuggestions
+      .filter((s) => !historyTexts.has(s.toLowerCase()))
+      .slice(0, 6 - historyMatches.length)
+      .map((t) => ({ text: t, kind: "listing" as const }));
+    return [...historyMatches, ...apiItems];
   })();
 
   const handleSelect = (term: string) => {
@@ -127,7 +135,8 @@ export function SearchInput({ value, onChange, onSubmit, placeholder = "Поис
         style={inputStyle}
         autoComplete="off"
       />
-      {open && suggestions.length > 0 && (
+
+      {open && items.length > 0 && (
         <div
           style={{
             position: "absolute",
@@ -147,36 +156,54 @@ export function SearchInput({ value, onChange, onSubmit, placeholder = "Поис
               Недавние поиски
             </div>
           )}
-          {suggestions.map((s) => (
-            <div
-              key={s}
-              onMouseDown={() => handleSelect(s)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "9px 12px",
-                cursor: "pointer",
-                fontSize: 14,
-                color: "var(--text)",
-                transition: "background 0.1s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--soft-solid)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
-                <polyline points="12 8 12 12 14 14" />
-                <circle cx="12" cy="12" r="9" />
-              </svg>
-              <span style={{ flex: 1 }}>{s}</span>
-              <button
-                onMouseDown={(e) => handleRemove(e, s)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: "2px 4px", fontSize: 13, lineHeight: 1 }}
-              >
-                ✕
-              </button>
+          {value.trim() && items.some((i) => i.kind === "listing") && items.some((i) => i.kind === "history") && (
+            <div style={{ padding: "6px 12px 2px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              История
             </div>
-          ))}
+          )}
+          {items.map((item, idx) => {
+            const prevKind = idx > 0 ? items[idx - 1].kind : null;
+            const showDivider = item.kind === "listing" && prevKind === "history";
+            return (
+              <div key={`${item.kind}-${item.text}`}>
+                {showDivider && (
+                  <div style={{ padding: "6px 12px 2px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", borderTop: "1px solid var(--line-solid)", marginTop: 4 }}>
+                    Варианты
+                  </div>
+                )}
+                <div
+                  onMouseDown={() => handleSelect(item.text)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", fontSize: 14, color: "var(--text)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--soft-solid)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                >
+                  {item.kind === "history" ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
+                      <polyline points="12 8 12 12 14 14" /><circle cx="12" cy="12" r="9" />
+                    </svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" style={{ flexShrink: 0 }}>
+                      <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+                    </svg>
+                  )}
+                  <span style={{ flex: 1 }}>
+                    {/* Bold-highlight matching prefix */}
+                    {value.trim() && item.text.toLowerCase().startsWith(value.toLowerCase())
+                      ? <><strong>{item.text.slice(0, value.length)}</strong>{item.text.slice(value.length)}</>
+                      : item.text}
+                  </span>
+                  {item.kind === "history" && (
+                    <button
+                      onMouseDown={(e) => handleRemove(e, item.text)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: "2px 4px", fontSize: 13, lineHeight: 1 }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
