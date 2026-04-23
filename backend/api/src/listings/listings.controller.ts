@@ -59,6 +59,19 @@ export class ListingsController {
   }
 
   @Public()
+  @Get('average-price')
+  getAveragePrice(@Query('categoryId') categoryId: string) {
+    if (!categoryId) return { avg: null };
+    return this.service.getAveragePrice(+categoryId);
+  }
+
+  @Public()
+  @Get('suggestions')
+  getSuggestions(@Query('q') q: string) {
+    return this.service.getSearchSuggestions(q || '');
+  }
+
+  @Public()
   @Get()
   findAll(
     @Query('categoryId') categoryId?: string,

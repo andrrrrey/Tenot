@@ -440,7 +440,9 @@ export default function EditPage() {
                 >
                   <option value="">Выберите модель</option>
                   {carModels.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
+                    <option key={m.id} value={m.id}>
+                      {m.name}{m.generation ? ` (${m.generation})` : ""}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -593,6 +595,24 @@ export default function EditPage() {
               onRemoveNew={handleRemoveNew}
               onSetCoverExisting={handleSetCoverExisting}
               onSetCoverNew={handleSetCoverNew}
+              onReorderExisting={(ids) => {
+                setExistingMedia((prev) => {
+                  const map = new Map(prev.map((m) => [m.id, m]));
+                  const reordered = ids.map((id) => map.get(id)!).filter(Boolean);
+                  const rest = prev.filter((m) => !ids.includes(m.id));
+                  return [...reordered, ...rest];
+                });
+              }}
+              onReorderNew={(indices) => {
+                setNewFiles((prev) => {
+                  const reordered = indices.map((i) => prev[i]);
+                  if (newCoverIndex !== null) {
+                    const newIdx = indices.indexOf(newCoverIndex);
+                    setNewCoverIndex(newIdx === -1 ? null : newIdx);
+                  }
+                  return reordered;
+                });
+              }}
               newCoverIndex={newCoverIndex}
             />
           </div>

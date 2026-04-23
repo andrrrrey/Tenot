@@ -27,6 +27,30 @@ export class ListingsService {
     });
   }
 
+  async getAveragePrice(categoryId: number): Promise<{ avg: number | null }> {
+    const result = await this.prisma.listing.aggregate({
+      where: { categoryId, isActive: true, status: 'PUBLISHED' },
+      _avg: { price: true },
+    });
+    return { avg: result._avg.price };
+  }
+
+  async getSearchSuggestions(q: string): Promise<string[]> {
+    if (!q.trim()) return [];
+    const results = await this.prisma.listing.findMany({
+      where: {
+        isActive: true,
+        status: 'PUBLISHED',
+        title: { contains: q.trim(), mode: 'insensitive' },
+      },
+      select: { title: true },
+      distinct: ['title'],
+      take: 6,
+      orderBy: { createdAt: 'desc' },
+    });
+    return results.map((r) => r.title);
+  }
+
   async findAll(filters: {
     categoryId?: number;
     minPrice?: number;
@@ -74,6 +98,7 @@ export class ListingsService {
     return this.prisma.listing.findMany({
       where: {
         isActive: true,
+        status: 'PUBLISHED',
         categoryId: categoryFilter,
         cityId: cityFilter,
         price: {

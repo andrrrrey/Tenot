@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Listing } from "@/services/listings";
 import { getCoverUrl } from "@/services/listings";
 import { useStore } from "@/lib/store";
@@ -19,6 +20,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   const { user } = useMe();
   const storeUser = useStore((s) => s.user);
   const currentUser = user || storeUser;
+  const router = useRouter();
   const [fav, setFav] = useState(isFavorite);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +31,10 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   const handleToggleFav = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!currentUser) return;
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
     setLoading(true);
     try {
       if (fav) {
@@ -108,32 +113,30 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
             </div>
           )}
 
-          {/* Favorite button overlay */}
-          {currentUser && (
-            <button
-              onClick={handleToggleFav}
-              disabled={loading}
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.95)",
-                border: "1px solid rgba(255,255,255,0.8)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                transition: "all 0.2s ease",
-                color: fav ? "#ef4444" : "var(--muted)",
-              }}
-            >
-              <IconHeart size={15} filled={fav} color={fav ? "#ef4444" : "currentColor"} strokeWidth={2} />
-            </button>
-          )}
+          {/* Favorite button overlay — always visible; redirects to login for guests */}
+          <button
+            onClick={handleToggleFav}
+            disabled={loading}
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.95)",
+              border: "1px solid rgba(255,255,255,0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+              transition: "all 0.2s ease",
+              color: fav ? "#ef4444" : "var(--muted)",
+            }}
+          >
+            <IconHeart size={15} filled={fav} color={fav ? "#ef4444" : "currentColor"} strokeWidth={2} />
+          </button>
         </div>
 
         {/* Content */}

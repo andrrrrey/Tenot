@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateListingDto {
   @IsString()
@@ -32,4 +32,8 @@ export class CreateListingDto {
   @IsOptional()
   @IsNumber()
   carYear?: number;
+
+  @IsOptional()
+  @IsEnum(['PUBLISHED', 'DRAFT'])
+  status?: 'PUBLISHED' | 'DRAFT';
 }

@@ -162,6 +162,7 @@ export default function MeHome() {
   const actions = [
     { href: "/me/items", icon: <IconList size={18} strokeWidth={1.8} />, label: "Мои объявления", primary: true },
     { href: "/add", icon: <IconPlus size={18} strokeWidth={2} />, label: "Разместить объявление", primary: true },
+    { href: "/me/drafts", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>, label: "Черновики", primary: true },
     { href: "/me/fav", icon: <IconHeart size={18} strokeWidth={1.8} />, label: "Избранное", primary: true },
     { href: "/chat", icon: <IconMessage size={18} strokeWidth={1.8} />, label: "Мои чаты", primary: false },
     { href: "/me/settings", icon: <IconSettings size={18} strokeWidth={1.8} />, label: "Настройки", primary: false },

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { createListing, uploadListingMedia } from "@/services/listings";
+import { createListing, uploadListingMedia, getAveragePrice } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
@@ -32,6 +32,7 @@ export default function AddPage() {
 
   const [newFiles, setNewFiles] = useState<NewMediaFile[]>([]);
   const [newCoverIndex, setNewCoverIndex] = useState<number | null>(null);
+  const [avgPrice, setAvgPrice] = useState<number | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,14 @@ export default function AddPage() {
     }
   }, [selectedCategoryHasCarFilter]);
 
+  // Fetch average price when category changes
+  useEffect(() => {
+    if (!categoryId) { setAvgPrice(null); return; }
+    getAveragePrice(Number(categoryId))
+      .then((r) => setAvgPrice(r.avg))
+      .catch(() => setAvgPrice(null));
+  }, [categoryId]);
+
   const canPublish = useMemo(() => {
     return (
       title.trim().length >= 3 &&
@@ -103,6 +112,10 @@ export default function AddPage() {
       categoryId
     );
   }, [title, price, description, categoryId]);
+
+  const canSaveDraft = useMemo(() => {
+    return title.trim().length > 0 || description.trim().length > 0 || Number(price) > 0;
+  }, [title, description, price]);
 
   const handleAddFiles = (files: NewMediaFile[]) => {
     setNewFiles((prev) => {
@@ -132,21 +145,23 @@ export default function AddPage() {
     setNewCoverIndex(index);
   };
 
-  const handleSubmit = async () => {
-    if (!canPublish) return;
+  const handleSubmit = async (status: 'PUBLISHED' | 'DRAFT' = 'PUBLISHED') => {
+    if (status === 'PUBLISHED' && !canPublish) return;
+    if (status === 'DRAFT' && !canSaveDraft) return;
     setSubmitting(true);
     setError(null);
 
     try {
       const listing = await createListing({
-        title: title.trim(),
-        description: description.trim(),
-        price: Number(price),
-        categoryId: Number(categoryId),
+        title: title.trim() || "Черновик",
+        description: description.trim() || " ",
+        price: Number(price) || 0,
+        categoryId: Number(categoryId) || 1,
         ...(cityId ? { cityId: Number(cityId) } : {}),
         ...(selectedCategoryHasCarFilter && carMakeId ? { carMakeId: Number(carMakeId) } : {}),
         ...(selectedCategoryHasCarFilter && carModelId ? { carModelId: Number(carModelId) } : {}),
         ...(selectedCategoryHasCarFilter && carYear ? { carYear: Number(carYear) } : {}),
+        status,
       });
 
       if (newFiles.length > 0) {
@@ -157,7 +172,7 @@ export default function AddPage() {
         );
       }
 
-      router.push("/me/items");
+      router.push(status === 'DRAFT' ? "/me/drafts" : "/me/items");
     } catch (e: any) {
       setError(e.message || "Ошибка при создании объявления");
     } finally {
@@ -288,7 +303,9 @@ export default function AddPage() {
                 >
                   <option value="">Выберите модель</option>
                   {carModels.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
+                    <option key={m.id} value={m.id}>
+                      {m.name}{m.generation ? ` (${m.generation})` : ""}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -337,7 +354,21 @@ export default function AddPage() {
 
           {/* Price */}
           <div>
-            <div className="field-label">Цена</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+              <div className="field-label" style={{ margin: 0 }}>Цена</div>
+              {avgPrice !== null && avgPrice > 0 && (
+                <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                  Средняя цена:{" "}
+                  <button
+                    type="button"
+                    onClick={() => setPrice(String(Math.round(avgPrice)))}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--brand)", fontWeight: 700, fontSize: 12, padding: 0 }}
+                  >
+                    {Math.round(avgPrice).toLocaleString("ru-RU")} ₽
+                  </button>
+                </div>
+              )}
+            </div>
             <div style={{ position: "relative" }}>
               <input
                 type="number"
@@ -393,32 +424,47 @@ export default function AddPage() {
               onRemoveNew={handleRemoveNew}
               onSetCoverExisting={() => {}}
               onSetCoverNew={handleSetCoverNew}
+              onReorderNew={(indices) => {
+                setNewFiles((prev) => {
+                  const reordered = indices.map((i) => prev[i]);
+                  if (newCoverIndex !== null) {
+                    const newIdx = indices.indexOf(newCoverIndex);
+                    setNewCoverIndex(newIdx === -1 ? null : newIdx);
+                  }
+                  return reordered;
+                });
+              }}
               newCoverIndex={newCoverIndex}
             />
           </div>
 
           <hr style={{ margin: 0 }} />
 
-          <button
-            className="btn primary"
-            disabled={!canPublish || submitting}
-            onClick={handleSubmit}
-            style={{
-              padding: "14px 24px",
-              fontSize: 15,
-              opacity: !canPublish || submitting ? 0.6 : 1,
-              gap: 8,
-            }}
-          >
-            {submitting ? (
-              "Публикация..."
-            ) : (
-              <>
-                <IconCheck size={17} strokeWidth={2.2} />
-                Опубликовать объявление
-              </>
-            )}
-          </button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              className="btn primary"
+              disabled={!canPublish || submitting}
+              onClick={() => handleSubmit('PUBLISHED')}
+              style={{ flex: 1, padding: "14px 24px", fontSize: 15, opacity: !canPublish || submitting ? 0.6 : 1, gap: 8 }}
+            >
+              {submitting ? (
+                "Публикация..."
+              ) : (
+                <>
+                  <IconCheck size={17} strokeWidth={2.2} />
+                  Опубликовать
+                </>
+              )}
+            </button>
+            <button
+              className="btn"
+              disabled={!canSaveDraft || submitting}
+              onClick={() => handleSubmit('DRAFT')}
+              style={{ padding: "14px 20px", fontSize: 15, opacity: !canSaveDraft || submitting ? 0.6 : 1 }}
+            >
+              Сохранить черновик
+            </button>
+          </div>
         </div>
       </div>
 
