@@ -42,6 +42,12 @@ export const adminGetListings = (filters?: {
 export const adminToggleListing = (id: number, isActive: boolean) =>
   api.patch<Listing>(`/admin/listings/${id}/toggle`, { isActive });
 
+export const adminChangeListingOwner = (id: number, userId: number) =>
+  api.patch<Listing>(`/admin/listings/${id}/owner`, { userId });
+
+export const adminBulkChangeOwner = (listingIds: number[], userId: number) =>
+  api.patch<{ count: number }>(`/admin/listings/bulk-owner`, { listingIds, userId });
+
 export const adminGetStats = () => api.get<Stats>('/admin/stats');
 
 export const adminGetReviews = (status?: string) =>
