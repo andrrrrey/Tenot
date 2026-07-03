@@ -1,6 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+const LISTING_INCLUDE = {
+  category: { include: { parent: true } },
+  user: { select: { id: true, email: true, name: true } },
+  images: true,
+} as const;
 
 @Injectable()
 export class AdminService {
@@ -58,11 +64,7 @@ export class AdminService {
 
     return this.prisma.listing.findMany({
       where,
-      include: {
-        category: { include: { parent: true } },
-        user: { select: { id: true, email: true, name: true } },
-        images: true,
-      },
+      include: LISTING_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -71,12 +73,35 @@ export class AdminService {
     return this.prisma.listing.update({
       where: { id },
       data: { isActive },
-      include: {
-        category: { include: { parent: true } },
-        user: { select: { id: true, email: true, name: true } },
-        images: true,
-      },
+      include: LISTING_INCLUDE,
     });
+  }
+
+  async changeListingOwner(id: number, userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    return this.prisma.listing.update({
+      where: { id },
+      data: { userId },
+      include: LISTING_INCLUDE,
+    });
+  }
+
+  async bulkChangeOwner(listingIds: number[], userId: number) {
+    if (!Array.isArray(listingIds) || listingIds.length === 0) {
+      throw new BadRequestException('Не выбрано ни одного объявления');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const result = await this.prisma.listing.updateMany({
+      where: { id: { in: listingIds } },
+      data: { userId },
+    });
+
+    return { count: result.count };
   }
 
   async getStats() {

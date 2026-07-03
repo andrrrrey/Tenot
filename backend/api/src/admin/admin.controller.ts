@@ -38,6 +38,16 @@ export class AdminController {
     return this.service.toggleListing(+id, isActive);
   }
 
+  @Patch('listings/bulk-owner')
+  bulkChangeOwner(@Body() body: { listingIds: number[]; userId: number }) {
+    return this.service.bulkChangeOwner(body.listingIds, Number(body.userId));
+  }
+
+  @Patch('listings/:id/owner')
+  changeOwner(@Param('id') id: string, @Body('userId') userId: number) {
+    return this.service.changeListingOwner(+id, Number(userId));
+  }
+
   @Get('stats')
   stats() {
     return this.service.getStats();
