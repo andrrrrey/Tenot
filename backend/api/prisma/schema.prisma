@@ -32,6 +32,14 @@ enum CityType {
   DISTRICT
 }
 
+enum CategoryFieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  MULTISELECT
+}
+
 model City {
   id       Int      @id @default(autoincrement())
   name     String
@@ -79,30 +87,53 @@ model CarMake {
 }
 
 model CarModel {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   name       String
   generation String?
   makeId     Int
   yearFrom   Int
   yearTo     Int?
 
-  make     CarMake  @relation(fields: [makeId], references: [id])
+  make     CarMake   @relation(fields: [makeId], references: [id])
   listings Listing[]
 
   @@unique([name, makeId])
 }
 
 model Category {
-  id           Int       @id @default(autoincrement())
-  name         String
-  imageUrl     String?
-  hasCarFilter Boolean   @default(false)
+  id            Int     @id @default(autoincrement())
+  name          String
+  imageUrl      String?
+  hasCarFilter  Boolean @default(false)
+  filterProfile String?
+  templateKey   String? @unique
 
   parentId Int?
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")
 
   listings Listing[]
+  fields   CategoryField[]
+}
+
+model CategoryField {
+  id         Int               @id @default(autoincrement())
+  categoryId Int
+  key        String
+  label      String
+  type       CategoryFieldType @default(TEXT)
+  unit       String?
+  options    Json?
+  required   Boolean           @default(false)
+  filterable Boolean           @default(true)
+  showInForm Boolean           @default(true)
+  sortOrder  Int               @default(0)
+
+  category Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  values   ListingAttribute[]
+
+  @@unique([categoryId, key])
+  @@index([categoryId, sortOrder])
 }
 
 model Listing {
@@ -128,10 +159,29 @@ model Listing {
   carMake  CarMake?  @relation(fields: [carMakeId], references: [id])
   carModel CarModel? @relation(fields: [carModelId], references: [id])
 
-  images    ListingImage[]
-  chats     Chat[]
-  favorites Favorite[]
-  reviews   Review[]
+  images     ListingImage[]
+  chats      Chat[]
+  favorites  Favorite[]
+  reviews    Review[]
+  attributes ListingAttribute[]
+}
+
+model ListingAttribute {
+  id              Int      @id @default(autoincrement())
+  listingId       Int
+  categoryFieldId Int
+  textValue       String?
+  numberValue     Float?
+  booleanValue    Boolean?
+  jsonValue       Json?
+
+  listing Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  field   CategoryField @relation(fields: [categoryFieldId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, categoryFieldId])
+  @@index([categoryFieldId, textValue])
+  @@index([categoryFieldId, numberValue])
+  @@index([categoryFieldId, booleanValue])
 }
 
 model ListingImage {

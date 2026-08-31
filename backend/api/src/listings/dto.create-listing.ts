@@ -1,4 +1,6 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
+
+export type ListingAttributeInput = string | number | boolean | string[] | null;
 
 export class CreateListingDto {
   @IsString()
@@ -32,6 +34,10 @@ export class CreateListingDto {
   @IsOptional()
   @IsNumber()
   carYear?: number;
+
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, ListingAttributeInput>;
 
   @IsOptional()
   @IsEnum(['PUBLISHED', 'DRAFT'])

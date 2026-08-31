@@ -27,7 +27,21 @@ export type Listing = {
   carYear?: number | null;
   carMake?: { id: number; name: string } | null;
   carModel?: { id: number; name: string; yearFrom: number; yearTo: number | null } | null;
+  attributes?: ListingAttribute[];
 };
+
+export type ListingAttributeValue = string | number | boolean | string[] | null;
+export type ListingAttribute = {
+  id: number;
+  categoryFieldId: number;
+  textValue?: string | null;
+  numberValue?: number | null;
+  booleanValue?: boolean | null;
+  jsonValue?: string[] | null;
+  field: { id: number; label: string; type: string; unit?: string | null };
+};
+
+export type AttributeFilter = { value?: string | number | boolean; min?: number; max?: number };
 
 export const getListings = (params?: {
   categoryId?: number;
@@ -39,6 +53,7 @@ export const getListings = (params?: {
   carModelId?: number;
   carYearFrom?: number;
   carYearTo?: number;
+  attributeFilters?: Record<string, AttributeFilter>;
 }) => {
   const qs = new URLSearchParams();
   if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
@@ -50,6 +65,9 @@ export const getListings = (params?: {
   if (params?.carModelId) qs.set('carModelId', String(params.carModelId));
   if (params?.carYearFrom) qs.set('carYearFrom', String(params.carYearFrom));
   if (params?.carYearTo) qs.set('carYearTo', String(params.carYearTo));
+  if (params?.attributeFilters && Object.keys(params.attributeFilters).length) {
+    qs.set('attributeFilters', JSON.stringify(params.attributeFilters));
+  }
   const q = qs.toString();
   return api.get<Listing[]>(`/listings${q ? `?${q}` : ''}`);
 };
@@ -81,6 +99,7 @@ export const createListing = (payload: {
   carMakeId?: number;
   carModelId?: number;
   carYear?: number;
+  attributes?: Record<string, ListingAttributeValue>;
   status?: 'PUBLISHED' | 'DRAFT';
 }) => api.post<Listing>('/listings', payload);
 
@@ -95,6 +114,7 @@ export const updateListing = (
     carMakeId?: number | null;
     carModelId?: number | null;
     carYear?: number | null;
+    attributes?: Record<string, ListingAttributeValue>;
   },
 ) => api.patch<Listing>(`/listings/${id}`, payload);
 

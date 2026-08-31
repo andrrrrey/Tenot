@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import {
@@ -10,11 +10,15 @@ import {
   deleteListingMedia,
   setListingCover,
   type ListingImage,
+  type ListingAttributeValue,
 } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { MediaUpload, type ExistingMedia, type NewMediaFile } from "@/components/MediaUpload";
+import { CategorySelect } from "@/components/CategorySelect";
+import { DynamicAttributeFields } from "@/components/DynamicCategoryFields";
+import { categoryHasAutoProfile } from "@/lib/categoryTree";
 
 export default function EditPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,13 +26,13 @@ export default function EditPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
   const [cityName, setCityName] = useState<string>("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [attributes, setAttributes] = useState<Record<string, ListingAttributeValue>>({});
 
   // Car fields
   const [carMakes, setCarMakes] = useState<CarMake[]>([]);
@@ -79,6 +83,10 @@ export default function EditPage() {
         if (listing.carMakeId) setCarMakeId(String(listing.carMakeId));
         if (listing.carModelId) setCarModelId(String(listing.carModelId));
         if (listing.carYear) setCarYear(String(listing.carYear));
+        setAttributes(Object.fromEntries((listing.attributes || []).map((attribute) => [
+          String(attribute.categoryFieldId),
+          attribute.numberValue ?? attribute.booleanValue ?? attribute.textValue ?? attribute.jsonValue ?? null,
+        ])));
         setExistingMedia(
           listing.images.map((img: ListingImage) => ({
             id: img.id,
@@ -114,45 +122,9 @@ export default function EditPage() {
     }
   }, [carMakeId, listingLoaded]);
 
-  // Sync parentCategoryId from listing's category
-  useEffect(() => {
-    if (!categoryId || categories.length === 0) return;
-    const id = Number(categoryId);
-    const root = categories.find((c) => c.id === id);
-    if (root) {
-      setParentCategoryId(String(root.id));
-      return;
-    }
-    for (const cat of categories) {
-      if (cat.children?.some((sub) => sub.id === id)) {
-        setParentCategoryId(String(cat.id));
-        return;
-      }
-    }
-  }, [categoryId, categories]);
-
-  const selectedParentCategory = useMemo(() => {
-    if (!parentCategoryId) return null;
-    return categories.find((c) => c.id === Number(parentCategoryId)) || null;
-  }, [parentCategoryId, categories]);
-
-  const subcategories = useMemo(() => {
-    return selectedParentCategory?.children || [];
-  }, [selectedParentCategory]);
-
   // Check if selected category has car filter
   const selectedCategoryHasCarFilter = useMemo(() => {
-    if (!categoryId) return false;
-    const id = Number(categoryId);
-    for (const cat of categories) {
-      if (cat.id === id && cat.hasCarFilter) return true;
-      if (cat.children) {
-        for (const sub of cat.children) {
-          if (sub.id === id && sub.hasCarFilter) return true;
-        }
-      }
-    }
-    return false;
+    return !!categoryId && categoryHasAutoProfile(categories, Number(categoryId));
   }, [categoryId, categories]);
 
   const canSave = useMemo(() => {
@@ -258,6 +230,7 @@ export default function EditPage() {
         carMakeId: selectedCategoryHasCarFilter && carMakeId ? Number(carMakeId) : null,
         carModelId: selectedCategoryHasCarFilter && carModelId ? Number(carModelId) : null,
         carYear: selectedCategoryHasCarFilter && carYear ? Number(carYear) : null,
+        attributes,
       });
 
       // 2. Delete removed media
@@ -354,50 +327,13 @@ export default function EditPage() {
             >
               Категория
             </label>
-            <select
-              value={parentCategoryId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                const val = e.target.value;
-                setParentCategoryId(val);
-                setCategoryId(val);
-              }}
-              style={{ padding: "12px 14px" }}
-            >
-              <option value="">Выберите категорию</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <CategorySelect categories={categories} value={categoryId} onChange={(value) => {
+              setCategoryId(value);
+              setAttributes({});
+            }} />
           </div>
 
-          {subcategories.length > 0 && (
-            <div>
-              <label
-                className="muted"
-                style={{
-                  display: "block",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                }}
-              >
-                Подкатегория
-              </label>
-              <select
-                value={categoryId === parentCategoryId ? "" : categoryId}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                  const val = e.target.value;
-                  setCategoryId(val || parentCategoryId);
-                }}
-                style={{ padding: "12px 14px" }}
-              >
-                <option value="">Все в «{selectedParentCategory?.name}»</option>
-                {subcategories.map((sub) => (
-                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <DynamicAttributeFields categoryId={categoryId} values={attributes} onChange={setAttributes} />
 
           {/* Car fields — shown when category has hasCarFilter */}
           {selectedCategoryHasCarFilter && (

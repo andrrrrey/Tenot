@@ -1,27 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRequireRole } from "@/hooks/useRequireRole";
-import { createListing, uploadListingMedia, getAveragePrice } from "@/services/listings";
+import { createListing, uploadListingMedia, getAveragePrice, type ListingAttributeValue } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
 import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { MediaUpload, type NewMediaFile } from "@/components/MediaUpload";
 import { IconPlus, IconCheck } from "@/components/Icons";
+import { CategorySelect } from "@/components/CategorySelect";
+import { DynamicAttributeFields } from "@/components/DynamicCategoryFields";
+import { categoryHasAutoProfile } from "@/lib/categoryTree";
 
 export default function AddPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
   const [cityName, setCityName] = useState<string>("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [attributes, setAttributes] = useState<Record<string, ListingAttributeValue>>({});
 
   // Car fields
   const [carMakes, setCarMakes] = useState<CarMake[]>([]);
@@ -41,8 +44,7 @@ export default function AddPage() {
     getCategories()
       .then((cats) => {
         setCategories(cats);
-        if (cats.length > 0 && !parentCategoryId) {
-          setParentCategoryId(String(cats[0].id));
+        if (cats.length > 0) {
           setCategoryId(String(cats[0].id));
         }
       })
@@ -62,29 +64,9 @@ export default function AddPage() {
     setCarModelId("");
   }, [carMakeId]);
 
-  // Get subcategories for selected parent
-  const selectedParentCategory = useMemo(() => {
-    if (!parentCategoryId) return null;
-    return categories.find((c) => c.id === Number(parentCategoryId)) || null;
-  }, [parentCategoryId, categories]);
-
-  const subcategories = useMemo(() => {
-    return selectedParentCategory?.children || [];
-  }, [selectedParentCategory]);
-
   // Check if selected category has car filter
   const selectedCategoryHasCarFilter = useMemo(() => {
-    if (!categoryId) return false;
-    const id = Number(categoryId);
-    for (const cat of categories) {
-      if (cat.id === id && cat.hasCarFilter) return true;
-      if (cat.children) {
-        for (const sub of cat.children) {
-          if (sub.id === id && sub.hasCarFilter) return true;
-        }
-      }
-    }
-    return false;
+    return !!categoryId && categoryHasAutoProfile(categories, Number(categoryId));
   }, [categoryId, categories]);
 
   // Reset car fields when switching to non-car category
@@ -161,6 +143,7 @@ export default function AddPage() {
         ...(selectedCategoryHasCarFilter && carMakeId ? { carMakeId: Number(carMakeId) } : {}),
         ...(selectedCategoryHasCarFilter && carModelId ? { carModelId: Number(carModelId) } : {}),
         ...(selectedCategoryHasCarFilter && carYear ? { carYear: Number(carYear) } : {}),
+        attributes,
         status,
       });
 
@@ -234,38 +217,13 @@ export default function AddPage() {
           {/* Category */}
           <div>
             <div className="field-label">Категория</div>
-            <select
-              value={parentCategoryId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                const val = e.target.value;
-                setParentCategoryId(val);
-                setCategoryId(val);
-              }}
-            >
-              <option value="">Выберите категорию</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {subcategories.length > 0 && (
-            <div>
-              <div className="field-label">Подкатегория</div>
-              <select
-                value={categoryId === parentCategoryId ? "" : categoryId}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                  const val = e.target.value;
-                  setCategoryId(val || parentCategoryId);
-                }}
-              >
-                <option value="">Все в «{selectedParentCategory?.name}»</option>
-                {subcategories.map((sub) => (
-                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                ))}
-              </select>
+            <CategorySelect categories={categories} value={categoryId} onChange={(value) => {
+              setCategoryId(value);
+              setAttributes({});
+            }} />
             </div>
-          )}
+
+          <DynamicAttributeFields categoryId={categoryId} values={attributes} onChange={setAttributes} />
 
           {/* Car fields — shown when category has hasCarFilter */}
           {selectedCategoryHasCarFilter && (

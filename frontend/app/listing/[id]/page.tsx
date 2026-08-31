@@ -76,6 +76,14 @@ export default function ListingPage() {
     }
   };
 
+  const attributeValue = (attribute: NonNullable<Listing['attributes']>[number]) => {
+    if (attribute.numberValue !== null && attribute.numberValue !== undefined) return attribute.numberValue.toLocaleString('ru-RU');
+    if (attribute.booleanValue !== null && attribute.booleanValue !== undefined) return attribute.booleanValue ? 'Да' : 'Нет';
+    if (attribute.textValue) return attribute.textValue;
+    if (attribute.jsonValue?.length) return attribute.jsonValue.join(', ');
+    return '—';
+  };
+
   return (
     <div>
       <style>{`
@@ -238,6 +246,22 @@ export default function ListingPage() {
                 {listing.description}
               </p>
             </div>
+
+            {!!listing.attributes?.length && (
+              <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid var(--line-solid)' }}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Характеристики</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+                  {listing.attributes.map((attribute) => (
+                    <div key={attribute.id} style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--soft-solid)' }}>
+                      <div className="muted" style={{ fontSize: 11 }}>{attribute.field.label}</div>
+                      <div style={{ marginTop: 3, fontWeight: 600, fontSize: 14 }}>
+                        {attributeValue(attribute)}{attribute.field.unit ? ` ${attribute.field.unit}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div
               className="muted"

@@ -84,6 +84,7 @@ export class ListingsController {
     @Query('carModelId') carModelId?: string,
     @Query('carYearFrom') carYearFrom?: string,
     @Query('carYearTo') carYearTo?: string,
+    @Query('attributeFilters') attributeFilters?: string,
   ) {
     return this.service.findAll({
       categoryId: categoryId ? +categoryId : undefined,
@@ -95,7 +96,18 @@ export class ListingsController {
       carModelId: carModelId ? +carModelId : undefined,
       carYearFrom: carYearFrom ? +carYearFrom : undefined,
       carYearTo: carYearTo ? +carYearTo : undefined,
+      attributeFilters: this.parseAttributeFilters(attributeFilters),
     });
+  }
+
+  private parseAttributeFilters(value?: string) {
+    if (!value) return undefined;
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   @Public()

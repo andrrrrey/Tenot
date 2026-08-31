@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateListingDto } from './dto.create-listing';
+import { CreateListingDto, ListingAttributeInput } from './dto.create-listing';
+import { CategoriesService } from '../categories/categories.service';
+import { CategoryField, CategoryFieldType, Prisma } from '@prisma/client';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
 
@@ -19,22 +21,22 @@ function levenshtein(a: string, b: string): number {
 
 @Injectable()
 export class ListingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private categories: CategoriesService) {}
 
   async createByUserId(userId: number, dto: CreateListingDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found. Please re-login.');
 
-    return this.prisma.listing.create({
-      data: { ...dto, userId },
-      include: {
-        images: true,
-        category: true,
-        city: true,
-        carMake: { select: { id: true, name: true } },
-        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
-        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
-      },
+    const { attributes, ...listingData } = dto;
+    const attributeData = await this.normalizeAttributes(dto.categoryId, attributes || {}, dto.status !== 'DRAFT');
+    return this.prisma.$transaction(async (tx) => {
+      const listing = await tx.listing.create({ data: { ...listingData, userId } });
+      if (attributeData.length) {
+        await tx.listingAttribute.createMany({
+          data: attributeData.map((item) => ({ ...item, listingId: listing.id })),
+        });
+      }
+      return tx.listing.findUnique({ where: { id: listing.id }, include: this.detailInclude() });
     });
   }
 
@@ -132,6 +134,7 @@ export class ListingsService {
     carModelId?: number;
     carYearFrom?: number;
     carYearTo?: number;
+    attributeFilters?: Record<string, { value?: string | number | boolean; min?: number; max?: number }>;
   }) {
     let categoryFilter: any = undefined;
     if (filters.categoryId) {
@@ -139,8 +142,8 @@ export class ListingsService {
         where: { id: filters.categoryId },
         include: { children: true },
       });
-      if (category && category.children && category.children.length > 0) {
-        const ids = [category.id, ...category.children.map((c) => c.id)];
+      if (category) {
+        const ids = await this.getDescendantCategoryIds(category.id);
         categoryFilter = { in: ids };
       } else {
         categoryFilter = filters.categoryId;
@@ -166,6 +169,7 @@ export class ListingsService {
       }
     }
 
+    const attributeConditions = this.attributeWhere(filters.attributeFilters);
     return this.prisma.listing.findMany({
       where: {
         isActive: true,
@@ -181,6 +185,7 @@ export class ListingsService {
         ...(filters.carYearFrom || filters.carYearTo
           ? { carYear: { gte: filters.carYearFrom, lte: filters.carYearTo } }
           : {}),
+        ...(attributeConditions.length ? { AND: attributeConditions } : {}),
         OR: filters.search
           ? [
               { title: { contains: filters.search, mode: 'insensitive' } },
@@ -195,6 +200,7 @@ export class ListingsService {
         city: true,
         carMake: { select: { id: true, name: true } },
         carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+        attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -210,6 +216,7 @@ export class ListingsService {
         city: true,
         carMake: { select: { id: true, name: true } },
         carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+        attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
       },
     });
   }
@@ -218,16 +225,24 @@ export class ListingsService {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
     if (!listing) throw new NotFoundException();
     if (listing.userId !== userId) throw new UnauthorizedException('Not the owner');
-    return this.prisma.listing.update({
-      where: { id },
-      data: dto,
-      include: {
-        images: true,
-        category: true,
-        city: true,
-        carMake: { select: { id: true, name: true } },
-        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
-      },
+    const { attributes, ...listingData } = dto;
+    const categoryId = dto.categoryId || listing.categoryId;
+    const attributeData = attributes !== undefined
+      ? await this.normalizeAttributes(categoryId, attributes, (dto.status || listing.status) !== 'DRAFT')
+      : null;
+    return this.prisma.$transaction(async (tx) => {
+      await tx.listing.update({ where: { id }, data: listingData });
+      if (attributeData !== null) {
+        await tx.listingAttribute.deleteMany({ where: { listingId: id } });
+        if (attributeData.length) {
+          await tx.listingAttribute.createMany({
+            data: attributeData.map((item) => ({ ...item, listingId: id })),
+          });
+        }
+      } else if (dto.categoryId && dto.categoryId !== listing.categoryId) {
+        await tx.listingAttribute.deleteMany({ where: { listingId: id } });
+      }
+      return tx.listing.findUnique({ where: { id }, include: this.detailInclude() });
     });
   }
 
@@ -235,7 +250,7 @@ export class ListingsService {
     return this.prisma.listing.update({
       where: { id },
       data: { isActive },
-      include: { images: true, category: true, city: true },
+      include: this.detailInclude(),
     });
   }
 
@@ -249,6 +264,7 @@ export class ListingsService {
         city: true,
         carMake: { select: { id: true, name: true } },
         carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+        attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -257,7 +273,7 @@ export class ListingsService {
   getMyListings(userId: number) {
     return this.prisma.listing.findMany({
       where: { userId },
-      include: { images: { orderBy: [{ order: 'asc' }, { id: 'asc' }] }, category: true, city: true },
+      include: this.detailInclude(),
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -437,6 +453,119 @@ export class ListingsService {
       where: { id: mediaId },
       data: { isCover: true },
     });
+  }
+
+  private async getDescendantCategoryIds(rootId: number) {
+    const categories = await this.prisma.category.findMany({ select: { id: true, parentId: true } });
+    const ids = new Set<number>([rootId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const category of categories) {
+        if (category.parentId && ids.has(category.parentId) && !ids.has(category.id)) {
+          ids.add(category.id);
+          changed = true;
+        }
+      }
+    }
+    return [...ids];
+  }
+
+  private attributeWhere(filters?: Record<string, { value?: string | number | boolean; min?: number; max?: number }>) {
+    if (!filters) return [];
+    const result: Prisma.ListingWhereInput[] = [];
+    for (const [fieldIdValue, filter] of Object.entries(filters)) {
+      const fieldId = Number(fieldIdValue);
+      if (!Number.isInteger(fieldId) || !filter) continue;
+      if (filter.min !== undefined || filter.max !== undefined) {
+        result.push({ attributes: { some: {
+          categoryFieldId: fieldId,
+          numberValue: { gte: filter.min, lte: filter.max },
+        } } });
+      } else if (typeof filter.value === 'number') {
+        result.push({ attributes: { some: { categoryFieldId: fieldId, numberValue: filter.value } } });
+      } else if (typeof filter.value === 'boolean') {
+        result.push({ attributes: { some: { categoryFieldId: fieldId, booleanValue: filter.value } } });
+      } else if (typeof filter.value === 'string' && filter.value.trim()) {
+        result.push({ attributes: { some: {
+          categoryFieldId: fieldId,
+          textValue: { equals: filter.value.trim(), mode: 'insensitive' },
+        } } });
+      }
+    }
+    return result;
+  }
+
+  private async normalizeAttributes(
+    categoryId: number,
+    values: Record<string, ListingAttributeInput>,
+    validateRequired: boolean,
+  ): Promise<Array<Omit<Prisma.ListingAttributeCreateManyInput, 'listingId'>>> {
+    const fields = await this.categories.getEffectiveFields(categoryId);
+    const fieldsById = new Map(fields.map((field) => [field.id, field]));
+    const result: Array<Omit<Prisma.ListingAttributeCreateManyInput, 'listingId'>> = [];
+
+    for (const [fieldIdValue, rawValue] of Object.entries(values)) {
+      const fieldId = Number(fieldIdValue);
+      const field = fieldsById.get(fieldId);
+      if (!field) throw new BadRequestException(`Field ${fieldIdValue} is not available for this category`);
+      if (rawValue === null || rawValue === '' || (Array.isArray(rawValue) && !rawValue.length)) continue;
+      result.push(this.normalizeAttributeValue(field, rawValue));
+    }
+
+    if (validateRequired) {
+      for (const field of fields.filter((item) => item.required && item.showInForm)) {
+        if (!result.some((item) => item.categoryFieldId === field.id)) {
+          throw new BadRequestException(`Field «${field.label}» is required`);
+        }
+      }
+    }
+    return result;
+  }
+
+  private normalizeAttributeValue(
+    field: CategoryField,
+    rawValue: Exclude<ListingAttributeInput, null>,
+  ): Omit<Prisma.ListingAttributeCreateManyInput, 'listingId'> {
+    const base = { categoryFieldId: field.id };
+    if (field.type === CategoryFieldType.NUMBER) {
+      const numberValue = Number(rawValue);
+      if (!Number.isFinite(numberValue)) throw new BadRequestException(`Invalid value for «${field.label}»`);
+      return { ...base, numberValue };
+    }
+    if (field.type === CategoryFieldType.BOOLEAN) {
+      const booleanValue = typeof rawValue === 'boolean' ? rawValue : String(rawValue) === 'true';
+      return { ...base, booleanValue };
+    }
+    if (field.type === CategoryFieldType.MULTISELECT) {
+      const jsonValue = Array.isArray(rawValue) ? rawValue.map(String) : [String(rawValue)];
+      const options = Array.isArray(field.options) ? field.options.map(String) : [];
+      if (options.length && jsonValue.some((value) => !options.includes(value))) {
+        throw new BadRequestException(`Invalid option for «${field.label}»`);
+      }
+      return { ...base, jsonValue };
+    }
+    if (field.type === CategoryFieldType.SELECT) {
+      const textValue = String(rawValue);
+      const options = Array.isArray(field.options) ? field.options.map(String) : [];
+      if (options.length && !options.includes(textValue)) {
+        throw new BadRequestException(`Invalid option for «${field.label}»`);
+      }
+      return { ...base, textValue };
+    }
+    return { ...base, textValue: String(rawValue) };
+  }
+
+  private detailInclude(): Prisma.ListingInclude {
+    return {
+      images: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
+      category: true,
+      city: true,
+      carMake: { select: { id: true, name: true } },
+      carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
+      attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
+      user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
+    };
   }
 
   private deleteFile(url: string) {

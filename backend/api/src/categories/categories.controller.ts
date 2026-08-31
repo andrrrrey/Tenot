@@ -13,7 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { mkdirSync } from 'fs';
-import { CategoriesService } from './categories.service';
+import { CategoriesService, CategoryFieldInput } from './categories.service';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
 
@@ -45,6 +45,24 @@ export class CategoriesController {
     return this.service.findAll();
   }
 
+  @Public()
+  @Get('filter-profiles')
+  filterProfiles() {
+    return this.service.getFilterProfiles();
+  }
+
+  @Public()
+  @Get(':id/fields')
+  fields(@Param('id') id: string) {
+    return this.service.getEffectiveFields(+id);
+  }
+
+  @Roles('ADMIN')
+  @Post('import-profile')
+  importProfile(@Body('filterProfile') filterProfile: string) {
+    return this.service.importProfile(filterProfile);
+  }
+
   @Roles('ADMIN')
   @Post()
   @UseInterceptors(
@@ -56,13 +74,14 @@ export class CategoriesController {
   )
   create(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { name: string; parentId?: string },
+    @Body() body: { name: string; parentId?: string; filterProfile?: string },
   ) {
     const imageUrl = file ? `/uploads/categories/${file.filename}` : undefined;
     return this.service.create({
       name: body.name,
       imageUrl,
       parentId: body.parentId ? Number(body.parentId) : undefined,
+      filterProfile: body.filterProfile,
     });
   }
 
@@ -78,13 +97,36 @@ export class CategoriesController {
   update(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { name?: string; hasCarFilter?: string },
+    @Body() body: { name?: string; hasCarFilter?: string; filterProfile?: string },
   ) {
-    const data: { name?: string; imageUrl?: string; hasCarFilter?: boolean } = {};
+    const data: { name?: string; imageUrl?: string; hasCarFilter?: boolean; filterProfile?: string } = {};
     if (body.name) data.name = body.name;
     if (file) data.imageUrl = `/uploads/categories/${file.filename}`;
     if (body.hasCarFilter !== undefined) data.hasCarFilter = body.hasCarFilter === 'true';
+    if (body.filterProfile !== undefined) data.filterProfile = body.filterProfile;
     return this.service.update(+id, data);
+  }
+
+  @Roles('ADMIN')
+  @Post(':id/fields')
+  createField(@Param('id') id: string, @Body() body: CategoryFieldInput) {
+    return this.service.createField(+id, body);
+  }
+
+  @Roles('ADMIN')
+  @Patch(':id/fields/:fieldId')
+  updateField(
+    @Param('id') id: string,
+    @Param('fieldId') fieldId: string,
+    @Body() body: Partial<CategoryFieldInput>,
+  ) {
+    return this.service.updateField(+id, +fieldId, body);
+  }
+
+  @Roles('ADMIN')
+  @Delete(':id/fields/:fieldId')
+  removeField(@Param('id') id: string, @Param('fieldId') fieldId: string) {
+    return this.service.removeField(+id, +fieldId);
   }
 
   @Roles('ADMIN')

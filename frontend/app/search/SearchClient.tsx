@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { getListings, type Listing } from "@/services/listings";
+import { getListings, type Listing, type AttributeFilter } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { getFavorites } from "@/services/favorites";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
@@ -11,6 +11,9 @@ import { CitySearchPopup } from "@/components/CitySearchPopup";
 import { SearchInput, saveSearchTerm } from "@/components/SearchInput";
 import { getFuzzyCorrection } from "@/services/listings";
 import { useMe } from "@/hooks/useMe";
+import { CategorySelect } from "@/components/CategorySelect";
+import { DynamicCatalogFilters } from "@/components/DynamicCategoryFields";
+import { categoryHasAutoProfile } from "@/lib/categoryTree";
 
 function TypoSuggestion({ query, onSelect }: { query: string; onSelect: (v: string) => void }) {
   const [correction, setCorrection] = useState<string | null>(null);
@@ -50,7 +53,6 @@ export default function SearchClient() {
   const [error, setError] = useState<string | null>(null);
 
   const [q, setQ] = useState(searchParams.get("q") || "");
-  const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>(searchParams.get("category") || "");
   const [cityId, setCityId] = useState<string>(searchParams.get("cityId") || "");
   const [cityName, setCityName] = useState("");
@@ -58,6 +60,7 @@ export default function SearchClient() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [sort, setSort] = useState<"default" | "cheap" | "expensive" | "new">("default");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [attributeFilters, setAttributeFilters] = useState<Record<string, AttributeFilter>>({});
 
   // Car filter state
   const [carMakes, setCarMakes] = useState<CarMake[]>([]);
@@ -76,7 +79,7 @@ export default function SearchClient() {
     setQ(searchParams.get("q") || "");
     const newCat = searchParams.get("category") || "";
     setCategoryId(newCat);
-    setParentCategoryId(""); // will be synced by the category sync effect
+    setAttributeFilters({});
     setCityId(searchParams.get("cityId") || "");
     setCityName("");
     setMinPrice(searchParams.get("minPrice") || "");
@@ -108,48 +111,9 @@ export default function SearchClient() {
     setCarModelId("");
   }, [carMakeId]);
 
-  // Sync parentCategoryId from URL category param when categories load
-  useEffect(() => {
-    if (!categoryId || categories.length === 0) return;
-    const id = Number(categoryId);
-    // Check if it's a root category
-    const root = categories.find((c) => c.id === id);
-    if (root) {
-      setParentCategoryId(String(root.id));
-      return;
-    }
-    // Check if it's a subcategory
-    for (const cat of categories) {
-      if (cat.children?.some((sub) => sub.id === id)) {
-        setParentCategoryId(String(cat.id));
-        return;
-      }
-    }
-  }, [categories]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Get subcategories for selected parent category
-  const selectedParentCategory = useMemo(() => {
-    if (!parentCategoryId) return null;
-    return categories.find((c) => c.id === Number(parentCategoryId)) || null;
-  }, [parentCategoryId, categories]);
-
-  const subcategories = useMemo(() => {
-    return selectedParentCategory?.children || [];
-  }, [selectedParentCategory]);
-
   // Determine if selected category has car filter enabled
   const selectedCategoryHasCarFilter = useMemo(() => {
-    if (!categoryId) return false;
-    const id = Number(categoryId);
-    for (const cat of categories) {
-      if (cat.id === id && cat.hasCarFilter) return true;
-      if (cat.children) {
-        for (const sub of cat.children) {
-          if (sub.id === id && sub.hasCarFilter) return true;
-        }
-      }
-    }
-    return false;
+    return !!categoryId && categoryHasAutoProfile(categories, Number(categoryId));
   }, [categoryId, categories]);
 
   // Reset car filters when switching to non-car category
@@ -177,6 +141,7 @@ export default function SearchClient() {
         carModelId?: number;
         carYearFrom?: number;
         carYearTo?: number;
+        attributeFilters?: Record<string, AttributeFilter>;
       } = {};
 
       if (categoryId) params.categoryId = Number(categoryId);
@@ -191,6 +156,11 @@ export default function SearchClient() {
         if (carYearFrom && !isNaN(Number(carYearFrom))) params.carYearFrom = Number(carYearFrom);
         if (carYearTo && !isNaN(Number(carYearTo))) params.carYearTo = Number(carYearTo);
       }
+      const activeAttributeFilters = Object.fromEntries(
+        Object.entries(attributeFilters).filter(([, filter]) =>
+          filter.value !== undefined || filter.min !== undefined || filter.max !== undefined),
+      );
+      if (Object.keys(activeAttributeFilters).length) params.attributeFilters = activeAttributeFilters;
 
       if (q.trim()) saveSearchTerm(q.trim());
 
@@ -204,7 +174,7 @@ export default function SearchClient() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [q, categoryId, cityId, minPrice, maxPrice, carMakeId, carModelId, carYearFrom, carYearTo, selectedCategoryHasCarFilter]);
+  }, [q, categoryId, cityId, minPrice, maxPrice, carMakeId, carModelId, carYearFrom, carYearTo, selectedCategoryHasCarFilter, attributeFilters]);
 
   const sortedListings = useMemo(() => {
     if (sort === "default") return listings;
@@ -291,38 +261,11 @@ export default function SearchClient() {
 
           <div>
             <div className="field-label">Категория</div>
-            <select
-              value={parentCategoryId}
-              onChange={(e) => {
-                const val = e.target.value;
-                setParentCategoryId(val);
-                setCategoryId(val); // default to parent category (all)
-              }}
-            >
-              <option value="">Все категории</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <CategorySelect categories={categories} value={categoryId} emptyLabel="Все категории"
+              onChange={(value) => { setCategoryId(value); setAttributeFilters({}); }} />
           </div>
 
-          {subcategories.length > 0 && (
-            <div>
-              <div className="field-label">Подкатегория</div>
-              <select
-                value={categoryId === parentCategoryId ? "" : categoryId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCategoryId(val || parentCategoryId);
-                }}
-              >
-                <option value="">Все в «{selectedParentCategory?.name}»</option>
-                {subcategories.map((sub) => (
-                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <DynamicCatalogFilters categoryId={categoryId} values={attributeFilters} onChange={setAttributeFilters} />
 
           {/* Car filters — shown only when selected category has hasCarFilter=true */}
           {selectedCategoryHasCarFilter && (
