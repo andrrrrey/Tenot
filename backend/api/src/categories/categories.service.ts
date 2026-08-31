@@ -1,7 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { CategoryFieldType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FILTER_PROFILES, FILTER_TEMPLATES, FilterTemplateNode } from './filter-templates';
+
+const FILTER_TEMPLATE_VERSION = 1;
 
 export type CategoryTreeItem = {
   id: number; name: string; imageUrl: string | null; parentId: number | null;
@@ -16,8 +18,19 @@ export type CategoryFieldInput = {
 };
 
 @Injectable()
-export class CategoriesService {
+export class CategoriesService implements OnModuleInit {
+  private readonly logger = new Logger(CategoriesService.name);
+
   constructor(private prisma: PrismaService) {}
+
+  async onModuleInit() {
+    const result = await this.syncTemplates(false);
+    this.logger.log(
+      result.skipped
+        ? `Category templates are up to date (${result.categories} categories)`
+        : `Category templates synchronized: +${result.addedCategories} categories, +${result.addedFields} fields`,
+    );
+  }
 
   getFilterProfiles() { return FILTER_PROFILES; }
 
@@ -119,7 +132,24 @@ export class CategoriesService {
     return this.findOneTree(id);
   }
 
-  remove(id: number) { return this.prisma.category.delete({ where: { id } }); }
+  async remove(id: number, force = false) {
+    const category = await this.ensureCategory(id);
+    if (category.templateKey && !force) {
+      throw new BadRequestException('System category deletion requires explicit confirmation');
+    }
+    const ids = await this.getDescendantIds(id);
+    const listings = await this.prisma.listing.count({ where: { categoryId: { in: ids } } });
+    if (listings > 0) {
+      throw new BadRequestException(`Category tree contains ${listings} listings and cannot be deleted`);
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.category.deleteMany({ where: { id: { in: ids } } });
+      if (category.templateKey && category.filterProfile) {
+        await tx.filterTemplateState.deleteMany({ where: { profile: category.filterProfile } });
+      }
+    });
+    return { deleted: true, count: ids.length };
+  }
 
   async importProfile(profileValue: string) {
     const profile = this.normalizeProfile(profileValue);
@@ -133,7 +163,43 @@ export class CategoriesService {
       });
     }
     await this.applyTemplate(profile, root.id);
+    await this.prisma.filterTemplateState.upsert({
+      where: { profile },
+      create: { profile, version: FILTER_TEMPLATE_VERSION },
+      update: { version: FILTER_TEMPLATE_VERSION },
+    });
     return this.findOneTree(root.id);
+  }
+
+  async syncTemplates(force = false) {
+    const beforeCategories = await this.prisma.category.count({ where: { templateKey: { not: null } } });
+    const beforeFields = await this.prisma.categoryField.count({
+      where: { category: { templateKey: { not: null } } },
+    });
+    let synchronized = false;
+
+    for (const template of FILTER_TEMPLATES) {
+      const [state, root] = await Promise.all([
+        this.prisma.filterTemplateState.findUnique({ where: { profile: template.profile } }),
+        this.prisma.category.findUnique({ where: { templateKey: template.root.templateKey } }),
+      ]);
+      if (!force && state?.version === FILTER_TEMPLATE_VERSION && root) continue;
+      await this.importProfile(template.profile);
+      synchronized = true;
+    }
+
+    const [categories, fields] = await Promise.all([
+      this.prisma.category.count({ where: { templateKey: { not: null } } }),
+      this.prisma.categoryField.count({ where: { category: { templateKey: { not: null } } } }),
+    ]);
+    return {
+      skipped: !synchronized,
+      version: FILTER_TEMPLATE_VERSION,
+      categories,
+      fields,
+      addedCategories: categories - beforeCategories,
+      addedFields: fields - beforeFields,
+    };
   }
 
   private async applyTemplate(profile: string, rootCategoryId: number) {
@@ -202,5 +268,21 @@ export class CategoriesService {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException('Category not found');
     return category;
+  }
+
+  private async getDescendantIds(rootId: number) {
+    const categories = await this.prisma.category.findMany({ select: { id: true, parentId: true } });
+    const ids = new Set<number>([rootId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const category of categories) {
+        if (category.parentId && ids.has(category.parentId) && !ids.has(category.id)) {
+          ids.add(category.id);
+          changed = true;
+        }
+      }
+    }
+    return [...ids];
   }
 }

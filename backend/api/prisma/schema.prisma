@@ -136,6 +136,12 @@ model CategoryField {
   @@index([categoryId, sortOrder])
 }
 
+model FilterTemplateState {
+  profile  String   @id
+  version  Int
+  syncedAt DateTime @updatedAt
+}
+
 model Listing {
   id          Int           @id @default(autoincrement())
   title       String

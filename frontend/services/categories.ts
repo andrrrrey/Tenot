@@ -11,8 +11,6 @@ export type Category = {
   children?: Category[];
 };
 
-export type FilterProfile = { value: string; label: string };
-
 export type CategoryField = {
   id: number;
   categoryId: number;
@@ -29,12 +27,11 @@ export type CategoryField = {
 
 export const getCategories = () => api.get<Category[]>('/categories');
 
-export const createCategory = (data: { name: string; image?: File; parentId?: number; filterProfile?: string }) => {
+export const createCategory = (data: { name: string; image?: File; parentId?: number }) => {
   const formData = new FormData();
   formData.append('name', data.name);
   if (data.image) formData.append('image', data.image);
   if (data.parentId !== undefined) formData.append('parentId', String(data.parentId));
-  if (data.filterProfile) formData.append('filterProfile', data.filterProfile);
   return api.upload<Category>('/categories', formData, 'POST');
 };
 
@@ -44,25 +41,20 @@ export const updateCategoryImage = (id: number, image: File) => {
   return api.upload<Category>(`/categories/${id}`, formData, 'PATCH');
 };
 
-export const updateCategoryCarFilter = (id: number, hasCarFilter: boolean) => {
-  const formData = new FormData();
-  formData.append('hasCarFilter', String(hasCarFilter));
-  return api.upload<Category>(`/categories/${id}`, formData, 'PATCH');
-};
-
-export const getFilterProfiles = () => api.get<FilterProfile[]>('/categories/filter-profiles');
-
 export const getCategoryFields = (categoryId: number) =>
   api.get<CategoryField[]>(`/categories/${categoryId}/fields`);
 
-export const updateCategoryFilterProfile = (id: number, filterProfile: string) => {
-  const formData = new FormData();
-  formData.append('filterProfile', filterProfile);
-  return api.upload<Category>(`/categories/${id}`, formData, 'PATCH');
+export type TemplateSyncResult = {
+  skipped: boolean;
+  version: number;
+  categories: number;
+  fields: number;
+  addedCategories: number;
+  addedFields: number;
 };
 
-export const importCategoryProfile = (filterProfile: string) =>
-  api.post<Category>('/categories/import-profile', { filterProfile });
+export const syncCategoryTemplates = () =>
+  api.post<TemplateSyncResult>('/categories/sync-templates', {});
 
 export const createCategoryField = (categoryId: number, field: Partial<CategoryField> & { label: string }) =>
   api.post<CategoryField>(`/categories/${categoryId}/fields`, field);
@@ -73,4 +65,5 @@ export const updateCategoryField = (categoryId: number, fieldId: number, field: 
 export const deleteCategoryField = (categoryId: number, fieldId: number) =>
   api.del<CategoryField>(`/categories/${categoryId}/fields/${fieldId}`);
 
-export const deleteCategory = (id: number) => api.del<any>(`/categories/${id}`);
+export const deleteCategory = (id: number, force = false) =>
+  api.del<{ deleted: boolean; count: number }>(`/categories/${id}${force ? '?force=true' : ''}`);

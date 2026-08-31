@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -46,21 +47,15 @@ export class CategoriesController {
   }
 
   @Public()
-  @Get('filter-profiles')
-  filterProfiles() {
-    return this.service.getFilterProfiles();
-  }
-
-  @Public()
   @Get(':id/fields')
   fields(@Param('id') id: string) {
     return this.service.getEffectiveFields(+id);
   }
 
   @Roles('ADMIN')
-  @Post('import-profile')
-  importProfile(@Body('filterProfile') filterProfile: string) {
-    return this.service.importProfile(filterProfile);
+  @Post('sync-templates')
+  syncTemplates() {
+    return this.service.syncTemplates(true);
   }
 
   @Roles('ADMIN')
@@ -74,14 +69,13 @@ export class CategoriesController {
   )
   create(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { name: string; parentId?: string; filterProfile?: string },
+    @Body() body: { name: string; parentId?: string },
   ) {
     const imageUrl = file ? `/uploads/categories/${file.filename}` : undefined;
     return this.service.create({
       name: body.name,
       imageUrl,
       parentId: body.parentId ? Number(body.parentId) : undefined,
-      filterProfile: body.filterProfile,
     });
   }
 
@@ -131,7 +125,7 @@ export class CategoriesController {
 
   @Roles('ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(+id);
+  remove(@Param('id') id: string, @Query('force') force?: string) {
+    return this.service.remove(+id, force === 'true');
   }
 }

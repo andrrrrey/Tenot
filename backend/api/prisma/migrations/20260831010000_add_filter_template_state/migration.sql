@@ -1,0 +1,5 @@
+CREATE TABLE "FilterTemplateState" (
+  "profile" TEXT PRIMARY KEY,
+  "version" INTEGER NOT NULL,
+  "syncedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
