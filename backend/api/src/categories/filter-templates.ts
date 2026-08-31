@@ -1,4 +1,4 @@
-import rawTemplates from './filter-templates.generated.json';
+import rawTemplates = require('./filter-templates.generated.json');
 
 export type FilterTemplateField = {
   key: string;
