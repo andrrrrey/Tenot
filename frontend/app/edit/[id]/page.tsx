@@ -28,7 +28,9 @@ export default function EditPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
+  const [allCities, setAllCities] = useState(false);
   const [cityName, setCityName] = useState<string>("");
+  const isAdmin = user?.role === "ADMIN";
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -80,6 +82,7 @@ export default function EditPage() {
         setCategoryId(String(listing.category.id));
         setCityId(listing.cityId ? String(listing.cityId) : "");
         setCityName(listing.city?.name || "");
+        setAllCities(!!listing.allCities);
         if (listing.carMakeId) setCarMakeId(String(listing.carMakeId));
         if (listing.carModelId) setCarModelId(String(listing.carModelId));
         if (listing.carYear) setCarYear(String(listing.carYear));
@@ -226,7 +229,8 @@ export default function EditPage() {
         description: description.trim(),
         price: Number(price),
         categoryId: Number(categoryId),
-        cityId: cityId ? Number(cityId) : null,
+        cityId: !allCities && cityId ? Number(cityId) : null,
+        ...(isAdmin ? { allCities } : {}),
         carMakeId: selectedCategoryHasCarFilter && carMakeId ? Number(carMakeId) : null,
         carModelId: selectedCategoryHasCarFilter && carModelId ? Number(carModelId) : null,
         carYear: selectedCategoryHasCarFilter && carYear ? Number(carYear) : null,
@@ -411,12 +415,24 @@ export default function EditPage() {
             >
               Город
             </label>
-            <CitySearchPopup
-              value={cityId}
-              selectedName={cityName}
-              onChange={(id, name) => { setCityId(id); setCityName(name); }}
-              placeholder="Выберите город"
-            />
+            {!allCities && (
+              <CitySearchPopup
+                value={cityId}
+                selectedName={cityName}
+                onChange={(id, name) => { setCityId(id); setCityName(name); }}
+                placeholder="Выберите город"
+              />
+            )}
+            {isAdmin && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 14, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={allCities}
+                  onChange={(e) => setAllCities(e.target.checked)}
+                />
+                Опубликовать во всех городах
+              </label>
+            )}
           </div>
 
           {/* Title */}

@@ -44,6 +44,7 @@ export default function ListingPage() {
   }
 
   const listingOwnerId = listing.user?.id;
+  const cityLabel = listing.allCities ? 'Все города' : listing.city?.name;
   const sellerName = listing.user?.name || 'Продавец';
   const sellerPhone = listing.user?.phone;
   const sellerInitials = sellerName
@@ -141,7 +142,7 @@ export default function ListingPage() {
             <div style={{ marginTop: 20 }}>
               <h1 className="h2" style={{ marginBottom: 6 }}>{listing.title}</h1>
 
-              {(listing.category?.name || listing.city?.name) && (
+              {(listing.category?.name || cityLabel) && (
                 <div
                   style={{
                     display: 'flex',
@@ -151,7 +152,7 @@ export default function ListingPage() {
                     marginTop: 8,
                   }}
                 >
-                  {listing.city?.name && (
+                  {cityLabel && (
                     <span
                       style={{
                         display: 'flex',
@@ -166,7 +167,7 @@ export default function ListingPage() {
                       }}
                     >
                       <IconMapPin size={12} strokeWidth={2} />
-                      {listing.city.name}
+                      {cityLabel}
                     </span>
                   )}
                   {listing.category?.name && (

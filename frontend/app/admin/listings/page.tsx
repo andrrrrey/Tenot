@@ -414,9 +414,9 @@ export default function AdminListings() {
                       <div className="muted" style={{ fontSize: 13 }} title="Владелец">
                         👤 {l.user?.name || l.user?.email || '-'}
                       </div>
-                      {l.city?.name && (
+                      {(l.allCities || l.city?.name) && (
                         <div className="muted" style={{ fontSize: 13 }}>
-                          {l.city.name}
+                          {l.allCities ? 'Все города' : l.city?.name}
                         </div>
                       )}
                       <div className="muted" style={{ fontSize: 12 }}>

@@ -155,6 +155,7 @@ model Listing {
   userId     Int
   categoryId Int
   cityId     Int?
+  allCities  Boolean       @default(false)
   carMakeId  Int?
   carModelId Int?
   carYear    Int?

@@ -28,6 +28,8 @@ export class ListingsService {
     if (!user) throw new UnauthorizedException('User not found. Please re-login.');
 
     const { attributes, ...listingData } = dto;
+    if (user.role !== 'ADMIN') delete listingData.allCities;
+    if (listingData.allCities) listingData.cityId = undefined;
     const attributeData = await this.normalizeAttributes(dto.categoryId, attributes || {}, dto.status !== 'DRAFT');
     return this.prisma.$transaction(async (tx) => {
       const listing = await tx.listing.create({ data: { ...listingData, userId } });
@@ -169,13 +171,16 @@ export class ListingsService {
       }
     }
 
-    const attributeConditions = this.attributeWhere(filters.attributeFilters);
+    const andConditions: Prisma.ListingWhereInput[] = this.attributeWhere(filters.attributeFilters);
+    // Listings published for all cities match any city filter
+    if (cityFilter !== undefined) {
+      andConditions.push({ OR: [{ cityId: cityFilter }, { allCities: true }] });
+    }
     return this.prisma.listing.findMany({
       where: {
         isActive: true,
         status: 'PUBLISHED',
         categoryId: categoryFilter,
-        cityId: cityFilter,
         price: {
           gte: filters.minPrice,
           lte: filters.maxPrice,
@@ -185,7 +190,7 @@ export class ListingsService {
         ...(filters.carYearFrom || filters.carYearTo
           ? { carYear: { gte: filters.carYearFrom, lte: filters.carYearTo } }
           : {}),
-        ...(attributeConditions.length ? { AND: attributeConditions } : {}),
+        ...(andConditions.length ? { AND: andConditions } : {}),
         OR: filters.search
           ? [
               { title: { contains: filters.search, mode: 'insensitive' } },
@@ -226,6 +231,11 @@ export class ListingsService {
     if (!listing) throw new NotFoundException();
     if (listing.userId !== userId) throw new UnauthorizedException('Not the owner');
     const { attributes, ...listingData } = dto;
+    if (listingData.allCities !== undefined) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (user?.role !== 'ADMIN') delete listingData.allCities;
+      else if (listingData.allCities) (listingData as Prisma.ListingUncheckedUpdateInput).cityId = null;
+    }
     const categoryId = dto.categoryId || listing.categoryId;
     const attributeData = attributes !== undefined
       ? await this.normalizeAttributes(categoryId, attributes, (dto.status || listing.status) !== 'DRAFT')

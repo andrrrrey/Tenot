@@ -21,6 +21,7 @@ export default function AddPage() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [cityId, setCityId] = useState<string>("");
   const [cityName, setCityName] = useState<string>("");
+  const [allCities, setAllCities] = useState(false);
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -139,7 +140,7 @@ export default function AddPage() {
         description: description.trim() || " ",
         price: Number(price) || 0,
         categoryId: Number(categoryId) || 1,
-        ...(cityId ? { cityId: Number(cityId) } : {}),
+        ...(allCities ? { allCities: true } : cityId ? { cityId: Number(cityId) } : {}),
         ...(selectedCategoryHasCarFilter && carMakeId ? { carMakeId: Number(carMakeId) } : {}),
         ...(selectedCategoryHasCarFilter && carModelId ? { carModelId: Number(carModelId) } : {}),
         ...(selectedCategoryHasCarFilter && carYear ? { carYear: Number(carYear) } : {}),
@@ -174,6 +175,8 @@ export default function AddPage() {
   }
 
   if (!user) return null;
+
+  const isAdmin = user.role === "ADMIN";
 
   return (
     <div>
@@ -286,12 +289,24 @@ export default function AddPage() {
           {/* City */}
           <div>
             <div className="field-label">Город</div>
-            <CitySearchPopup
-              value={cityId}
-              selectedName={cityName}
-              onChange={(id, name) => { setCityId(id); setCityName(name); }}
-              placeholder="Выберите город"
-            />
+            {!allCities && (
+              <CitySearchPopup
+                value={cityId}
+                selectedName={cityName}
+                onChange={(id, name) => { setCityId(id); setCityName(name); }}
+                placeholder="Выберите город"
+              />
+            )}
+            {isAdmin && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 14, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={allCities}
+                  onChange={(e) => setAllCities(e.target.checked)}
+                />
+                Опубликовать во всех городах
+              </label>
+            )}
           </div>
 
           {/* Title */}
