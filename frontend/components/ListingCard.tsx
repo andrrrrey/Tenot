@@ -54,6 +54,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
   };
 
   const coverUrl = getCoverUrl(listing.images);
+  const cityLabel = listing.allCities ? "Все города" : listing.city?.name;
 
   return (
     <div className="listing-card"
@@ -156,7 +157,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
             {listing.title}
           </div>
 
-          {(listing.category?.name || listing.city?.name) && (
+          {(listing.category?.name || cityLabel) && (
             <div
               style={{
                 display: "flex",
@@ -167,10 +168,10 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
                 fontWeight: 500,
               }}
             >
-              {listing.city?.name && (
+              {cityLabel && (
                 <>
                   <IconMapPin size={11} strokeWidth={1.8} />
-                  <span>{listing.city.name}</span>
+                  <span>{cityLabel}</span>
                   {listing.category?.name && <span style={{ opacity: 0.5 }}>·</span>}
                 </>
               )}

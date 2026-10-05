@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
 
 export type ListingAttributeInput = string | number | boolean | string[] | null;
 
@@ -22,6 +22,11 @@ export class CreateListingDto {
   @IsOptional()
   @IsNumber()
   cityId?: number;
+
+  // Publish the listing in every city (admin only)
+  @IsOptional()
+  @IsBoolean()
+  allCities?: boolean;
 
   @IsOptional()
   @IsNumber()

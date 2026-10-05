@@ -21,6 +21,7 @@ export type Listing = {
   images: ListingImage[];
   user: { id: number; email: string; name?: string; phone?: string; avatarUrl?: string | null; cityId?: number; city?: { id: number; name: string } | null };
   cityId: number | null;
+  allCities?: boolean;
   city: { id: number; name: string } | null;
   carMakeId?: number | null;
   carModelId?: number | null;
@@ -96,6 +97,7 @@ export const createListing = (payload: {
   price: number;
   categoryId: number;
   cityId?: number;
+  allCities?: boolean;
   carMakeId?: number;
   carModelId?: number;
   carYear?: number;
@@ -111,6 +113,7 @@ export const updateListing = (
     price?: number;
     categoryId?: number;
     cityId?: number | null;
+    allCities?: boolean;
     carMakeId?: number | null;
     carModelId?: number | null;
     carYear?: number | null;
