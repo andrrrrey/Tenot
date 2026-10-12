@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../state/chat_store.dart';
 import '../state/session.dart';
 import '../theme.dart';
 import 'common.dart';
@@ -14,6 +15,7 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<Session>().user;
+    final unread = context.select<ChatStore, int>((s) => s.unreadTotal);
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xF7F8F9FB),
@@ -52,7 +54,7 @@ class BottomNav extends StatelessWidget {
                   ),
                 ),
               ),
-              _tab(3, Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'Чаты'),
+              _tab(3, Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'Чаты', badge: unread),
               _profileTab(user?.avatarUrl, user != null),
             ],
           ),
@@ -83,7 +85,7 @@ class BottomNav extends StatelessWidget {
         color: active ? T.brand : T.muted,
       ));
 
-  Widget _tab(int i, IconData icon, IconData activeIcon, String label) {
+  Widget _tab(int i, IconData icon, IconData activeIcon, String label, {int badge = 0}) {
     final active = index == i;
     return Expanded(
       child: InkWell(
@@ -91,7 +93,27 @@ class BottomNav extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _circle(active: active, child: Icon(active ? activeIcon : icon, size: 21, color: active ? Colors.white : T.muted)),
+            Stack(clipBehavior: Clip.none, children: [
+              _circle(active: active, child: Icon(active ? activeIcon : icon, size: 21, color: active ? Colors.white : T.muted)),
+              if (badge > 0)
+                Positioned(
+                  top: -2,
+                  right: -4,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 16),
+                    height: 16,
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: T.favorite,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xE6F8F9FB), width: 1.5),
+                    ),
+                    child: Text(badge > 9 ? '9+' : '$badge',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700, height: 1)),
+                  ),
+                ),
+            ]),
             const SizedBox(height: 4),
             _label(label, active),
           ],

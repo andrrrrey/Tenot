@@ -319,3 +319,71 @@ class ListingFilter {
         carYearTo,
       ].where((e) => e != null).length;
 }
+
+// ── Чаты (frontend/services/chat.ts) ─────────────────────────────────────────
+
+class ChatUser {
+  final int id;
+  final String? name;
+  final String? avatarUrl;
+
+  const ChatUser(this.id, {this.name, this.avatarUrl});
+
+  static ChatUser? fromJson(dynamic j) => j is Map<String, dynamic>
+      ? ChatUser(_int(j['id']), name: j['name'] as String?, avatarUrl: j['avatarUrl'] as String?)
+      : null;
+
+  String get displayName => (name != null && name!.trim().isNotEmpty) ? name! : 'Пользователь';
+}
+
+class Message {
+  final int id;
+  final int chatId;
+  final int senderId;
+  final String? text;
+  final String? audioUrl;
+  final double? audioDuration;
+  final bool isRead;
+  final DateTime createdAt;
+
+  Message.fromJson(Map<String, dynamic> j)
+      : id = _int(j['id']),
+        chatId = _int(j['chatId']),
+        senderId = _int(j['senderId']),
+        text = j['text'] as String?,
+        audioUrl = j['audioUrl'] as String?,
+        audioDuration = j['audioDuration'] == null ? null : _num(j['audioDuration']),
+        isRead = j['isRead'] == true,
+        createdAt = (DateTime.tryParse('${j['createdAt']}') ?? DateTime.now()).toLocal();
+}
+
+class Chat {
+  final int id;
+  final int initiatorId;
+  final int ownerId;
+  final int listingId;
+  final Message? lastMessage;
+  final ChatUser? initiator;
+  final ChatUser? owner;
+  final String? listingTitle;
+  final int unread;
+
+  Chat.fromJson(Map<String, dynamic> j)
+      : id = _int(j['id']),
+        initiatorId = _int(j['initiatorId']),
+        ownerId = _int(j['ownerId']),
+        listingId = _int(j['listingId']),
+        lastMessage = (j['messages'] as List? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .map(Message.fromJson)
+            .firstOrNull,
+        initiator = ChatUser.fromJson(j['initiator']),
+        owner = ChatUser.fromJson(j['owner']),
+        listingTitle = (j['listing'] is Map) ? '${j['listing']['title']}' : null,
+        unread = (j['_count'] is Map) ? _int(j['_count']['messages']) : 0;
+
+  /// Собеседник для текущего пользователя (getInterlocutor на сайте).
+  ChatUser? interlocutor(int myId) => myId == initiatorId ? owner : initiator;
+
+  int receiverId(int myId) => myId == initiatorId ? ownerId : initiatorId;
+}

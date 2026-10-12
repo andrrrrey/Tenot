@@ -7,6 +7,7 @@ import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'add_listing_screen.dart';
+import 'chat_thread_screen.dart';
 
 /// Карточка объявления — как app/listing/[id]/page.tsx (мобильная вёрстка).
 class ListingScreen extends StatefulWidget {
@@ -37,6 +38,21 @@ class _ListingScreenState extends State<ListingScreen> {
     } catch (e) {
       if (mounted) setState(() => _error = e);
     }
+  }
+
+  /// Как handleChat на сайте: гостя — на вход, затем открыть переписку с продавцом.
+  Future<void> _openChat(Listing l, ListingUser seller) async {
+    if (!await requireLogin(context)) return;
+    if (!mounted) return;
+    if (context.read<Session>().user?.id == seller.id) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ChatThreadScreen(
+        listingId: l.id,
+        receiverId: seller.id,
+        receiver: ChatUser(seller.id, name: seller.displayName, avatarUrl: seller.avatarUrl),
+        listingTitle: l.title,
+      ),
+    ));
   }
 
   Future<void> _open(Uri uri) async {
@@ -293,10 +309,10 @@ class _ListingScreenState extends State<ListingScreen> {
                 label: Text(_phoneShown ? 'Позвонить $phone' : 'Показать телефон'),
               ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => _open(Uri.parse('${session.api.baseUrl}/listing/${l.id}')),
+            FilledButton.icon(
+              onPressed: u == null ? null : () => _openChat(l, u),
               icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-              label: const Text('Написать в чат на сайте'),
+              label: const Text('Написать в чат'),
             ),
           ],
         ],

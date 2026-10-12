@@ -8,6 +8,7 @@ import 'screens/chats_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
+import 'state/chat_store.dart';
 import 'state/session.dart';
 import 'theme.dart';
 import 'widgets/bottom_nav.dart';
@@ -30,8 +31,11 @@ class TenotApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: session,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: session),
+        ChangeNotifierProvider(create: (_) => ChatStore(session)),
+      ],
       child: MaterialApp(
         title: 'TENOT',
         debugShowCheckedModeBanner: false,
@@ -83,6 +87,7 @@ class _ShellState extends State<Shell> {
       return;
     }
     if (i == 1) _favKey.currentState?.reload();
+    if (i == 3) context.read<ChatStore>().refresh();
     if (i == 4) _profileKey.currentState?.reload();
     tabIndex.value = i;
   }

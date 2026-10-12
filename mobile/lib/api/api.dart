@@ -126,6 +126,8 @@ class Api {
       'gif': 'gif',
     };
     final sub = map[ext];
+    if (ext == 'm4a' || ext == 'aac') return MediaType('audio', 'mp4');
+    if (ext == 'webm') return MediaType('audio', 'webm');
     if (ext == 'mp4') return MediaType('video', 'mp4');
     if (ext == 'mov') return MediaType('video', 'quicktime');
     return MediaType('image', sub ?? 'jpeg');
@@ -195,6 +197,27 @@ class Api {
   Future<void> addFavorite(int listingId) => post('/favorites', {'listingId': listingId});
 
   Future<void> removeFavorite(int listingId) => delete('/favorites', {'listingId': '$listingId'});
+
+  // ── Чаты ────────────────────────────────────────────────────────────────
+  Future<List<Chat>> myChats() async =>
+      (await get('/chat/my') as List? ?? []).whereType<Map<String, dynamic>>().map(Chat.fromJson).toList();
+
+  Future<List<Message>> messages(int chatId) async => (await get('/chat/$chatId/messages') as List? ?? [])
+      .whereType<Map<String, dynamic>>()
+      .map(Message.fromJson)
+      .toList();
+
+  Future<Message> sendMessage(int listingId, int receiverId, String text) async => Message.fromJson(
+      await post('/chat/send', {'listingId': listingId, 'receiverId': receiverId, 'text': text}));
+
+  Future<Message> sendAudio(int listingId, int receiverId, String filePath, double durationSeconds) async =>
+      Message.fromJson(await upload('/chat/send/audio', 'audio', [filePath], fields: {
+        'listingId': '$listingId',
+        'receiverId': '$receiverId',
+        'audioDuration': durationSeconds.toStringAsFixed(1),
+      }));
+
+  Future<void> markChatRead(int chatId) => patch('/chat/$chatId/read');
 
   // ── Справочники ─────────────────────────────────────────────────────────
   Future<List<Category>> categories() async => (await get('/categories') as List? ?? [])
