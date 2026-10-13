@@ -36,7 +36,8 @@ export class OtpService {
   /** Выпускает и отправляет код. Ответ не зависит от того, зарегистрирован ли номер. */
   async request(rawPhone: string, ctx: OtpRequestContext) {
     const phone = this.normalize(rawPhone);
-    const code = String(randomInt(0, 10 ** this.cfg.codeLength)).padStart(this.cfg.codeLength, '0');
+    const code =
+      this.cfg.testCode ?? String(randomInt(0, 10 ** this.cfg.codeLength)).padStart(this.cfg.codeLength, '0');
 
     // Проверка лимитов и запись кода — под advisory-lock на номер,
     // чтобы параллельные запросы не обошли ограничение повторной отправки.

@@ -28,6 +28,8 @@ services:
       SMSRU_API_ID: ${SMSRU_API_ID:-}
       SMSRU_FROM: ${SMSRU_FROM:-}
       SMSRU_TEST: ${SMSRU_TEST:-0}
+      # Тест без SMS: OTP_TEST_CODE=1234 (только при SMS_PROVIDER=console; на проде не оставлять)
+      OTP_TEST_CODE: ${OTP_TEST_CODE:-}
     volumes:
       - uploads:/app/uploads
     depends_on:
