@@ -95,6 +95,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Войти').last);
     await tester.pumpAndSettle();
+    // По умолчанию — вход по телефону, email — на второй вкладке.
+    expect(find.text('Получить код'), findsOneWidget);
+    await tester.tap(find.text('По email'));
+    await tester.pumpAndSettle();
     expect(find.text('Нет аккаунта? Зарегистрироваться'), findsOneWidget);
   });
 }
