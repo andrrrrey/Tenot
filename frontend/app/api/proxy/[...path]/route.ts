@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { clientHeaders } from '../../_client-headers';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://api:3001';
 
@@ -63,7 +64,7 @@ async function handleProxy(
   const url = `${BACKEND_URL}/${path}${searchParams ? `?${searchParams}` : ''}`;
 
   // Собираем заголовки для проксирования
-  const headers: HeadersInit = {};
+  const headers: Record<string, string> = { ...clientHeaders(request) };
 
   // Прокидываем Content-Type
   const contentType = request.headers.get('content-type');

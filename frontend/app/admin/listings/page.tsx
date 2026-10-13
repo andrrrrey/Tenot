@@ -14,7 +14,8 @@ import {
 import { getCategories, type Category } from '@/services/categories';
 import type { Listing } from '@/services/listings';
 
-const userLabel = (u: AdminUser) => (u.name ? `${u.name} (${u.email})` : u.email);
+const userContact = (u: AdminUser) => u.email || u.phone || `#${u.id}`;
+const userLabel = (u: AdminUser) => (u.name ? `${u.name} (${userContact(u)})` : userContact(u));
 
 // Компактный выбор пользователя: поиск по имени/email + выпадающий список.
 // Используется и для одиночной, и для массовой смены владельца.
@@ -38,7 +39,7 @@ function OwnerPicker({
     const q = query.trim().toLowerCase();
     if (!q) return users;
     return users.filter(
-      (u) => u.email.toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q),
+      (u) => userContact(u).toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q),
     );
   }, [users, query]);
 
@@ -265,7 +266,7 @@ export default function AdminListings() {
               <option value="">Все пользователи</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name ? `${u.name} (${u.email})` : u.email}
+                  {userLabel(u)}
                 </option>
               ))}
             </select>

@@ -30,6 +30,9 @@ class Api {
   final http.Client _client;
   String? token;
 
+  /// Постоянный идентификатор установки — backend учитывает его в лимитах SMS-кодов.
+  String? deviceId;
+
   /// Вызывается при 401 на запросе с токеном — токен протух, нужно разлогинить.
   void Function()? onUnauthorized;
 
@@ -45,6 +48,7 @@ class Api {
         'user-agent': appUserAgent,
         if (json) 'content-type': 'application/json',
         if (token != null) 'authorization': 'Bearer $token',
+        if (deviceId != null) 'x-device-id': deviceId!,
       };
 
   /// Абсолютный URL для медиа (`/uploads/...` → `<base>/uploads/...`).
@@ -161,6 +165,17 @@ class Api {
 
   Future<String> register(String email, String password) async {
     final data = await post('/auth/register', {'email': email, 'password': password});
+    return (data as Map)['access_token'] as String;
+  }
+
+  /// Отправка SMS-кода. Возвращает, через сколько секунд можно запросить код повторно.
+  Future<int> requestPhoneCode(String phone) async {
+    final data = await post('/auth/phone/request', {'phone': phone});
+    return ((data as Map)['retryAfter'] as num?)?.toInt() ?? 60;
+  }
+
+  Future<String> loginByPhone(String phone, String code) async {
+    final data = await post('/auth/phone/verify', {'phone': phone, 'code': code});
     return (data as Map)['access_token'] as String;
   }
 

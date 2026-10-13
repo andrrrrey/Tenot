@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '@/services/auth';
-import { useStore } from '@/lib/store';
+import { useStore, type User } from '@/lib/store';
 import { IconEye, IconEyeOff, IconLock, IconMail } from '@/components/Icons';
+import PhoneLoginForm from './PhoneLoginForm';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -17,6 +18,12 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'phone' | 'email'>('phone');
+
+  const onPhoneSuccess = (user: { id: number; role: string } | null) => {
+    if (user) setUser({ id: String(user.id), name: '', role: user.role as User['role'] });
+    router.push('/me');
+  };
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -105,6 +112,23 @@ export default function LoginForm() {
           </div>
         )}
 
+        <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+          {(['phone', 'email'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              className={mode === m ? 'btn primary' : 'btn'}
+              onClick={() => { setMode(m); setError(null); }}
+              style={{ flex: 1, padding: "9px 12px", fontSize: 14, borderRadius: "var(--radius-sm)" }}
+            >
+              {m === 'phone' ? 'По телефону' : 'По email'}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'phone' ? (
+          <PhoneLoginForm onSuccess={onPhoneSuccess} onError={setError} />
+        ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div className="field-label">Email</div>
@@ -175,6 +199,7 @@ export default function LoginForm() {
             {loading ? 'Вход...' : 'Войти'}
           </button>
         </div>
+        )}
 
         <div style={{ marginTop: 24, textAlign: "center" }}>
           <span className="muted" style={{ fontSize: 14 }}>Нет аккаунта? </span>

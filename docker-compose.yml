@@ -23,6 +23,13 @@ services:
     environment:
       DATABASE_URL: postgresql://autoparts:autoparts@db:5432/autoparts?connection_limit=20&pool_timeout=30
       JWT_SECRET: ${JWT_SECRET:-dev_secret}
+      # Вход по SMS-коду: console (код в логах API) | smsru
+      SMS_PROVIDER: ${SMS_PROVIDER:-console}
+      SMSRU_API_ID: ${SMSRU_API_ID:-}
+      SMSRU_FROM: ${SMSRU_FROM:-}
+      SMSRU_TEST: ${SMSRU_TEST:-0}
+      # Тест без SMS: OTP_TEST_CODE=1234 (только при SMS_PROVIDER=console; на проде не оставлять)
+      OTP_TEST_CODE: ${OTP_TEST_CODE:-}
     volumes:
       - uploads:/app/uploads
     depends_on:
