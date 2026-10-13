@@ -10,7 +10,10 @@ import 'models.dart';
 class ApiException implements Exception {
   final int status;
   final String message;
-  ApiException(this.status, this.message);
+
+  /// Через сколько секунд можно повторить запрос (ответ 429 при запросе SMS-кода).
+  final int? retryAfter;
+  ApiException(this.status, this.message, {this.retryAfter});
 
   @override
   String toString() => message;
@@ -101,7 +104,12 @@ class Api {
     if (res.statusCode >= 200 && res.statusCode < 300) return data;
 
     if (res.statusCode == 401 && hadToken) onUnauthorized?.call();
-    throw ApiException(res.statusCode, _errorMessage(res.statusCode, data));
+    final retryAfter = data is Map ? data['retryAfter'] : null;
+    throw ApiException(
+      res.statusCode,
+      _errorMessage(res.statusCode, data),
+      retryAfter: retryAfter is num ? retryAfter.toInt() : null,
+    );
   }
 
   static String _errorMessage(int status, dynamic data) {
