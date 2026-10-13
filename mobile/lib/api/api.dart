@@ -48,7 +48,7 @@ class Api {
         'user-agent': appUserAgent,
         if (json) 'content-type': 'application/json',
         if (token != null) 'authorization': 'Bearer $token',
-        if (deviceId != null) 'x-device-id': deviceId!,
+        'x-device-id': ?deviceId,
       };
 
   /// Абсолютный URL для медиа (`/uploads/...` → `<base>/uploads/...`).
