@@ -117,6 +117,14 @@ export default function HomePage() {
           }}
         >
           <h2 className="h2">Категории</h2>
+          {/* На мобильном категории — горизонтальная лента, поэтому даём переход ко всем */}
+          <Link className="cats-all-link" href="/categories" style={{ color: "var(--brand)", fontWeight: 600, fontSize: 14 }}>
+            Все категории
+          </Link>
+          <style>{`
+            .cats-all-link { display: none; }
+            @media (max-width: 640px) { .cats-all-link { display: inline-flex; } }
+          `}</style>
         </div>
         <CategoriesGrid />
       </section>

@@ -78,8 +78,8 @@ export class ChatService {
     return { ok: true };
   }
 
-  getChats(userId: number) {
-    return this.prisma.chat.findMany({
+  async getChats(userId: number) {
+    const chats = await this.prisma.chat.findMany({
       where: { OR: [{ initiatorId: userId }, { ownerId: userId }] },
       include: {
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
@@ -96,6 +96,9 @@ export class ChatService {
       },
       orderBy: { id: 'desc' },
     });
+    // Диалоги с самым свежим сообщением — вверху списка.
+    const lastAt = (c: (typeof chats)[number]) => c.messages[0]?.createdAt.getTime() ?? 0;
+    return chats.sort((a, b) => lastAt(b) - lastAt(a) || b.id - a.id);
   }
 
   getMessages(chatId: number, userId: number) {
