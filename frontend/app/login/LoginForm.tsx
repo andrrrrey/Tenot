@@ -7,6 +7,7 @@ import { login } from '@/services/auth';
 import { useStore, type User } from '@/lib/store';
 import { IconEye, IconEyeOff, IconLock, IconMail } from '@/components/Icons';
 import PhoneLoginForm from './PhoneLoginForm';
+import AuthModeTabs, { type AuthMode } from './AuthModeTabs';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -18,7 +19,7 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'phone' | 'email'>('phone');
+  const [mode, setMode] = useState<AuthMode>('phone');
 
   const onPhoneSuccess = (user: { id: number; role: string } | null) => {
     if (user) setUser({ id: String(user.id), name: '', role: user.role as User['role'] });
@@ -112,19 +113,7 @@ export default function LoginForm() {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-          {(['phone', 'email'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              className={mode === m ? 'btn primary' : 'btn'}
-              onClick={() => { setMode(m); setError(null); }}
-              style={{ flex: 1, padding: "9px 12px", fontSize: 14, borderRadius: "var(--radius-sm)" }}
-            >
-              {m === 'phone' ? 'По телефону' : 'По email'}
-            </button>
-          ))}
-        </div>
+        <AuthModeTabs mode={mode} onChange={(m) => { setMode(m); setError(null); }} />
 
         {mode === 'phone' ? (
           <PhoneLoginForm onSuccess={onPhoneSuccess} onError={setError} />

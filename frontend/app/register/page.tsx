@@ -5,6 +5,9 @@ import { register } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { IconMail, IconLock } from '@/components/Icons';
+import { useStore, type User } from '@/lib/store';
+import PhoneLoginForm from '../login/PhoneLoginForm';
+import AuthModeTabs, { type AuthMode } from '../login/AuthModeTabs';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -12,6 +15,13 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const setUser = useStore((s) => s.setUser);
+  const [mode, setMode] = useState<AuthMode>('phone');
+
+  const onPhoneSuccess = (user: { id: number; role: string } | null) => {
+    if (user) setUser({ id: String(user.id), name: '', role: user.role as User['role'] });
+    router.push('/me');
+  };
 
   const submit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -77,7 +87,9 @@ export default function RegisterPage() {
             <IconMail size={24} color="#fff" strokeWidth={2} />
           </div>
           <h1 className="h2" style={{ marginBottom: 6 }}>Создать аккаунт</h1>
-          <div className="muted" style={{ fontSize: 14 }}>Зарегистрируйтесь бесплатно</div>
+          <div className="muted" style={{ fontSize: 14 }}>
+            {mode === 'phone' ? 'Аккаунт создастся после подтверждения номера' : 'Зарегистрируйтесь бесплатно'}
+          </div>
         </div>
 
         {error && (
@@ -86,6 +98,11 @@ export default function RegisterPage() {
           </div>
         )}
 
+        <AuthModeTabs mode={mode} onChange={(m) => { setMode(m); setError(null); }} />
+
+        {mode === 'phone' ? (
+          <PhoneLoginForm onSuccess={onPhoneSuccess} onError={setError} />
+        ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div className="field-label">Email</div>
@@ -138,6 +155,7 @@ export default function RegisterPage() {
             {loading ? 'Создание...' : 'Создать аккаунт'}
           </button>
         </div>
+        )}
 
         <div style={{ marginTop: 24, textAlign: "center" }}>
           <span className="muted" style={{ fontSize: 14 }}>Уже есть аккаунт? </span>
