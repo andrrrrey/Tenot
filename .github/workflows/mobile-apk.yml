@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       api_base_url:
-        description: 'Адрес backend (по умолчанию https://test.tenot.ru)'
+        description: 'Адрес backend (по умолчанию https://tenot.ru)'
         required: false
-        default: 'https://test.tenot.ru'
+        default: 'https://tenot.ru'
 
 jobs:
   build:
@@ -43,7 +43,7 @@ jobs:
       - name: Сборка APK
         run: |
           flutter build apk --release \
-            --dart-define=API_BASE_URL=${{ github.event.inputs.api_base_url || 'https://test.tenot.ru' }}
+            --dart-define=API_BASE_URL=${{ github.event.inputs.api_base_url || 'https://tenot.ru' }}
           cp build/app/outputs/flutter-apk/app-release.apk build/tenot-${{ github.run_number }}.apk
 
       - uses: actions/upload-artifact@v4

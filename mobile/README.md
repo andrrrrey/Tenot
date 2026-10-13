@@ -2,7 +2,7 @@
 
 Этап 2.1 спецификации: базовое приложение для Android/iOS в дизайне мобильной версии сайта.
 Работает с **текущим backend** без изменений на сервере: все запросы идут через тот же прокси,
-что и у сайта (`https://test.tenot.ru/api/proxy/...`), токен передаётся заголовком
+что и у сайта (`https://tenot.ru/api/proxy/...`), токен передаётся заголовком
 `Authorization: Bearer ...`.
 
 Что есть:
@@ -22,7 +22,7 @@
 1. GitHub → вкладка **Actions** → workflow **Mobile APK** → последний зелёный запуск.
 2. Внизу страницы в блоке **Artifacts** скачать `tenot-apk` (zip с файлом `tenot-<N>.apk`).
 3. Передать APK на Android-телефон (Telegram, почта, USB), открыть и разрешить установку
-   из неизвестных источников. Приложение сразу работает с `https://test.tenot.ru`.
+   из неизвестных источников. Приложение сразу работает с `https://tenot.ru`.
 
 Собрать APK под другой сервер: Actions → Mobile APK → **Run workflow** → указать адрес backend.
 
@@ -59,7 +59,7 @@ flutter run -d emulator-5554
 flutter run -d macos
 ```
 
-По умолчанию приложение ходит на `https://test.tenot.ru`. Другой backend:
+По умолчанию приложение ходит на `https://tenot.ru`. Другой backend:
 
 ```bash
 # локальный docker-compose.local.yml (сайт на :3000)

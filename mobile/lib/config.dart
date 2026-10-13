@@ -3,7 +3,7 @@
 ///   flutter run --dart-define=API_BASE_URL=http://localhost:3000
 const String apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://test.tenot.ru',
+  defaultValue: 'https://tenot.ru',
 );
 
 /// Nginx отсекает пустой и «ботовый» User-Agent, поэтому шлём свой.
