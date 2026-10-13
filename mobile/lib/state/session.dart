@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -53,7 +54,8 @@ class Session extends ChangeNotifier {
 
   /// Автологин при старте по сохранённому токену.
   Future<void> init() async {
-    api.deviceId = await _deviceId();
+    // Не ждём: идентификатор нужен только для лимитов SMS-кодов
+    unawaited(_deviceId().then((id) => api.deviceId = id));
     api.token = await _storage.read();
     if (api.token != null) {
       try {
