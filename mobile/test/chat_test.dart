@@ -36,6 +36,20 @@ void main() {
         body = {'id': 1, 'email': 'me@test.ru', 'name': 'Я', 'role': 'USER'};
       } else if (p == '/chat/my') {
         body = [
+          // Старый диалог с более поздним id, но давним сообщением — должен оказаться ниже.
+          {
+            'id': 9,
+            'initiatorId': 3,
+            'ownerId': 1,
+            'listingId': 11,
+            'messages': [
+              {'id': 90, 'chatId': 9, 'senderId': 3, 'text': 'Старое', 'isRead': true, 'createdAt': '2026-01-01T10:00:00.000Z'}
+            ],
+            'initiator': {'id': 3, 'name': 'Анна'},
+            'owner': {'id': 1, 'name': 'Я'},
+            'listing': {'id': 11, 'title': 'Самокат'},
+            '_count': {'messages': 0},
+          },
           {
             'id': 5,
             'initiatorId': 2,
@@ -75,6 +89,8 @@ void main() {
     expect(find.text('Пётр Покупатель'), findsOneWidget);
     expect(find.text('Велосипед'), findsOneWidget);
     expect(find.text('Вы: Да'), findsOneWidget);
+    // Свежий диалог — выше старого.
+    expect(tester.getTopLeft(find.text('Пётр Покупатель')).dy, lessThan(tester.getTopLeft(find.text('Анна')).dy));
 
     await tester.tap(find.text('Пётр Покупатель'));
     await tester.pumpAndSettle();

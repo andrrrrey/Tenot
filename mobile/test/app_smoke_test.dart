@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:tenot/api/api.dart';
 import 'package:tenot/main.dart';
+import 'package:tenot/screens/categories_screen.dart';
 import 'package:tenot/screens/listing_screen.dart';
 import 'package:tenot/screens/search_screen.dart';
 import 'package:tenot/state/session.dart';
@@ -68,6 +69,16 @@ void main() {
     // Запросы идут через прокси сайта и со своим User-Agent.
     expect(requests.first.url.toString(), startsWith('https://example.test/api/proxy/'));
     expect(requests.first.headers['user-agent'], contains('TenotApp'));
+
+    // «Все категории» открывает сетку всех категорий, тап по плитке — поиск.
+    await tester.tap(find.text('Все категории'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CategoriesScreen), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(CategoriesScreen), matching: find.text('Электроника')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SearchScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(SearchScreen))).popUntil((r) => r.isFirst);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Автозапчасти'));
     await tester.pumpAndSettle();

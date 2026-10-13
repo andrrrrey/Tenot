@@ -6,6 +6,7 @@ import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/pickers.dart';
+import 'categories_screen.dart';
 import 'search_screen.dart';
 
 /// Главная — как app/page.tsx в мобильной вёрстке: шапка с поиском, hero, категории, свежие.
@@ -57,6 +58,15 @@ class _HomeScreenState extends State<HomeScreen> {
           cityId: _cityId,
           cityName: _cityName,
         ),
+      ),
+    ));
+  }
+
+  void _openAllCategories() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CategoriesScreen(
+        initial: _categories,
+        onSelect: (c) => _search(category: c),
       ),
     ));
   }
@@ -133,9 +143,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.fromLTRB(14, 16, 14, 0),
                   sliver: SliverToBoxAdapter(child: _hero()),
                 ),
-                const SliverPadding(
-                  padding: EdgeInsets.fromLTRB(14, 28, 14, 0),
-                  sliver: SliverToBoxAdapter(child: SectionTitle('Категории')),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(14, 28, 14, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: SectionTitle(
+                      'Категории',
+                      trailing: GestureDetector(
+                        onTap: _openAllCategories,
+                        child: const Text('Все категории',
+                            style: TextStyle(color: T.brand, fontWeight: FontWeight.w600, fontSize: 14)),
+                      ),
+                    ),
+                  ),
                 ),
                 SliverToBoxAdapter(child: _categoriesRow()),
                 const SliverPadding(
@@ -244,59 +263,8 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (_, i) {
           if (cats == null) return const SizedBox(width: 150, child: Skeleton());
           final c = cats[i];
-          return _CategoryCard(category: c, onTap: () => _search(category: c));
+          return CategoryCard(category: c, onTap: () => _search(category: c));
         },
-      ),
-    );
-  }
-}
-
-/// Карточка категории — как .cat-card в CategoriesGrid.tsx.
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.category, required this.onTap});
-  final Category category;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 150,
-      decoration: T.cardDecoration(shadow: T.shadowXs),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Stack(
-            children: [
-              Positioned(
-                right: -6,
-                bottom: -6,
-                width: 72,
-                height: 72,
-                child: category.imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: NetImage(category.imageUrl, iconSize: 24),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(color: T.brandLight, borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.grid_view_rounded, color: T.brand, size: 28),
-                      ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: SizedBox(
-                  width: 118,
-                  child: Text(category.name,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, height: 1.3, color: T.text)),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

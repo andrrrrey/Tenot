@@ -40,12 +40,20 @@ class ChatStore extends ChangeNotifier {
   Future<void> refresh() async {
     if (!session.isLoggedIn) return;
     try {
-      chats = await session.api.myChats();
+      // Диалоги со свежими сообщениями — вверху (сервер отдаёт по дате создания чата).
+      chats = (await session.api.myChats())..sort(_byLastMessage);
       error = null;
     } catch (e) {
       error = e;
     }
     notifyListeners();
+  }
+
+  static int _byLastMessage(Chat a, Chat b) {
+    final at = a.lastMessage?.createdAt, bt = b.lastMessage?.createdAt;
+    if (at != null && bt != null && at != bt) return bt.compareTo(at);
+    if ((at == null) != (bt == null)) return at == null ? 1 : -1;
+    return b.id.compareTo(a.id);
   }
 
   /// Существующий чат текущего пользователя по объявлению (если он покупатель).

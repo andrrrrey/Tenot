@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCategories, type Category } from "@/services/categories";
 
-export function CategoriesGrid() {
+/**
+ * full — все категории плитками (страница /categories): на мобильном 2 колонки
+ * вместо горизонтальной ленты, как на главной.
+ */
+export function CategoriesGrid({ full = false }: { full?: boolean } = {}) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +21,7 @@ export function CategoriesGrid() {
 
   if (loading) {
     return (
-      <div className="categories-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+      <div className={full ? "categories-grid-all" : "categories-grid"} style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="skeleton" style={{ height: 90 }} />
         ))}
@@ -35,7 +39,14 @@ export function CategoriesGrid() {
 
   return (
     <>
-    <style>{`
+    <style>{full ? `
+      @media (max-width: 900px) {
+        .categories-grid-all { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+      }
+      @media (max-width: 640px) {
+        .categories-grid-all { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+      }
+    ` : `
       @media (max-width: 900px) {
         .categories-grid {
           grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -59,7 +70,7 @@ export function CategoriesGrid() {
       }
     `}</style>
     <div
-      className="categories-grid"
+      className={full ? "categories-grid-all" : "categories-grid"}
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
