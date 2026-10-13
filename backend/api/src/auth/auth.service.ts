@@ -23,11 +23,22 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new UnauthorizedException();
+    if (!user || !user.password) throw new UnauthorizedException();
 
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException();
 
+    return this.sign(user.id, user.role);
+  }
+
+  /** Вход по подтверждённому номеру (79XXXXXXXXX); создаёт пользователя при первом входе. */
+  async loginByPhone(phone: string) {
+    const user = await this.prisma.user.upsert({
+      where: { authPhone: phone },
+      update: {},
+      create: { authPhone: phone, phone: `+${phone}`, role: 'USER' },
+      select: { id: true, role: true },
+    });
     return this.sign(user.id, user.role);
   }
 

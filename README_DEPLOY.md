@@ -166,3 +166,34 @@ You can schedule that with cron (daily 04:00):
 ```cron
 0 4 * * * cd /home/ubuntu/tenot-full && sudo ./scripts/sync_letsencrypt_to_project.sh >/dev/null 2>&1
 ```
+
+## Вход по SMS-коду (SMS.ru)
+
+1. Зарегистрироваться на https://sms.ru, пополнить баланс, взять `api_id` в разделе «Программистам».
+2. В `.env` (root):
+   ```env
+   SMS_PROVIDER=smsru
+   SMSRU_API_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   # SMSRU_FROM=TENOT   # после согласования буквенного имени отправителя
+   # SMSRU_TEST=1       # тестовый режим: SMS не уходит и не списывается
+   ```
+3. `docker compose up -d --build` и `docker compose exec api sh -lc "npx prisma migrate deploy"`.
+
+По умолчанию `SMS_PROVIDER=console` — код пишется в логи API (`docker compose logs -f api`).
+
+**Защита (настраивается env-переменными API, значения по умолчанию):**
+
+| Ограничение | Переменная | По умолчанию |
+|---|---|---|
+| Повторная отправка на номер | `OTP_RESEND_SEC` | 60 с |
+| Время жизни кода / длина | `OTP_TTL_SEC` / `OTP_CODE_LENGTH` | 300 с / 4 |
+| Попыток ввода на код | `OTP_MAX_ATTEMPTS` | 5 |
+| Кодов на номер | `OTP_LIMIT_PHONE_HOUR` / `_DAY` | 5 / 10 |
+| Кодов с IP | `OTP_LIMIT_IP_HOUR` / `_DAY` | 10 / 30 |
+| Кодов с устройства (`X-Device-Id`) | `OTP_LIMIT_DEVICE_HOUR` | 5 |
+| Всего SMS в час (предохранитель бюджета) | `OTP_LIMIT_GLOBAL_HOUR` | 300 |
+
+Дополнительно: только российские мобильные номера (+79…), nginx-зона `otp` (10 запросов/мин с IP).
+
+**Новый провайдер или канал** (SMS Aero, звонок-код, Telegram Gateway): реализовать `OtpSender`
+в `backend/api/src/auth/otp/senders/` и добавить его в `otp-sender.factory.ts` — остальной модуль не меняется.

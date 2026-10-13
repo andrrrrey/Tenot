@@ -28,7 +28,7 @@ export default function AdminUsers() {
       <h1 className="h2">Пользователи</h1>
       {users.map((u) => (
         <div key={u.id} className="card" style={{ padding: 12, marginBottom: 10 }}>
-          <div><b>{u.email}</b></div>
+          <div><b>{u.email || u.phone || `#${u.id}`}</b></div>
           <div className="muted">Роль: {roleLabel(u.role)}</div>
           <div style={{ marginTop: 8 }}>
             <button className="btn" onClick={() => setRole(u.id, 'USER')}>Пользователь</button>{' '}

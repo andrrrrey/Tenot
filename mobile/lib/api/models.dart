@@ -242,7 +242,7 @@ class UserProfile {
         role = '${j['role'] ?? 'USER'}',
         city = IdName.fromJson(j['city']);
 
-  String get displayName => (name != null && name!.trim().isNotEmpty) ? name! : email;
+  String get displayName => (name != null && name!.trim().isNotEmpty) ? name! : (email.isNotEmpty ? email : (phone ?? ''));
 }
 
 /// Фильтры поиска — те же параметры, что у getListings на сайте.

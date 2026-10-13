@@ -55,10 +55,12 @@ model City {
 
 model User {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
+  email     String?  @unique
+  password  String?
   name      String?
   phone     String?
+  // Нормализованный подтверждённый номер (7XXXXXXXXXX) для входа по SMS-коду
+  authPhone String?  @unique
   avatarUrl String?
   role      Role     @default(USER)
   createdAt DateTime @default(now())
@@ -258,4 +260,22 @@ model Review {
   listing Listing? @relation(fields: [listingId], references: [id])
 
   @@unique([authorId, targetId])
+}
+
+// Одноразовые коды входа по телефону; также служит журналом для лимитов отправки
+model PhoneOtp {
+  id        Int       @id @default(autoincrement())
+  phone     String
+  codeHash  String
+  ip        String
+  deviceId  String?
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([phone, createdAt])
+  @@index([ip, createdAt])
+  @@index([deviceId, createdAt])
+  @@index([createdAt])
 }

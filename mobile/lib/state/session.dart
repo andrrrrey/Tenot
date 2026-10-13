@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -52,6 +53,7 @@ class Session extends ChangeNotifier {
 
   /// Автологин при старте по сохранённому токену.
   Future<void> init() async {
+    api.deviceId = await _deviceId();
     api.token = await _storage.read();
     if (api.token != null) {
       try {
@@ -70,6 +72,26 @@ class Session extends ChangeNotifier {
   Future<void> login(String email, String password) => _auth(api.login(email, password));
 
   Future<void> register(String email, String password) => _auth(api.register(email, password));
+
+  Future<int> requestPhoneCode(String phone) => api.requestPhoneCode(phone);
+
+  Future<void> loginByPhone(String phone, String code) => _auth(api.loginByPhone(phone, code));
+
+  static Future<String?> _deviceId() async {
+    const key = 'tenot_device_id';
+    try {
+      final p = await SharedPreferences.getInstance();
+      var id = p.getString(key);
+      if (id == null) {
+        final rnd = Random.secure();
+        id = List.generate(16, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+        await p.setString(key, id);
+      }
+      return id;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> _auth(Future<String> request) async {
     final token = await request;

@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import type { Listing } from './listings';
 
-export type AdminUser = { id: number; email: string; name?: string; role: 'USER' | 'ADMIN'; createdAt: string };
+export type AdminUser = { id: number; email: string | null; phone?: string | null; name?: string; role: 'USER' | 'ADMIN'; createdAt: string };
 export type Stats = { users: number; listings: number; chats: number; messages: number; reviews: number; pendingReviews: number };
 
 export type AdminReview = {
