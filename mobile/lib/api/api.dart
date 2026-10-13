@@ -25,7 +25,8 @@ class Api {
       : baseUrl = (baseUrl ?? apiBaseUrl).replaceAll(RegExp(r'/+$'), ''),
         _client = client ?? http.Client();
 
-  final String baseUrl;
+  /// Может поменяться, если сервер постоянно перенаправляет на другой домен (см. [_send]).
+  String baseUrl;
   final http.Client _client;
   String? token;
 
@@ -53,11 +54,30 @@ class Api {
     return '$baseUrl${url.startsWith('/') ? '' : '/'}$url';
   }
 
+  static const _redirects = {301, 302, 303, 307, 308};
+
+  /// Если сервер перенаправил запрос на тот же путь другого домена
+  /// (например, test.tenot.ru → tenot.ru), запоминаем новый адрес backend.
+  /// GET-запросы HTTP-клиент проходит по редиректу сам, а POST/PATCH/DELETE — нет.
+  bool _adoptRedirect(http.Response res) {
+    final location = res.headers['location'];
+    final requestUrl = res.request?.url;
+    if (!_redirects.contains(res.statusCode) || location == null || requestUrl == null) return false;
+    final target = requestUrl.resolve(location);
+    if (target.path != requestUrl.path || !target.hasAuthority) return false;
+    final newBase = target.origin;
+    if (newBase == baseUrl) return false;
+    baseUrl = newBase;
+    return true;
+  }
+
   Future<dynamic> _send(Future<http.Response> Function() run) async {
     final hadToken = token != null;
     http.Response res;
     try {
       res = await run().timeout(_timeout);
+      // Повторяем запрос по новому адресу (запрос пересобирается с актуальным baseUrl).
+      if (_adoptRedirect(res)) res = await run().timeout(_timeout);
     } on SocketException {
       throw ApiException(0, 'Нет соединения с сервером');
     } on HttpException {
