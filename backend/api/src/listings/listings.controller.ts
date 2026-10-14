@@ -18,7 +18,7 @@ import { mkdirSync } from 'fs';
 import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto.create-listing';
 import { Roles } from '../auth/roles.decorator';
-import { Public } from '../auth/public.decorator';
+import { OptionalAuth, Public } from '../auth/public.decorator';
 
 const LISTINGS_UPLOAD_DIR = './uploads/listings';
 mkdirSync(LISTINGS_UPLOAD_DIR, { recursive: true });
@@ -114,6 +114,13 @@ export class ListingsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(+id);
+  }
+
+  @Public()
+  @OptionalAuth()
+  @Post(':id/view')
+  registerView(@Req() req: any, @Param('id') id: string) {
+    return this.service.registerView(+id, req.user?.userId);
   }
 
   @Roles('USER', 'ADMIN')

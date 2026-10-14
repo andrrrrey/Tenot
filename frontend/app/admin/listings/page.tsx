@@ -13,6 +13,7 @@ import {
 } from '@/services/admin';
 import { getCategories, type Category } from '@/services/categories';
 import type { Listing } from '@/services/listings';
+import { ListingStats } from '@/components/ListingStats';
 
 const userContact = (u: AdminUser) => u.email || u.phone || `#${u.id}`;
 const userLabel = (u: AdminUser) => (u.name ? `${u.name} (${userContact(u)})` : userContact(u));
@@ -423,6 +424,7 @@ export default function AdminListings() {
                       <div className="muted" style={{ fontSize: 12 }}>
                         {new Date(l.createdAt).toLocaleDateString('ru-RU')}
                       </div>
+                      <ListingStats listing={l} />
                     </div>
                   </div>
 

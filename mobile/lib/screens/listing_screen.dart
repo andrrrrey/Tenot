@@ -23,18 +23,37 @@ class _ListingScreenState extends State<ListingScreen> {
   Object? _error;
   int _page = 0;
   bool _phoneShown = false;
+  int? _views;
+  /// Был ли в избранном на момент загрузки — чтобы счётчик сразу реагировал на FavButton.
+  bool _favAtLoad = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _registerView();
+  }
+
+  Future<void> _registerView() async {
+    try {
+      final v = await context.read<Session>().api.registerView(widget.id);
+      if (mounted && v != null) setState(() => _views = v);
+    } catch (_) {
+      // счётчик просмотров не критичен
+    }
   }
 
   Future<void> _load() async {
     setState(() => _error = null);
     try {
-      final l = await context.read<Session>().api.listing(widget.id);
-      if (mounted) setState(() => _l = l);
+      final session = context.read<Session>();
+      final l = await session.api.listing(widget.id);
+      if (mounted) {
+        setState(() {
+          _l = l;
+          _favAtLoad = session.isFavorite(l.id);
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e);
     }
@@ -241,9 +260,18 @@ class _ListingScreenState extends State<ListingScreen> {
             Text(l.description, style: const TextStyle(fontSize: 14, height: 1.6)),
           ],
           const Divider(height: 32),
-          Text('Объявление № ${l.id}', style: T.mutedText.copyWith(fontSize: 12)),
+          _stats(l),
         ],
       ),
+    );
+  }
+
+  Widget _stats(Listing l) {
+    final fav = context.watch<Session>().isFavorite(l.id);
+    final favorites = l.favoritesCount - (_favAtLoad ? 1 : 0) + (fav ? 1 : 0);
+    return ListingStats(
+      views: _views ?? l.viewsCount,
+      favorites: favorites < 0 ? 0 : favorites,
     );
   }
 

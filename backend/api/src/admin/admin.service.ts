@@ -6,6 +6,7 @@ const LISTING_INCLUDE = {
   category: { include: { parent: true } },
   user: { select: { id: true, email: true, name: true } },
   images: true,
+  _count: { select: { favorites: true } },
 } as const;
 
 @Injectable()

@@ -165,6 +165,29 @@ class FavButton extends StatelessWidget {
   }
 }
 
+/// Счётчики просмотров и добавлений в избранное — как components/ListingStats.tsx.
+class ListingStats extends StatelessWidget {
+  const ListingStats({super.key, required this.views, required this.favorites, this.size = 12, this.color = T.muted});
+  final int views;
+  final int favorites;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(color: color, fontSize: size, fontWeight: FontWeight.w500);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(Icons.visibility_outlined, size: size + 2, color: color),
+      const SizedBox(width: 3),
+      Text('$views', style: style),
+      SizedBox(width: size * 0.8),
+      Icon(Icons.favorite_border, size: size + 1, color: color),
+      const SizedBox(width: 3),
+      Text('$favorites', style: style),
+    ]);
+  }
+}
+
 /// Карточка объявления — копия components/ListingCard.tsx.
 class ListingCard extends StatelessWidget {
   const ListingCard({super.key, required this.listing, this.footer});
@@ -238,8 +261,15 @@ class ListingCard extends StatelessWidget {
                           style: const TextStyle(
                               fontWeight: FontWeight.w800, fontSize: 16.5, color: T.price, letterSpacing: -0.3)),
                       const SizedBox(height: 2),
-                      Text(formatDate(l.createdAt),
-                          style: const TextStyle(color: T.mutedLight, fontSize: 11, fontWeight: FontWeight.w500)),
+                      Row(children: [
+                        Expanded(
+                          child: Text(formatDate(l.createdAt),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: T.mutedLight, fontSize: 11, fontWeight: FontWeight.w500)),
+                        ),
+                        ListingStats(views: l.viewsCount, favorites: l.favoritesCount, size: 11, color: T.mutedLight),
+                      ]),
                       ?footer,
                     ],
                   ),

@@ -209,6 +209,12 @@ class Api {
 
   Future<Listing> listing(int id) async => Listing.fromJson(await get('/listings/$id'));
 
+  /// Засчитывает просмотр (собственные просмотры владельца бэкенд не считает).
+  Future<int?> registerView(int id) async {
+    final data = await post('/listings/$id/view');
+    return data is Map ? (data['viewsCount'] as num?)?.toInt() : null;
+  }
+
   Future<List<Listing>> myListings() async => _listings(await get('/listings/my'));
 
   Future<Map<String, dynamic>> fuzzy(String q) async =>

@@ -16,6 +16,8 @@ export type Listing = {
   price: number;
   isActive: boolean;
   status: 'PUBLISHED' | 'DRAFT';
+  viewsCount?: number;
+  _count?: { favorites: number };
   createdAt: string;
   category: { id: number; name: string; hasCarFilter?: boolean };
   images: ListingImage[];
@@ -74,6 +76,20 @@ export const getListings = (params?: {
 };
 
 export const getListing = (id: number) => api.get<Listing>(`/listings/${id}`);
+
+/** Registers a view (the backend ignores the owner's own views). Counted once per browser session. */
+export const registerListingView = (id: number) => {
+  const key = `viewed:listing:${id}`;
+  try {
+    if (sessionStorage.getItem(key)) return Promise.resolve(null);
+    sessionStorage.setItem(key, '1');
+  } catch {
+    // storage unavailable — still count the view
+  }
+  return api.post<{ viewsCount: number }>(`/listings/${id}/view`).catch(() => null);
+};
+
+export const getFavoritesCount = (listing: Pick<Listing, '_count'>) => listing._count?.favorites ?? 0;
 
 export const getMyListings = () => api.get<Listing[]>('/listings/my');
 

@@ -152,6 +152,7 @@ model Listing {
   price       Float
   isActive    Boolean       @default(true)
   status      ListingStatus @default(PUBLISHED)
+  viewsCount  Int           @default(0)
   createdAt   DateTime      @default(now())
 
   userId     Int

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRequireRole } from "@/hooks/useRequireRole";
 import { getMyListings, toggleListing, deleteListing, getCoverUrl, type Listing } from "@/services/listings";
+import { ListingStats } from "@/components/ListingStats";
 
 export default function MyItemsPage() {
   const { user, loading: authLoading } = useRequireRole(["USER", "ADMIN"]);
@@ -119,6 +120,7 @@ export default function MyItemsPage() {
                   <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
                     {new Date(listing.createdAt).toLocaleString("ru-RU")}
                   </div>
+                  <ListingStats listing={listing} style={{ marginTop: 6 }} />
                 </Link>
 
                 {!listing.isActive && (
