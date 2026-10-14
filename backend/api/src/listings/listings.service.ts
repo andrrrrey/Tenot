@@ -198,15 +198,7 @@ export class ListingsService {
             ]
           : undefined,
       },
-      include: {
-        images: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
-        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
-        category: true,
-        city: true,
-        carMake: { select: { id: true, name: true } },
-        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
-        attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
-      },
+      include: this.detailInclude(),
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -214,16 +206,16 @@ export class ListingsService {
   findOne(id: number) {
     return this.prisma.listing.findUnique({
       where: { id },
-      include: {
-        images: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
-        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
-        category: true,
-        city: true,
-        carMake: { select: { id: true, name: true } },
-        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
-        attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
-      },
+      include: this.detailInclude(),
     });
+  }
+
+  /** Increments the public view counter; owners' own views are not counted. */
+  async registerView(id: number, viewerId?: number) {
+    const listing = await this.prisma.listing.findUnique({ where: { id }, select: { userId: true, viewsCount: true } });
+    if (!listing) throw new NotFoundException('Listing not found');
+    if (viewerId && viewerId === listing.userId) return { viewsCount: listing.viewsCount };
+    return this.prisma.listing.update({ where: { id }, data: { viewsCount: { increment: 1 } }, select: { viewsCount: true } });
   }
 
   async update(id: number, userId: number, dto: Partial<CreateListingDto>) {
@@ -267,15 +259,7 @@ export class ListingsService {
   findByUserId(userId: number) {
     return this.prisma.listing.findMany({
       where: { userId, isActive: true },
-      include: {
-        images: { orderBy: [{ order: 'asc' }, { id: 'asc' }] },
-        user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
-        category: true,
-        city: true,
-        carMake: { select: { id: true, name: true } },
-        carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
-        attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
-      },
+      include: this.detailInclude(),
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -575,6 +559,7 @@ export class ListingsService {
       carModel: { select: { id: true, name: true, yearFrom: true, yearTo: true } },
       attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
       user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
+      _count: { select: { favorites: true } },
     };
   }
 

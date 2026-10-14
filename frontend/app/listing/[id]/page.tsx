@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getListing, type Listing } from '@/services/listings';
+import { getListing, getFavoritesCount, registerListingView, type Listing } from '@/services/listings';
 import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 import { MediaGallery } from '@/components/MediaGallery';
@@ -15,6 +15,7 @@ import {
   IconArrowLeft,
 } from '@/components/Icons';
 import { openChatForListing } from '@/components/ChatWidget';
+import { ListingStats } from '@/components/ListingStats';
 
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,10 +23,17 @@ export default function ListingPage() {
   const { user } = useMe();
   const [listing, setListing] = useState<Listing | null>(null);
   const [fav, setFav] = useState(false);
+  const [favCount, setFavCount] = useState(0);
   const [showPhone, setShowPhone] = useState(false);
 
   useEffect(() => {
-    getListing(Number(id)).then(setListing);
+    getListing(Number(id)).then((l) => {
+      setListing(l);
+      setFavCount(getFavoritesCount(l));
+    });
+    registerListingView(Number(id)).then((res) => {
+      if (res) setListing((prev) => (prev ? { ...prev, viewsCount: res.viewsCount } : prev));
+    });
   }, [id]);
 
   useEffect(() => {
@@ -62,9 +70,11 @@ export default function ListingPage() {
     if (fav) {
       await removeFavorite(listing.id);
       setFav(false);
+      setFavCount((c) => Math.max(0, c - 1));
     } else {
       await addFavorite(listing.id);
       setFav(true);
+      setFavCount((c) => c + 1);
     }
   };
 
@@ -266,14 +276,27 @@ export default function ListingPage() {
 
             <div
               className="muted"
-              style={{ marginTop: 20, fontSize: 12, paddingTop: 16, borderTop: '1px solid var(--line-solid)' }}
+              style={{
+                marginTop: 20,
+                fontSize: 12,
+                paddingTop: 16,
+                borderTop: '1px solid var(--line-solid)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
             >
-              Опубликовано:{' '}
-              {new Date(listing.createdAt).toLocaleDateString('ru-RU', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              <span>
+                Опубликовано:{' '}
+                {new Date(listing.createdAt).toLocaleDateString('ru-RU', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+              <ListingStats listing={listing} favoritesCount={favCount} />
             </div>
           </div>
         </div>

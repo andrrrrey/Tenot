@@ -92,6 +92,8 @@ class Listing {
   final double price;
   final bool isActive;
   final String status;
+  final int viewsCount;
+  final int favoritesCount;
   final DateTime createdAt;
   final IdName? category;
   final bool categoryHasCarFilter;
@@ -113,6 +115,8 @@ class Listing {
         price = _num(j['price']),
         isActive = j['isActive'] != false,
         status = '${j['status'] ?? 'PUBLISHED'}',
+        viewsCount = _int(j['viewsCount']),
+        favoritesCount = (j['_count'] is Map) ? _int(j['_count']['favorites']) : 0,
         createdAt = DateTime.tryParse('${j['createdAt']}') ?? DateTime.now(),
         category = IdName.fromJson(j['category']),
         categoryHasCarFilter = (j['category'] is Map) && j['category']['hasCarFilter'] == true,

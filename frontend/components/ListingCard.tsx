@@ -9,6 +9,7 @@ import { useMe } from "@/hooks/useMe";
 import { addFavorite, removeFavorite } from "@/services/favorites";
 import { useState, useEffect } from "react";
 import { IconHeart, IconMapPin } from "@/components/Icons";
+import { ListingStats } from "@/components/ListingStats";
 
 type Props = {
   listing: Listing;
@@ -192,11 +193,14 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
             {listing.price.toLocaleString("ru-RU")} ₽
           </div>
 
-          <div style={{ color: "var(--muted-light)", fontSize: 11, fontWeight: 500 }}>
-            {new Date(listing.createdAt).toLocaleDateString("ru-RU", {
-              day: "numeric",
-              month: "short",
-            })}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ color: "var(--muted-light)", fontSize: 11, fontWeight: 500 }}>
+              {new Date(listing.createdAt).toLocaleDateString("ru-RU", {
+                day: "numeric",
+                month: "short",
+              })}
+            </div>
+            <ListingStats listing={listing} size={11} style={{ color: "var(--muted-light)", gap: 8 }} />
           </div>
         </div>
       </Link>

@@ -329,6 +329,8 @@ class _MyListingTile extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: T.price)),
                 const SizedBox(height: 2),
                 Text(formatDate(l.createdAt), style: T.mutedText.copyWith(fontSize: 11.5)),
+                const SizedBox(height: 4),
+                ListingStats(views: l.viewsCount, favorites: l.favoritesCount, size: 11.5),
               ]),
             ),
             PopupMenuButton<String>(
