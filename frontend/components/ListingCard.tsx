@@ -115,6 +115,8 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
             </div>
           )}
 
+          {listing.has360 && <span className="badge-360">360°</span>}
+
           {/* Favorite button overlay — always visible; redirects to login for guests */}
           <button
             onClick={handleToggleFav}

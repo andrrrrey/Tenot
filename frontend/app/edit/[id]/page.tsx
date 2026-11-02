@@ -567,6 +567,9 @@ export default function EditPage() {
               }}
               newCoverIndex={newCoverIndex}
             />
+            <div className="app-only-hint">
+              360°-обзор (вращение) можно снять и добавить в мобильном приложении TENOT.
+            </div>
           </div>
 
           <hr style={{ margin: 0 }} />
