@@ -28,6 +28,16 @@ class ListingImage {
   bool get isImage => type == 'image';
 }
 
+/// Набор кадров 360°-вращения (GET /listings/:id/360).
+class Spin360 {
+  final List<String> frames;
+  final String previewUrl;
+
+  Spin360.fromJson(Map<String, dynamic> j)
+      : frames = (j['frames'] as List? ?? []).map((e) => '$e').toList(),
+        previewUrl = '${j['previewUrl'] ?? ''}';
+}
+
 class ListingUser {
   final int id;
   final String? name;
@@ -107,6 +117,10 @@ class Listing {
   final IdName? carMake;
   final IdName? carModel;
   final List<ListingAttribute> attributes;
+  /// Есть 360°-вращение (бейдж «360°»).
+  final bool has360;
+  /// Превью 360°-вращения; сами кадры — через Api.listing360 (ленивая загрузка).
+  final String? preview360;
 
   Listing.fromJson(Map<String, dynamic> j)
       : id = _int(j['id']),
@@ -136,7 +150,17 @@ class Listing {
             .whereType<Map<String, dynamic>>()
             .map(ListingAttribute.fromJson)
             .whereType<ListingAttribute>()
-            .toList();
+            .toList(),
+        has360 = j['has360'] == true,
+        preview360 = _spinPreview(j['media360']);
+
+  static String? _spinPreview(dynamic media360) {
+    if (media360 is! List) return null;
+    for (final m in media360) {
+      if (m is Map && m['kind'] == 'spin' && m['previewUrl'] is String) return m['previewUrl'] as String;
+    }
+    return null;
+  }
 
   bool get isDraft => status == 'DRAFT';
 
