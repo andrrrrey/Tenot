@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -16,6 +17,14 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { mkdirSync } from 'fs';
 import { ListingsService } from './listings.service';
+import {
+  Media360Service,
+  SPIN_BATCH_MAX,
+  SPIN_FRAME_MAX_SIZE,
+  SPIN_MAX_FRAMES,
+  assertUploadId,
+  spinTmpDir,
+} from './media360.service';
 import { CreateListingDto } from './dto.create-listing';
 import { Roles } from '../auth/roles.decorator';
 import { OptionalAuth, Public } from '../auth/public.decorator';
@@ -42,9 +51,38 @@ const mediaFileFilter = (_req: any, file: Express.Multer.File, cb: any) => {
   }
 };
 
+// Кадры 360°-вращения: uploadId и startIndex приходят в query (не зависят от порядка
+// полей в multipart), файлы сразу пишутся во временную папку загрузки как frame_NNN.
+const spinFramesStorage = diskStorage({
+  destination: (req: any, _file, cb) => {
+    try {
+      const uploadId = assertUploadId(req.query.uploadId);
+      const dir = spinTmpDir(+req.params.id, uploadId);
+      mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    } catch (e) {
+      cb(e as Error, '');
+    }
+  },
+  filename: (req: any, file, cb) => {
+    const start = Number(req.query.startIndex);
+    if (!Number.isInteger(start) || start < 0) return cb(new BadRequestException('Некорректный startIndex'), '');
+    req._spinCounter = (req._spinCounter ?? 0) + 1;
+    const index = start + req._spinCounter - 1;
+    if (index >= SPIN_MAX_FRAMES) return cb(new BadRequestException(`Максимум ${SPIN_MAX_FRAMES} кадров`), '');
+    const ext = file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    cb(null, `frame_${String(index).padStart(3, '0')}.${ext}`);
+  },
+});
+
+const spinFrameFilter = (_req: any, file: Express.Multer.File, cb: any) => {
+  if (/^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype)) cb(null, true);
+  else cb(new BadRequestException('Кадры 360° — только JPEG, PNG или WebP'), false);
+};
+
 @Controller('listings')
 export class ListingsController {
-  constructor(private service: ListingsService) {}
+  constructor(private service: ListingsService, private media360: Media360Service) {}
 
   @Roles('USER', 'ADMIN')
   @Get('my')
@@ -190,5 +228,48 @@ export class ListingsController {
     @Param('mediaId') mediaId: string,
   ) {
     return this.service.setCover(+id, req.user.userId, +mediaId);
+  }
+
+  // ── 360° content ────────────────────────────────────────────────────────────
+
+  @Public()
+  @Get(':id/360')
+  get360(@Param('id') id: string) {
+    return this.media360.get360(+id);
+  }
+
+  @Roles('USER', 'ADMIN')
+  @Post(':id/360/spin/frames')
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      storage: spinFramesStorage,
+      fileFilter: spinFrameFilter,
+      limits: { files: SPIN_BATCH_MAX, fileSize: SPIN_FRAME_MAX_SIZE },
+    }),
+  )
+  uploadSpinFrames(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('uploadId') uploadId: string,
+    @Query('startIndex') startIndex: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.media360.acceptFrames(+id, req.user.userId, assertUploadId(uploadId), +startIndex, files || []);
+  }
+
+  @Roles('USER', 'ADMIN')
+  @Post(':id/360/spin/commit')
+  commitSpin(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { uploadId?: string; count?: number },
+  ) {
+    return this.media360.commitSpin(+id, req.user.userId, assertUploadId(body?.uploadId), Number(body?.count));
+  }
+
+  @Roles('USER', 'ADMIN')
+  @Delete(':id/360/spin')
+  deleteSpin(@Req() req: any, @Param('id') id: string) {
+    return this.media360.deleteSpin(+id, req.user.userId);
   }
 }

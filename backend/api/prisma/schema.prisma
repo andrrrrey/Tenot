@@ -153,6 +153,7 @@ model Listing {
   isActive    Boolean       @default(true)
   status      ListingStatus @default(PUBLISHED)
   viewsCount  Int           @default(0)
+  has360      Boolean       @default(false)
   createdAt   DateTime      @default(now())
 
   userId     Int
@@ -174,6 +175,24 @@ model Listing {
   favorites  Favorite[]
   reviews    Review[]
   attributes ListingAttribute[]
+  media360   Listing360[]
+}
+
+// 360°-контент объявления: "spin" — набор кадров вращения, "interior" — сферическая панорама (позже)
+model Listing360 {
+  id         Int      @id @default(autoincrement())
+  listingId  Int
+  kind       String
+  frames     String[]
+  previewUrl String
+  width      Int?
+  height     Int?
+  status     String   @default("ready")
+  createdAt  DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, kind])
 }
 
 model ListingAttribute {
