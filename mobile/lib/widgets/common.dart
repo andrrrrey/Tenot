@@ -215,6 +215,20 @@ class ListingCard extends StatelessWidget {
                   children: [
                     NetImage(l.coverUrl),
                     Positioned(top: 8, right: 8, child: FavButton(listingId: l.id, size: 32)),
+                    if (l.has360)
+                      Positioned(
+                        left: 8,
+                        bottom: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xBF111827),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text('360°',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                        ),
+                      ),
                     if (l.isDraft || !l.isActive)
                       Positioned(
                         top: 8,

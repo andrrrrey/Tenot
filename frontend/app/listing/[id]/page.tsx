@@ -7,6 +7,7 @@ import { getListing, getFavoritesCount, registerListingView, type Listing } from
 import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 import { MediaGallery } from '@/components/MediaGallery';
+import { Spin360Viewer } from '@/components/Spin360Viewer';
 import {
   IconHeart,
   IconPhone,
@@ -53,6 +54,7 @@ export default function ListingPage() {
 
   const listingOwnerId = listing.user?.id;
   const cityLabel = listing.allCities ? 'Все города' : listing.city?.name;
+  const spinPreview = listing.has360 ? listing.media360?.find((m) => m.kind === 'spin')?.previewUrl : undefined;
   const sellerName = listing.user?.name || 'Продавец';
   const sellerPhone = listing.user?.phone;
   const sellerInitials = sellerName
@@ -147,6 +149,13 @@ export default function ListingPage() {
           <div className="card listing-card-inner" style={{ padding: '20px' }}>
             {/* Media gallery */}
             <MediaGallery media={listing.images ?? []} />
+
+            {/* 360°-вращение: кадры грузятся только после нажатия */}
+            {spinPreview && (
+              <div style={{ marginTop: 16 }}>
+                <Spin360Viewer listingId={listing.id} previewUrl={spinPreview} />
+              </div>
+            )}
 
             {/* Title & meta */}
             <div style={{ marginTop: 20 }}>

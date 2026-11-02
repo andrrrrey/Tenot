@@ -16,7 +16,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TimeoutInterceptor(30_000));
 
   // Serve uploaded files as static assets
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads' });
+  // dotfiles: 'deny' — служебные папки вроде uploads/.tmp360 (незавершённые загрузки 360°) не отдаются
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads', dotfiles: 'deny' });
 
   const server = await app.listen(3001, '0.0.0.0');
 

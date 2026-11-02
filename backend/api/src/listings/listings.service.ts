@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto, ListingAttributeInput } from './dto.create-listing';
 import { CategoriesService } from '../categories/categories.service';
+import { Media360Service } from './media360.service';
 import { CategoryField, CategoryFieldType, Prisma } from '@prisma/client';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
@@ -21,7 +22,11 @@ function levenshtein(a: string, b: string): number {
 
 @Injectable()
 export class ListingsService {
-  constructor(private prisma: PrismaService, private categories: CategoriesService) {}
+  constructor(
+    private prisma: PrismaService,
+    private categories: CategoriesService,
+    private media360: Media360Service,
+  ) {}
 
   async createByUserId(userId: number, dto: CreateListingDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -284,6 +289,7 @@ export class ListingsService {
     for (const img of listing.images) {
       this.deleteFile(img.url);
     }
+    await this.media360.removeAllFiles(id);
 
     await this.prisma.favorite.deleteMany({ where: { listingId: id } });
     await this.prisma.listingImage.deleteMany({ where: { listingId: id } });
@@ -560,6 +566,8 @@ export class ListingsService {
       attributes: { include: { field: true }, orderBy: { field: { sortOrder: 'asc' } } },
       user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
       _count: { select: { favorites: true } },
+      // Только сводка 360° — сами кадры отдаются отдельно через GET /listings/:id/360 (ленивая загрузка)
+      media360: { where: { status: 'ready' }, select: { kind: true, previewUrl: true } },
     };
   }
 

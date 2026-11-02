@@ -31,7 +31,13 @@ export type Listing = {
   carMake?: { id: number; name: string } | null;
   carModel?: { id: number; name: string; yearFrom: number; yearTo: number | null } | null;
   attributes?: ListingAttribute[];
+  /** Есть 360°-вращение (бейдж в ленте). */
+  has360?: boolean;
+  /** Сводка 360° (только превью; кадры — через getListing360). */
+  media360?: { kind: 'spin' | 'interior'; previewUrl: string }[];
 };
+
+export type Spin360 = { frames: string[]; previewUrl: string; frameCount: number };
 
 export type ListingAttributeValue = string | number | boolean | string[] | null;
 export type ListingAttribute = {
@@ -76,6 +82,9 @@ export const getListings = (params?: {
 };
 
 export const getListing = (id: number) => api.get<Listing>(`/listings/${id}`);
+
+/** Кадры 360° — запрашиваются только после действия пользователя (ленивая загрузка). */
+export const getListing360 = (id: number) => api.get<{ spin: Spin360 | null }>(`/listings/${id}/360`);
 
 /** Registers a view (the backend ignores the owner's own views). Counted once per browser session. */
 export const registerListingView = (id: number) => {

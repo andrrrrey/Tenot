@@ -6,7 +6,10 @@ import '../api/models.dart';
 import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/spin360_viewer.dart';
 import 'add_listing_screen.dart';
+import 'capture360/spin_capture_screen.dart';
+import 'capture360/spin_review_screen.dart';
 import 'chat_thread_screen.dart';
 
 /// Карточка объявления — как app/listing/[id]/page.tsx (мобильная вёрстка).
@@ -74,6 +77,48 @@ class _ListingScreenState extends State<ListingScreen> {
     ));
   }
 
+  /// Съёмка 360° → проверка → отправка. «Переснять» возвращает на камеру.
+  Future<void> _capture360(Listing l) async {
+    final nav = Navigator.of(context);
+    while (mounted) {
+      final frames = await nav.push<List<String>>(
+        MaterialPageRoute(builder: (_) => const SpinCaptureScreen(), fullscreenDialog: true),
+      );
+      if (frames == null || frames.isEmpty || !mounted) return;
+      final result = await nav.push<SpinReviewResult>(
+        MaterialPageRoute(builder: (_) => SpinReviewScreen(listingId: l.id, frames: frames)),
+      );
+      if (result == SpinReviewResult.uploaded) {
+        _load();
+        return;
+      }
+      if (result != SpinReviewResult.retake) return;
+    }
+  }
+
+  Future<void> _delete360(Listing l) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить 360°-обзор?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Удалить')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await context.read<Session>().api.deleteSpin(l.id);
+      if (mounted) {
+        showInfo(context, '360°-обзор удалён');
+        _load();
+      }
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
+  }
+
   Future<void> _open(Uri uri) async {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
       showInfo(context, 'Не удалось открыть ссылку');
@@ -98,6 +143,12 @@ class _ListingScreenState extends State<ListingScreen> {
                     padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
                     children: [
                       _gallery(l),
+                      if (l.has360 && l.preview360 != null) ...[
+                        const SizedBox(height: 14),
+                        // Отдельным блоком, а не страницей PageView — чтобы свайп вращения
+                        // не конфликтовал с листанием фото.
+                        Spin360Viewer(key: ValueKey(l.preview360), listingId: l.id, previewUrl: l.preview360!),
+                      ],
                       const SizedBox(height: 14),
                       _main(l),
                       const SizedBox(height: 14),
@@ -322,8 +373,20 @@ class _ListingScreenState extends State<ListingScreen> {
               },
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text('Редактировать'),
-            )
-          else ...[
+            ),
+          if (isOwner) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _capture360(l),
+              icon: const Icon(Icons.threesixty_rounded, size: 18),
+              label: Text(l.has360 ? 'Переснять 360°-обзор' : 'Снять 360°-обзор'),
+            ),
+            if (l.has360)
+              TextButton(
+                onPressed: () => _delete360(l),
+                child: const Text('Удалить 360°-обзор'),
+              ),
+          ] else ...[
             if (phone != null && phone.isNotEmpty)
               FilledButton.icon(
                 onPressed: () {

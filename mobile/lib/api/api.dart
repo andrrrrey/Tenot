@@ -236,6 +236,28 @@ class Api {
 
   Future<void> deleteListingMedia(int id, int mediaId) => delete('/listings/$id/media/$mediaId');
 
+  // ── 360° ────────────────────────────────────────────────────────────────
+  /// Кадры 360°-вращения (null — если у объявления их нет).
+  Future<Spin360?> listing360(int id) async {
+    final data = await get('/listings/$id/360');
+    final spin = data is Map ? data['spin'] : null;
+    return spin is Map<String, dynamic> ? Spin360.fromJson(spin) : null;
+  }
+
+  /// Партия кадров во временную загрузку [uploadId]; кадры нумеруются с [startIndex].
+  /// Небольшими партиями — чтобы не упираться в лимит nginx (25 МБ на запрос).
+  Future<void> uploadSpinFrames(int id, String uploadId, int startIndex, List<String> paths) => upload(
+        '/listings/$id/360/spin/frames?uploadId=${Uri.encodeQueryComponent(uploadId)}&startIndex=$startIndex',
+        'files',
+        paths,
+      );
+
+  /// Завершить загрузку: сервер собирает [count] кадров в набор и привязывает к объявлению.
+  Future<void> commitSpin(int id, String uploadId, int count) =>
+      post('/listings/$id/360/spin/commit', {'uploadId': uploadId, 'count': count});
+
+  Future<void> deleteSpin(int id) => delete('/listings/$id/360/spin');
+
   // ── Favorites ───────────────────────────────────────────────────────────
   Future<List<Listing>> favorites() async => (await get('/favorites') as List? ?? [])
       .whereType<Map<String, dynamic>>()

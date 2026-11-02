@@ -7,7 +7,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Нужен доступ к микрофону для голосовых сообщений в чате.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Нужен доступ к камере, чтобы сфотографировать товар.</string>
+	<string>Нужен доступ к камере, чтобы сфотографировать товар или снять 360°-обзор.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
