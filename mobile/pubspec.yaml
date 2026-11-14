@@ -47,6 +47,7 @@ dependencies:
   path_provider: ^2.1.6
   camera: ^0.11.2
   sensors_plus: ^6.1.1
+  panorama_viewer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

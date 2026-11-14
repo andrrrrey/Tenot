@@ -4,7 +4,8 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sensors_plus/sensors_plus.dart';
+
+import 'orientation_tracker.dart';
 
 /// Режим съёмки 360°-вращения.
 enum SpinCaptureMode {
@@ -40,18 +41,13 @@ class _SpinCaptureScreenState extends State<SpinCaptureScreen> with WidgetsBindi
   bool _busy = false;
   final List<String> _frames = [];
 
-  // Датчики
-  StreamSubscription<GyroscopeEvent>? _gyroSub;
-  StreamSubscription<AccelerometerEvent>? _accelSub;
+  // Датчики: поворот вокруг вертикали и наклон (общий трекер с экраном съёмки салона)
+  final OrientationTracker _tracker = OrientationTracker();
   Timer? _turntableTimer;
-  final Stopwatch _clock = Stopwatch();
-  int _lastGyroMicros = 0;
-  // Гравитация (сглаженный акселерометр) — чтобы вращение считать вокруг вертикали
-  // при любом положении телефона.
-  double _gx = 0, _gy = 0, _gz = 9.8;
-  double _angle = 0; // накопленный поворот вокруг вертикали, радианы (со знаком)
-  double _speed = 0; // текущая угловая скорость вокруг вертикали, рад/с
   bool _tilted = false;
+
+  double get _angle => _tracker.verticalAngleRad; // накопленный поворот, радианы (со знаком)
+  double get _speed => _tracker.verticalSpeed; // угловая скорость вокруг вертикали, рад/с
 
   double get _step => 2 * math.pi / _frameCount;
   double get _progress => (_frames.length / _frameCount).clamp(0, 1).toDouble();
@@ -63,14 +59,19 @@ class _SpinCaptureScreenState extends State<SpinCaptureScreen> with WidgetsBindi
     // Машина широкая — снимаем горизонтально.
     SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
     _initCamera();
-    _accelSub = accelerometerEventStream(samplingPeriod: SensorInterval.gameInterval).listen(_onAccel);
+    _tracker.onUpdate = _onGyro;
+    _tracker.startTiltOnly();
+    _tiltTimer = Timer.periodic(const Duration(milliseconds: 200), (_) => _checkTilt());
   }
+
+  Timer? _tiltTimer;
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _stopSensors();
-    _accelSub?.cancel();
+    _tiltTimer?.cancel();
+    _tracker.dispose();
     _camera?.dispose();
     SystemChrome.setPreferredOrientations(const []);
     super.dispose();
@@ -119,29 +120,13 @@ class _SpinCaptureScreenState extends State<SpinCaptureScreen> with WidgetsBindi
 
   // ── Датчики ──────────────────────────────────────────────────────────────
 
-  void _onAccel(AccelerometerEvent e) {
-    const k = 0.1; // низкочастотный фильтр
-    _gx += (e.x - _gx) * k;
-    _gy += (e.y - _gy) * k;
-    _gz += (e.z - _gz) * k;
-    final g = math.sqrt(_gx * _gx + _gy * _gy + _gz * _gz);
-    // Ось Z — перпендикуляр к экрану. Если на неё приходится много гравитации,
-    // телефон сильно наклонён вперёд/назад (камера смотрит в пол/небо).
-    final tilted = g > 0 && (_gz.abs() / g) > 0.5;
+  void _checkTilt() {
+    // Камера смотрит в пол/небо, если на ось экрана приходится много гравитации.
+    final tilted = _tracker.flatness > 0.5;
     if (tilted != _tilted && mounted) setState(() => _tilted = tilted);
   }
 
-  void _onGyro(GyroscopeEvent e) {
-    final now = _clock.elapsedMicroseconds;
-    final dt = (now - _lastGyroMicros) / 1e6;
-    _lastGyroMicros = now;
-    if (dt <= 0 || dt > 0.2) return;
-    final g = math.sqrt(_gx * _gx + _gy * _gy + _gz * _gz);
-    if (g == 0) return;
-    // Проекция угловой скорости на вертикаль = поворот вокруг вертикальной оси.
-    final w = (e.x * _gx + e.y * _gy + e.z * _gz) / g;
-    _angle += w * dt;
-    _speed = w.abs();
+  void _onGyro() {
     if (_mode == SpinCaptureMode.walkAround && _running) {
       // Направление обхода любое — считаем по модулю.
       if (_angle.abs() >= _frames.length * _step) _shoot();
@@ -149,20 +134,12 @@ class _SpinCaptureScreenState extends State<SpinCaptureScreen> with WidgetsBindi
     if (mounted) setState(() {});
   }
 
-  void _startSensors() {
-    _clock
-      ..reset()
-      ..start();
-    _lastGyroMicros = 0;
-    _gyroSub = gyroscopeEventStream(samplingPeriod: SensorInterval.gameInterval).listen(_onGyro);
-  }
+  void _startSensors() => _tracker.start();
 
   void _stopSensors() {
-    _gyroSub?.cancel();
-    _gyroSub = null;
+    _tracker.stopGyro();
     _turntableTimer?.cancel();
     _turntableTimer = null;
-    _clock.stop();
   }
 
   // ── Съёмка ───────────────────────────────────────────────────────────────
@@ -173,7 +150,7 @@ class _SpinCaptureScreenState extends State<SpinCaptureScreen> with WidgetsBindi
     HapticFeedback.mediumImpact();
     setState(() {
       _frames.clear();
-      _angle = 0;
+      _tracker.resetYaw();
       _running = true;
     });
     await _shoot(); // первый кадр — сразу; заодно фиксируем экспозицию
@@ -388,7 +365,7 @@ class _SpinCaptureScreenState extends State<SpinCaptureScreen> with WidgetsBindi
                     child: OutlinedButton(
                       onPressed: () => setState(() {
                         _frames.clear();
-                        _angle = 0;
+                        _tracker.resetYaw();
                       }),
                       child: const Text('Заново'),
                     ),

@@ -6,8 +6,11 @@ import '../api/models.dart';
 import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/panorama_view_screen.dart';
 import '../widgets/spin360_viewer.dart';
 import 'add_listing_screen.dart';
+import 'capture360/interior_capture_screen.dart';
+import 'capture360/interior_review_screen.dart';
 import 'capture360/spin_capture_screen.dart';
 import 'capture360/spin_review_screen.dart';
 import 'chat_thread_screen.dart';
@@ -29,6 +32,8 @@ class _ListingScreenState extends State<ListingScreen> {
   int? _views;
   /// Был ли в избранном на момент загрузки — чтобы счётчик сразу реагировал на FavButton.
   bool _favAtLoad = false;
+  /// Статус панорамы салона (склеивается / ошибка) — только для владельца.
+  Interior360? _interior;
 
   @override
   void initState() {
@@ -56,6 +61,13 @@ class _ListingScreenState extends State<ListingScreen> {
           _l = l;
           _favAtLoad = session.isFavorite(l.id);
         });
+      }
+      if (session.user != null && l.user?.id == session.user!.id && l.isTransport) {
+        // Статус склейки салона — не критичен для показа объявления.
+        try {
+          final interior = (await session.api.media360(l.id)).interior;
+          if (mounted) setState(() => _interior = interior);
+        } catch (_) {}
       }
     } catch (e) {
       if (mounted) setState(() => _error = e);
@@ -93,6 +105,82 @@ class _ListingScreenState extends State<ListingScreen> {
         return;
       }
       if (result != SpinReviewResult.retake) return;
+    }
+  }
+
+  Widget _interiorCard(Listing l) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(
+        aspectRatio: 2,
+        child: Material(
+          color: const Color(0xFF111827),
+          child: InkWell(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => PanoramaViewScreen(listingId: l.id)),
+            ),
+            child: Stack(fit: StackFit.expand, children: [
+              NetImage(l.previewInterior),
+              const Center(
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(color: Colors.white, shape: StadiumBorder()),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.panorama_photosphere, size: 20),
+                      SizedBox(width: 8),
+                      Text('Осмотреть салон 360°', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Съёмка салона → проверка → отправка на склейку. «Переснять» возвращает на камеру.
+  Future<void> _captureInterior(Listing l) async {
+    final nav = Navigator.of(context);
+    while (mounted) {
+      final shots = await nav.push<List<InteriorShot>>(
+        MaterialPageRoute(builder: (_) => const InteriorCaptureScreen(), fullscreenDialog: true),
+      );
+      if (shots == null || shots.isEmpty || !mounted) return;
+      final result = await nav.push<SpinReviewResult>(
+        MaterialPageRoute(builder: (_) => InteriorReviewScreen(listingId: l.id, shots: shots)),
+      );
+      if (result == SpinReviewResult.uploaded) {
+        _load();
+        return;
+      }
+      if (result != SpinReviewResult.retake) return;
+    }
+  }
+
+  Future<void> _deleteInterior(Listing l) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить панораму салона?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Удалить')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await context.read<Session>().api.deleteInterior(l.id);
+      if (mounted) {
+        showInfo(context, 'Панорама салона удалена');
+        _interior = null;
+        _load();
+      }
+    } catch (e) {
+      if (mounted) showError(context, e);
     }
   }
 
@@ -148,6 +236,10 @@ class _ListingScreenState extends State<ListingScreen> {
                         // Отдельным блоком, а не страницей PageView — чтобы свайп вращения
                         // не конфликтовал с листанием фото.
                         Spin360Viewer(key: ValueKey(l.preview360), listingId: l.id, previewUrl: l.preview360!),
+                      ],
+                      if (l.hasInterior && l.previewInterior != null) ...[
+                        const SizedBox(height: 14),
+                        _interiorCard(l),
                       ],
                       const SizedBox(height: 14),
                       _main(l),
@@ -386,6 +478,26 @@ class _ListingScreenState extends State<ListingScreen> {
                 onPressed: () => _delete360(l),
                 child: const Text('Удалить 360°-обзор'),
               ),
+            if (l.isTransport) ...[
+              if (_interior?.isProcessing == true)
+                const _StatusNote(icon: Icons.hourglass_top, text: 'Панорама салона склеивается — обычно 1–3 минуты'),
+              if (_interior?.isFailed == true)
+                _StatusNote(
+                  icon: Icons.error_outline,
+                  text: _interior!.error ?? 'Не удалось склеить панораму — переснимите салон',
+                  error: true,
+                ),
+              OutlinedButton.icon(
+                onPressed: _interior?.isProcessing == true ? null : () => _captureInterior(l),
+                icon: const Icon(Icons.panorama_photosphere, size: 18),
+                label: Text(l.hasInterior ? 'Переснять салон 360°' : 'Снять салон 360°'),
+              ),
+              if (l.hasInterior || _interior != null)
+                TextButton(
+                  onPressed: () => _deleteInterior(l),
+                  child: const Text('Удалить панораму салона'),
+                ),
+            ],
           ] else ...[
             if (phone != null && phone.isNotEmpty)
               FilledButton.icon(
@@ -408,6 +520,26 @@ class _ListingScreenState extends State<ListingScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _StatusNote extends StatelessWidget {
+  const _StatusNote({required this.icon, required this.text, this.error = false});
+  final IconData icon;
+  final String text;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = error ? const Color(0xFFDC2626) : const Color(0xFF6B7280);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: color))),
+      ]),
     );
   }
 }
