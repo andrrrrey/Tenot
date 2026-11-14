@@ -32,9 +32,10 @@ FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# OpenSSL нужен для Prisma runtime, wget для health checks
+# OpenSSL нужен для Prisma runtime, wget для health checks,
+# hugin-tools — склейка 360°-панорам салона (pto_gen, cpfind, autooptimiser, nona, verdandi)
 # Remove ld.so.preload in case the base image or runtime is compromised
-RUN apt-get update && apt-get install -y openssl wget --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y openssl wget hugin-tools --no-install-recommends && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/ld.so.preload
 
 COPY --from=builder /app/dist ./dist

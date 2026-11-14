@@ -215,7 +215,7 @@ class ListingCard extends StatelessWidget {
                   children: [
                     NetImage(l.coverUrl),
                     Positioned(top: 8, right: 8, child: FavButton(listingId: l.id, size: 32)),
-                    if (l.has360)
+                    if (l.has360 || l.hasInterior)
                       Positioned(
                         left: 8,
                         bottom: 8,

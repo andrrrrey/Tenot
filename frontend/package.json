@@ -9,15 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@photo-sphere-viewer/core": "^5.15.1",
+    "@photo-sphere-viewer/gyroscope-plugin": "^5.15.1",
     "next": "15.1.11",
     "react": "19.0.4",
     "react-dom": "19.0.4",
+    "three": "^0.185.1",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.67",
     "@types/react-dom": "^18.2.22",
+    "@types/three": "^0.185.4",
     "eslint": "^9.10.0",
     "eslint-config-next": "15.1.11",
     "typescript": "^5.6.3"

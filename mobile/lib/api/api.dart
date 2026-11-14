@@ -237,12 +237,14 @@ class Api {
   Future<void> deleteListingMedia(int id, int mediaId) => delete('/listings/$id/media/$mediaId');
 
   // ── 360° ────────────────────────────────────────────────────────────────
-  /// Кадры 360°-вращения (null — если у объявления их нет).
-  Future<Spin360?> listing360(int id) async {
+  /// Весь 360°-контент объявления: вращение и панорама салона (со статусом склейки).
+  Future<Media360> media360(int id) async {
     final data = await get('/listings/$id/360');
-    final spin = data is Map ? data['spin'] : null;
-    return spin is Map<String, dynamic> ? Spin360.fromJson(spin) : null;
+    return Media360.fromJson(data is Map<String, dynamic> ? data : const {});
   }
+
+  /// Кадры 360°-вращения (null — если у объявления их нет).
+  Future<Spin360?> listing360(int id) async => (await media360(id)).spin;
 
   /// Партия кадров во временную загрузку [uploadId]; кадры нумеруются с [startIndex].
   /// Небольшими партиями — чтобы не упираться в лимит nginx (25 МБ на запрос).
@@ -257,6 +259,20 @@ class Api {
       post('/listings/$id/360/spin/commit', {'uploadId': uploadId, 'count': count});
 
   Future<void> deleteSpin(int id) => delete('/listings/$id/360/spin');
+
+  /// Снимки салона партией во временную загрузку [uploadId], нумерация с [startIndex].
+  Future<void> uploadInteriorShots(int id, String uploadId, int startIndex, List<String> paths) => upload(
+        '/listings/$id/360/interior/frames?uploadId=${Uri.encodeQueryComponent(uploadId)}&startIndex=$startIndex',
+        'files',
+        paths,
+      );
+
+  /// Завершить загрузку снимков салона: сервер склеит панораму в фоне (1–3 минуты),
+  /// статус — через [media360].
+  Future<void> commitInterior(int id, String uploadId, List<Map<String, double>> shots) =>
+      post('/listings/$id/360/interior/commit', {'uploadId': uploadId, 'shots': shots});
+
+  Future<void> deleteInterior(int id) => delete('/listings/$id/360/interior');
 
   // ── Favorites ───────────────────────────────────────────────────────────
   Future<List<Listing>> favorites() async => (await get('/favorites') as List? ?? [])

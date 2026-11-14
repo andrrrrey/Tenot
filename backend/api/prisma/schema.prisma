@@ -154,6 +154,7 @@ model Listing {
   status      ListingStatus @default(PUBLISHED)
   viewsCount  Int           @default(0)
   has360      Boolean       @default(false)
+  hasInterior Boolean       @default(false)
   createdAt   DateTime      @default(now())
 
   userId     Int
@@ -178,7 +179,8 @@ model Listing {
   media360   Listing360[]
 }
 
-// 360°-контент объявления: "spin" — набор кадров вращения, "interior" — сферическая панорама (позже)
+// 360°-контент объявления: "spin" — набор кадров вращения, "interior" — сферическая панорама салона.
+// interior: frames = [url панорамы]; status processing|ready|failed (во время пересъёмки старая панорама остаётся)
 model Listing360 {
   id         Int      @id @default(autoincrement())
   listingId  Int
@@ -188,6 +190,7 @@ model Listing360 {
   width      Int?
   height     Int?
   status     String   @default("ready")
+  error      String?
   createdAt  DateTime @default(now())
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)

@@ -38,6 +38,34 @@ class Spin360 {
         previewUrl = '${j['previewUrl'] ?? ''}';
 }
 
+/// Панорама салона (GET /listings/:id/360 → interior).
+class Interior360 {
+  final String? url;
+  final String? previewUrl;
+  /// processing | ready | failed
+  final String status;
+  final String? error;
+
+  Interior360.fromJson(Map<String, dynamic> j)
+      : url = j['url'] as String?,
+        previewUrl = j['previewUrl'] as String?,
+        status = '${j['status'] ?? 'ready'}',
+        error = j['error'] as String?;
+
+  bool get isProcessing => status == 'processing';
+  bool get isFailed => status == 'failed';
+}
+
+/// Весь 360°-контент объявления.
+class Media360 {
+  final Spin360? spin;
+  final Interior360? interior;
+
+  Media360.fromJson(Map<String, dynamic> j)
+      : spin = j['spin'] is Map<String, dynamic> ? Spin360.fromJson(j['spin']) : null,
+        interior = j['interior'] is Map<String, dynamic> ? Interior360.fromJson(j['interior']) : null;
+}
+
 class ListingUser {
   final int id;
   final String? name;
@@ -121,6 +149,12 @@ class Listing {
   final bool has360;
   /// Превью 360°-вращения; сами кадры — через Api.listing360 (ленивая загрузка).
   final String? preview360;
+  /// Есть панорама салона 360°.
+  final bool hasInterior;
+  /// Превью панорамы салона; сама панорама — через Api.media360.
+  final String? previewInterior;
+  /// Шаблон категории — по нему видно раздел «Транспорт» (там доступна съёмка салона).
+  final String? categoryTemplateKey;
 
   Listing.fromJson(Map<String, dynamic> j)
       : id = _int(j['id']),
@@ -152,14 +186,25 @@ class Listing {
             .whereType<ListingAttribute>()
             .toList(),
         has360 = j['has360'] == true,
-        preview360 = _spinPreview(j['media360']);
+        preview360 = _preview(j['media360'], 'spin'),
+        hasInterior = j['hasInterior'] == true,
+        previewInterior = _preview(j['media360'], 'interior'),
+        categoryTemplateKey = j['category'] is Map ? j['category']['templateKey'] as String? : null;
 
-  static String? _spinPreview(dynamic media360) {
+  static String? _preview(dynamic media360, String kind) {
     if (media360 is! List) return null;
     for (final m in media360) {
-      if (m is Map && m['kind'] == 'spin' && m['previewUrl'] is String) return m['previewUrl'] as String;
+      if (m is Map && m['kind'] == kind && m['previewUrl'] is String && (m['previewUrl'] as String).isNotEmpty) {
+        return m['previewUrl'] as String;
+      }
     }
     return null;
+  }
+
+  /// Раздел «Транспорт» — там доступна панорама салона (как isTransportCategory на сервере).
+  bool get isTransport {
+    final k = categoryTemplateKey;
+    return k != null && (k == 'root:TRANSPORT' || k.startsWith('transport:'));
   }
 
   bool get isDraft => status == 'DRAFT';
