@@ -1,6 +1,7 @@
 FROM node:20-slim AS deps
 WORKDIR /app
-COPY package*.json ./
+# .npmrc: onnxruntime-node ставится только для CPU (без CUDA-библиотек на ~370 МБ)
+COPY package*.json .npmrc ./
 RUN npm install
 
 FROM node:20-slim AS builder
@@ -11,6 +12,10 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Модель поиска госномеров (open-image-models, MIT) — с проверкой sha256
+RUN apt-get update && apt-get install -y curl --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+    && sh scripts/fetch-plate-model.sh models/plate-detector.onnx
 
 RUN npx prisma generate
 RUN npm run build
@@ -27,6 +32,9 @@ RUN apt-get update && apt-get install -y openssl wget hugin-tools --no-install-r
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/models ./models
+# Библиотеки onnxruntime для других ОС в образе не нужны
+RUN rm -rf node_modules/onnxruntime-node/bin/napi-v*/darwin node_modules/onnxruntime-node/bin/napi-v*/win32
 COPY --from=builder /app/prisma ./prisma
 COPY package*.json ./
 
