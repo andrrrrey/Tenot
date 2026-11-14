@@ -16,6 +16,9 @@ build/
 # Uploaded files
 uploads/
 
+# ML-модели (скачиваются scripts/fetch-plate-model.sh)
+backend/api/models/
+
 # Backups
 backups/
 

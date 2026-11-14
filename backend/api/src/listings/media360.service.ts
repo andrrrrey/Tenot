@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'fs';
@@ -10,6 +11,7 @@ import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { removeMediaFolder, SPIN_ROOT_DIR } from './media360.paths';
 import { InteriorShot, PanoramaStitchService } from './panorama-stitch.service';
+import { PlateBlurService } from './plate-blur.service';
 
 export { SPIN_ROOT_DIR } from './media360.paths';
 /**
@@ -59,7 +61,12 @@ function isFiniteAngle(v: unknown, limit: number) {
 
 @Injectable()
 export class Media360Service {
-  constructor(private prisma: PrismaService, private stitch: PanoramaStitchService) {}
+  private readonly log = new Logger(Media360Service.name);
+  constructor(
+    private prisma: PrismaService,
+    private stitch: PanoramaStitchService,
+    private plates: PlateBlurService,
+  ) {}
 
   /** Проверка, что объявление существует и принадлежит пользователю. */
   async assertOwner(listingId: number, userId: number) {
@@ -116,15 +123,31 @@ export class Media360Service {
       if (!byIndex.has(i)) throw new BadRequestException(`Не хватает кадра №${i + 1}`);
     }
 
+    // «Автомобили»: на кадрах обхода снаружи виден номер — размываем каждый кадр.
+    // Сбой на кадре не блокирует публикацию (кадр остаётся как есть, предупреждение в лог).
+    const blurPlates = await this.plates.shouldBlur(
+      (await this.prisma.listing.findUnique({ where: { id: listingId }, select: { categoryId: true } }))!.categoryId,
+    );
+
     const folder = `${listingId}/${Date.now()}`;
     const dest = join(SPIN_ROOT_DIR, folder);
     mkdirSync(dest, { recursive: true });
     const urls: string[] = [];
+    let blurFailed = 0;
     for (let i = 0; i < count; i++) {
       const name = byIndex.get(i)!;
-      renameSync(join(tmp, name), join(dest, name));
+      let source = join(tmp, name);
+      if (blurPlates) {
+        try {
+          source = (await this.plates.blurFile(source)).path;
+        } catch {
+          blurFailed++;
+        }
+      }
+      renameSync(source, join(dest, name));
       urls.push(`/uploads/listings/360/${folder}/${name}`);
     }
+    if (blurFailed) this.log.warn(`Listing ${listingId}: plate blur failed on ${blurFailed}/${count} spin frames`);
     rmSync(tmp, { recursive: true, force: true });
 
     const previous = await this.prisma.listing360.findUnique({

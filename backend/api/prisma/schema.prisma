@@ -223,6 +223,10 @@ model ListingImage {
   isCover   Boolean @default(false)
   order     Int     @default(0)
   listingId Int
+  // Размытие госномеров (категория «Автомобили»): none — не требуется, done — обработано,
+  // pending — ждёт фонового повтора, failed — попытки исчерпаны
+  plateBlur      String @default("none")
+  plateBlurTries Int    @default(0)
 
   listing Listing @relation(fields: [listingId], references: [id])
 }

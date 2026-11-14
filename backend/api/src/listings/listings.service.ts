@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto, ListingAttributeInput } from './dto.create-listing';
 import { CategoriesService } from '../categories/categories.service';
 import { Media360Service } from './media360.service';
+import { PlateBlurService } from './plate-blur.service';
 import { CategoryField, CategoryFieldType, Prisma } from '@prisma/client';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
@@ -26,6 +27,7 @@ export class ListingsService {
     private prisma: PrismaService,
     private categories: CategoriesService,
     private media360: Media360Service,
+    private plates: PlateBlurService,
   ) {}
 
   async createByUserId(userId: number, dto: CreateListingDto) {
@@ -250,6 +252,12 @@ export class ListingsService {
         await tx.listingAttribute.deleteMany({ where: { listingId: id } });
       }
       return tx.listing.findUnique({ where: { id }, include: this.detailInclude() });
+    }).then(async (updated) => {
+      // Объявление перенесли в «Автомобили» — уже загруженные фото тоже размываем (в фоне).
+      if (dto.categoryId && dto.categoryId !== listing.categoryId && (await this.plates.shouldBlur(dto.categoryId))) {
+        await this.plates.markListingPending(id);
+      }
+      return updated;
     });
   }
 
@@ -347,6 +355,14 @@ export class ListingsService {
 
     const nextOrder = listing.images.length;
 
+    // Категория «Автомобили»: размываем госномера до сохранения в карточке.
+    // Если не получилось — фото публикуется как есть и обрабатывается повторно в фоне.
+    const blurPlates = newImages.length > 0 && (await this.plates.shouldBlur(listing.categoryId));
+    const processed = new Map<Express.Multer.File, { url: string; plateBlur: string }>();
+    if (blurPlates) {
+      for (const f of newImages) processed.set(f, await this.plates.processUpload(`/uploads/listings/${f.filename}`));
+    }
+
     const createData = files.map((f, idx) => {
       const type = f.mimetype.startsWith('video/') ? 'video' : 'image';
       const isCover =
@@ -357,7 +373,8 @@ export class ListingsService {
 
       return {
         listingId,
-        url: `/uploads/listings/${f.filename}`,
+        url: processed.get(f)?.url ?? `/uploads/listings/${f.filename}`,
+        plateBlur: processed.get(f)?.plateBlur ?? 'none',
         type,
         isCover: isCover || false,
         order: nextOrder + idx,
