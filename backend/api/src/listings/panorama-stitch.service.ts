@@ -214,11 +214,11 @@ export class PanoramaStitchService implements OnModuleInit {
     mkdirSync(dest, { recursive: true });
     const base = sharp(canvas);
     await base.clone().jpeg({ quality: 82, progressive: true }).toFile(join(dest, 'interior.jpg'));
-    // Превью — центральная полоса панорамы (то, что видно «по горизонту»)
+    // Превью — передняя половина панорамы по горизонту (180° × 90°), 2:1
     await base
       .clone()
-      .extract({ left: 0, top: Math.round(PANO_H * 0.25), width: PANO_W, height: Math.round(PANO_H * 0.5) })
-      .resize(1200, 300, { fit: 'cover' })
+      .extract({ left: PANO_W / 4, top: PANO_H / 4, width: PANO_W / 2, height: PANO_H / 2 })
+      .resize(1200, 600)
       .jpeg({ quality: 78 })
       .toFile(join(dest, 'interior_preview.jpg'));
 

@@ -8,6 +8,7 @@ import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 import { MediaGallery } from '@/components/MediaGallery';
 import { Spin360Viewer } from '@/components/Spin360Viewer';
+import { Panorama360 } from '@/components/Panorama360';
 import {
   IconHeart,
   IconPhone,
@@ -55,6 +56,9 @@ export default function ListingPage() {
   const listingOwnerId = listing.user?.id;
   const cityLabel = listing.allCities ? 'Все города' : listing.city?.name;
   const spinPreview = listing.has360 ? listing.media360?.find((m) => m.kind === 'spin')?.previewUrl : undefined;
+  const interiorPreview = listing.hasInterior
+    ? listing.media360?.find((m) => m.kind === 'interior')?.previewUrl
+    : undefined;
   const sellerName = listing.user?.name || 'Продавец';
   const sellerPhone = listing.user?.phone;
   const sellerInitials = sellerName
@@ -154,6 +158,13 @@ export default function ListingPage() {
             {spinPreview && (
               <div style={{ marginTop: 16 }}>
                 <Spin360Viewer listingId={listing.id} previewUrl={spinPreview} />
+              </div>
+            )}
+
+            {/* Панорама салона: библиотека просмотра и сама панорама грузятся только после нажатия */}
+            {interiorPreview && (
+              <div style={{ marginTop: 16 }}>
+                <Panorama360 listingId={listing.id} previewUrl={interiorPreview} />
               </div>
             )}
 

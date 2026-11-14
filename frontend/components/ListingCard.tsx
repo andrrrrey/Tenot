@@ -115,7 +115,7 @@ export function ListingCard({ listing, isFavorite = false, onFavoriteChange }: P
             </div>
           )}
 
-          {listing.has360 && <span className="badge-360">360°</span>}
+          {(listing.has360 || listing.hasInterior) && <span className="badge-360">360°</span>}
 
           {/* Favorite button overlay — always visible; redirects to login for guests */}
           <button
