@@ -567,7 +567,8 @@ export class ListingsService {
       user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, cityId: true, city: true } },
       _count: { select: { favorites: true } },
       // Только сводка 360° — сами кадры отдаются отдельно через GET /listings/:id/360 (ленивая загрузка)
-      media360: { where: { status: 'ready' }, select: { kind: true, previewUrl: true } },
+      // Строки с готовым содержимым (во время пересъёмки салона видна прежняя панорама) + статус склейки
+      media360: { where: { NOT: { previewUrl: '' } }, select: { kind: true, previewUrl: true, status: true } },
     };
   }
 

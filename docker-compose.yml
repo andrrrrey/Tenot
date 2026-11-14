@@ -43,7 +43,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    mem_limit: 512m
+    # Склейка панорам салона (Hugin: cpfind ~0.5 ГБ на 28 снимков) идёт в процессе API
+    mem_limit: 1536m
     restart: unless-stopped
 
   web:
