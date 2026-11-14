@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { setAuthErrorHandler, clearAuthErrorHandler, ApiError } from "@/lib/api";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
   const logout = useStore((s) => s.logout);
   const router = useRouter();
@@ -14,7 +15,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleAuthError = useCallback(
     (error: ApiError) => {
       if (error.isUnauthorized) {
-        // 401 - требуется авторизация
+        // A 401 only means "session expired" when the application actually
+        // had an authenticated user. Anonymous visitors may legitimately hit
+        // optional protected endpoints and must remain on the public page.
+        if (!user) return;
         logout();
         router.push("/login?error=session_expired");
       } else if (error.isForbidden) {
@@ -22,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/?error=forbidden");
       }
     },
-    [logout, router]
+    [user, logout, router]
   );
 
   // Устанавливаем глобальный обработчик ошибок
@@ -43,6 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: data.user.role,
             avatarUrl: data.user.avatarUrl || null,
           });
+        } else {
+          setUser(null);
         }
       })
       .catch(() => {

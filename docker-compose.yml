@@ -23,6 +23,8 @@ services:
     environment:
       DATABASE_URL: postgresql://autoparts:autoparts@db:5432/autoparts?connection_limit=20&pool_timeout=30
       JWT_SECRET: ${JWT_SECRET:-dev_secret}
+      PRISMA_SCHEMA_ENGINE_BINARY: /app/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x
+      PRISMA_QUERY_ENGINE_LIBRARY: /app/node_modules/@prisma/engines/libquery_engine-debian-openssl-3.0.x.so.node
       # Вход по SMS-коду: console (код в логах API) | smsru
       SMS_PROVIDER: ${SMS_PROVIDER:-console}
       SMSRU_API_ID: ${SMSRU_API_ID:-}
@@ -36,7 +38,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3001/categories || exit 1"]
       interval: 15s
@@ -60,7 +62,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
       interval: 15s
