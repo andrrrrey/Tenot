@@ -43,3 +43,7 @@ infra/nginx/auth/*
 # OS
 .DS_Store
 Thumbs.db
+
+# Локальная копия движков Prisma для сборки без интернета (см. backend/api/prisma-engines/README.md)
+backend/api/prisma-engines/*
+!backend/api/prisma-engines/README.md

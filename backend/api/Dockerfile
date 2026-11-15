@@ -13,20 +13,48 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y openssl ca-certificates curl gzip && rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+
+# Всё, что скачивается из интернета, — ДО `COPY . .`: эти слои зависят только от
+# package-lock.json, поэтому кэшируются Docker и не скачиваются заново при каждом
+# изменении кода.
 
 # Модель поиска госномеров (open-image-models, MIT) — с проверкой sha256
+COPY scripts/fetch-plate-model.sh scripts/fetch-plate-model.sh
 RUN sh scripts/fetch-plate-model.sh models/plate-detector.onnx
 
+# Движки Prisma. binaries.prisma.sh (Cloudflare) с сервера отвечает с перебоями и
+# может зависнуть навсегда, поэтому:
+#  1) если файлы положены в prisma-engines/ (см. prisma-engines/README.md) и sha256
+#     совпадает — берутся оттуда, без интернета;
+#  2) иначе скачиваются с таймаутами и до 10 попыток.
 ARG PRISMA_ENGINES_COMMIT=605197351a3c8bdd595af2d2a9bc3025bca48ea2
-RUN set -eux; \
-    engine_base="https://binaries.prisma.sh/all_commits/${PRISMA_ENGINES_COMMIT}/debian-openssl-3.0.x"; \
-    curl -fsSL --retry 5 -A 'Mozilla/5.0' "${engine_base}/schema-engine.gz" | gzip -d > node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x; \
-    curl -fsSL --retry 5 -A 'Mozilla/5.0' "${engine_base}/libquery_engine.so.node.gz" | gzip -d > node_modules/@prisma/engines/libquery_engine-debian-openssl-3.0.x.so.node; \
-    echo 'cedeae04739cfa085493da2bafb5d1e4da0247fc74f2995a51ee24f20c9890be  node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x' | sha256sum -c -; \
-    echo '35860a5c0fb2f79e7b38c40747c4d212318d97e1910ca528b133c802716de0b8  node_modules/@prisma/engines/libquery_engine-debian-openssl-3.0.x.so.node' | sha256sum -c -; \
-    chmod +x node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x; \
-    CHECKPOINT_DISABLE=1 \
+COPY prisma-engines/ /tmp/prisma-engines/
+RUN set -eu; \
+    dir=node_modules/@prisma/engines; \
+    base="https://binaries.prisma.sh/all_commits/${PRISMA_ENGINES_COMMIT}/debian-openssl-3.0.x"; \
+    engine() { \
+      gz=$1; file=$2; sum=$3; \
+      if [ -f "/tmp/prisma-engines/$file" ] && echo "$sum  /tmp/prisma-engines/$file" | sha256sum -c - >/dev/null 2>&1; then \
+        cp "/tmp/prisma-engines/$file" "$dir/$file"; echo "prisma engine $file: local copy"; return 0; \
+      fi; \
+      for i in 1 2 3 4 5 6 7 8 9 10; do \
+        if curl -fsSL --connect-timeout 15 --max-time 180 -A 'Mozilla/5.0' -o /tmp/engine.gz "$base/$gz" \
+           && gzip -dc /tmp/engine.gz > "$dir/$file" \
+           && echo "$sum  $dir/$file" | sha256sum -c -; then \
+          rm -f /tmp/engine.gz; echo "prisma engine $file: downloaded"; return 0; \
+        fi; \
+        echo "prisma engine $file: attempt $i failed, retrying"; sleep 5; \
+      done; \
+      return 1; \
+    }; \
+    engine schema-engine.gz schema-engine-debian-openssl-3.0.x cedeae04739cfa085493da2bafb5d1e4da0247fc74f2995a51ee24f20c9890be; \
+    engine libquery_engine.so.node.gz libquery_engine-debian-openssl-3.0.x.so.node 35860a5c0fb2f79e7b38c40747c4d212318d97e1910ca528b133c802716de0b8; \
+    chmod +x "$dir/schema-engine-debian-openssl-3.0.x"; \
+    rm -rf /tmp/prisma-engines
+
+COPY . .
+
+RUN CHECKPOINT_DISABLE=1 \
     PRISMA_HIDE_UPDATE_MESSAGE=true \
     PRISMA_SCHEMA_ENGINE_BINARY=/app/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x \
     PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/@prisma/engines/libquery_engine-debian-openssl-3.0.x.so.node \
