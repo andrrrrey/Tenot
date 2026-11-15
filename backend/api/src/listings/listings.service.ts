@@ -4,6 +4,7 @@ import { CreateListingDto, ListingAttributeInput } from './dto.create-listing';
 import { CategoriesService } from '../categories/categories.service';
 import { Media360Service } from './media360.service';
 import { PlateBlurService } from './plate-blur.service';
+import { ListingSort, rankListings } from './listing-ranking';
 import { CategoryField, CategoryFieldType, Prisma } from '@prisma/client';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
@@ -144,6 +145,9 @@ export class ListingsService {
     carYearFrom?: number;
     carYearTo?: number;
     attributeFilters?: Record<string, { value?: string | number | boolean; min?: number; max?: number }>;
+    /** Только объявления с 360°-контентом (вращение или салон). */
+    only360?: boolean;
+    sort?: ListingSort;
   }) {
     let categoryFilter: any = undefined;
     if (filters.categoryId) {
@@ -183,7 +187,10 @@ export class ListingsService {
     if (cityFilter !== undefined) {
       andConditions.push({ OR: [{ cityId: cityFilter }, { allCities: true }] });
     }
-    return this.prisma.listing.findMany({
+    if (filters.only360) {
+      andConditions.push({ OR: [{ has360: true }, { hasInterior: true }] });
+    }
+    const listings = await this.prisma.listing.findMany({
       where: {
         isActive: true,
         status: 'PUBLISHED',
@@ -208,6 +215,8 @@ export class ListingsService {
       include: this.detailInclude(),
       orderBy: { createdAt: 'desc' },
     });
+    // Ранжирование (п. 2.13): приоритет объявлениям с 360°-контентом
+    return rankListings(listings, filters.sort ?? 'relevance', { search: filters.search });
   }
 
   findOne(id: number) {

@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getListing360 } from "@/services/listings";
 
 // Photo Sphere Viewer + three.js (~600 КБ) — отдельным чанком, только после нажатия.
-const PanoramaCanvas = dynamic(() => import("./PanoramaCanvas"), {
+const loadCanvas = () => import("./PanoramaCanvas");
+const PanoramaCanvas = dynamic(loadCanvas, {
   ssr: false,
   loading: () => <div className="pano360-overlay">Загружаем просмотр…</div>,
 });
@@ -21,6 +22,16 @@ type Phase = "idle" | "loading" | "ready" | "error";
 export function Panorama360({ listingId, previewUrl }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [url, setUrl] = useState<string | null>(null);
+  const prefetched = useRef(false);
+
+  // Намерение открыть (наведение / фокус / касание) — заранее подтягиваем чанк просмотрщика
+  const prefetch = () => {
+    if (prefetched.current) return;
+    prefetched.current = true;
+    loadCanvas().catch(() => {
+      prefetched.current = false;
+    });
+  };
 
   const open = async () => {
     setPhase("loading");
@@ -41,10 +52,24 @@ export function Panorama360({ listingId, previewUrl }: Props) {
       ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewUrl} alt="Салон 360°" className="pano360-preview" draggable={false} />
+          <img
+            src={previewUrl}
+            alt="Салон 360°"
+            className="pano360-preview"
+            draggable={false}
+            loading="lazy"
+            decoding="async"
+          />
           <span className="spin360-badge">Салон 360°</span>
           {phase === "idle" && (
-            <button type="button" className="spin360-play" onClick={open}>
+            <button
+              type="button"
+              className="spin360-play"
+              onClick={open}
+              onPointerEnter={prefetch}
+              onFocus={prefetch}
+              onTouchStart={prefetch}
+            >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
                 <circle cx="12" cy="12" r="9" />
                 <ellipse cx="12" cy="12" rx="9" ry="3.5" />

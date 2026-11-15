@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { getListings, type Listing, type AttributeFilter } from "@/services/listings";
+import { getListings, type Listing, type AttributeFilter, type ListingSort } from "@/services/listings";
 import { getCategories, type Category } from "@/services/categories";
 import { getFavorites } from "@/services/favorites";
 import { getCarMakes, getCarModels, type CarMake, type CarModel } from "@/services/car-makes";
@@ -58,7 +58,8 @@ export default function SearchClient() {
   const [cityName, setCityName] = useState("");
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
-  const [sort, setSort] = useState<"default" | "cheap" | "expensive" | "new">("default");
+  const [sort, setSort] = useState<ListingSort>("relevance");
+  const [only360, setOnly360] = useState(searchParams.get("has360") === "true");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [attributeFilters, setAttributeFilters] = useState<Record<string, AttributeFilter>>({});
 
@@ -142,13 +143,16 @@ export default function SearchClient() {
         carYearFrom?: number;
         carYearTo?: number;
         attributeFilters?: Record<string, AttributeFilter>;
-      } = {};
+        has360?: boolean;
+        sort?: ListingSort;
+      } = { sort };
 
       if (categoryId) params.categoryId = Number(categoryId);
       if (cityId) params.cityId = Number(cityId);
       if (minPrice && !isNaN(Number(minPrice))) params.minPrice = Number(minPrice);
       if (maxPrice && !isNaN(Number(maxPrice))) params.maxPrice = Number(maxPrice);
       if (q.trim()) params.search = q.trim();
+      if (only360) params.has360 = true;
 
       if (selectedCategoryHasCarFilter) {
         if (carMakeId) params.carMakeId = Number(carMakeId);
@@ -174,18 +178,10 @@ export default function SearchClient() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [q, categoryId, cityId, minPrice, maxPrice, carMakeId, carModelId, carYearFrom, carYearTo, selectedCategoryHasCarFilter, attributeFilters]);
+  }, [q, categoryId, cityId, minPrice, maxPrice, carMakeId, carModelId, carYearFrom, carYearTo, selectedCategoryHasCarFilter, attributeFilters, only360, sort]);
 
-  const sortedListings = useMemo(() => {
-    if (sort === "default") return listings;
-    const list = [...listings];
-    if (sort === "cheap") list.sort((a, b) => a.price - b.price);
-    if (sort === "expensive") list.sort((a, b) => b.price - a.price);
-    if (sort === "new") {
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-    return list;
-  }, [listings, sort]);
+  // Порядок задаёт сервер (ранжирование с приоритетом 360°-контента, п. 2.13)
+  const sortedListings = listings;
 
   const handleFavoriteChange = (listingId: number, isFav: boolean) => {
     setFavoriteIds((prev) => {
@@ -361,13 +357,23 @@ export default function SearchClient() {
 
           <div>
             <div className="field-label">Сортировка</div>
-            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-              <option value="default">По умолчанию</option>
+            <select value={sort} onChange={(e) => setSort(e.target.value as ListingSort)}>
+              <option value="relevance">По релевантности</option>
               <option value="cheap">Сначала дешевле</option>
               <option value="expensive">Сначала дороже</option>
               <option value="new">По дате</option>
             </select>
           </div>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={only360}
+              onChange={(e) => setOnly360(e.target.checked)}
+              style={{ width: "auto" }}
+            />
+            <span>Только с обзором 360°</span>
+          </label>
         </div>
       </aside>
 

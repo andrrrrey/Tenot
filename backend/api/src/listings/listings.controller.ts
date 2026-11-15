@@ -31,6 +31,7 @@ import {
 import { CreateListingDto } from './dto.create-listing';
 import { Roles } from '../auth/roles.decorator';
 import { OptionalAuth, Public } from '../auth/public.decorator';
+import { parseListingSort } from './listing-ranking';
 
 const LISTINGS_UPLOAD_DIR = './uploads/listings';
 mkdirSync(LISTINGS_UPLOAD_DIR, { recursive: true });
@@ -128,6 +129,8 @@ export class ListingsController {
     @Query('carYearFrom') carYearFrom?: string,
     @Query('carYearTo') carYearTo?: string,
     @Query('attributeFilters') attributeFilters?: string,
+    @Query('has360') has360?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.service.findAll({
       categoryId: categoryId ? +categoryId : undefined,
@@ -140,6 +143,8 @@ export class ListingsController {
       carYearFrom: carYearFrom ? +carYearFrom : undefined,
       carYearTo: carYearTo ? +carYearTo : undefined,
       attributeFilters: this.parseAttributeFilters(attributeFilters),
+      only360: has360 === 'true' || has360 === '1',
+      sort: parseListingSort(sort),
     });
   }
 
