@@ -7,8 +7,8 @@ import { getListing, getFavoritesCount, registerListingView, type Listing } from
 import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 import { MediaGallery } from '@/components/MediaGallery';
-import { Spin360Viewer } from '@/components/Spin360Viewer';
-import { Panorama360 } from '@/components/Panorama360';
+import dynamic from 'next/dynamic';
+import { LazyMount } from '@/components/LazyMount';
 import {
   IconHeart,
   IconPhone,
@@ -18,6 +18,16 @@ import {
 } from '@/components/Icons';
 import { openChatForListing } from '@/components/ChatWidget';
 import { ListingStats } from '@/components/ListingStats';
+
+// 360°-модули — отдельные чанки: грузятся, только когда блок приближается к экрану (п. 2.13)
+const Spin360Viewer = dynamic(() => import('@/components/Spin360Viewer').then((m) => m.Spin360Viewer), {
+  ssr: false,
+  loading: () => <div className="spin360" />,
+});
+const Panorama360 = dynamic(() => import('@/components/Panorama360').then((m) => m.Panorama360), {
+  ssr: false,
+  loading: () => <div className="pano360" />,
+});
 
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
@@ -157,14 +167,18 @@ export default function ListingPage() {
             {/* 360°-вращение: кадры грузятся только после нажатия */}
             {spinPreview && (
               <div style={{ marginTop: 16 }}>
-                <Spin360Viewer listingId={listing.id} previewUrl={spinPreview} />
+                <LazyMount placeholder={<div className="spin360" />}>
+                  <Spin360Viewer listingId={listing.id} previewUrl={spinPreview} />
+                </LazyMount>
               </div>
             )}
 
             {/* Панорама салона: библиотека просмотра и сама панорама грузятся только после нажатия */}
             {interiorPreview && (
               <div style={{ marginTop: 16 }}>
-                <Panorama360 listingId={listing.id} previewUrl={interiorPreview} />
+                <LazyMount placeholder={<div className="pano360" />}>
+                  <Panorama360 listingId={listing.id} previewUrl={interiorPreview} />
+                </LazyMount>
               </div>
             )}
 

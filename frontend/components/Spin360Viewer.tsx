@@ -122,7 +122,14 @@ export function Spin360Viewer({ listingId, previewUrl }: Props) {
       style={{ cursor: phase === "ready" ? (drag.current ? "grabbing" : "grab") : "default" }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="Обзор 360°" draggable={false} className="spin360-img" />
+      <img
+        src={src}
+        alt="Обзор 360°"
+        draggable={false}
+        className="spin360-img"
+        loading={phase === "idle" ? "lazy" : undefined}
+        decoding="async"
+      />
 
       <span className="spin360-badge">360°</span>
 

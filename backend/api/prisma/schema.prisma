@@ -177,6 +177,9 @@ model Listing {
   reviews    Review[]
   attributes ListingAttribute[]
   media360   Listing360[]
+
+  // Выдача: активные опубликованные объявления, фильтр «только с 360°»
+  @@index([status, isActive, has360])
 }
 
 // 360°-контент объявления: "spin" — набор кадров вращения, "interior" — сферическая панорама салона.

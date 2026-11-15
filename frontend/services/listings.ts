@@ -60,6 +60,9 @@ export type ListingAttribute = {
 
 export type AttributeFilter = { value?: string | number | boolean; min?: number; max?: number };
 
+/** Порядок выдачи: relevance — с приоритетом объявлений с 360°-контентом (по умолчанию на сервере). */
+export type ListingSort = 'relevance' | 'new' | 'cheap' | 'expensive';
+
 export const getListings = (params?: {
   categoryId?: number;
   minPrice?: number;
@@ -71,6 +74,9 @@ export const getListings = (params?: {
   carYearFrom?: number;
   carYearTo?: number;
   attributeFilters?: Record<string, AttributeFilter>;
+  /** Только объявления с 360°-вращением или панорамой салона. */
+  has360?: boolean;
+  sort?: ListingSort;
 }) => {
   const qs = new URLSearchParams();
   if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
@@ -85,6 +91,8 @@ export const getListings = (params?: {
   if (params?.attributeFilters && Object.keys(params.attributeFilters).length) {
     qs.set('attributeFilters', JSON.stringify(params.attributeFilters));
   }
+  if (params?.has360) qs.set('has360', 'true');
+  if (params?.sort && params.sort !== 'relevance') qs.set('sort', params.sort);
   const q = qs.toString();
   return api.get<Listing[]>(`/listings${q ? `?${q}` : ''}`);
 };

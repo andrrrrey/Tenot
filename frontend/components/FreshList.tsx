@@ -14,11 +14,9 @@ export function FreshList() {
 
   useEffect(() => {
     setLoading(true);
-    getListings()
+    getListings({ sort: 'new' })
       .then((data) => {
-        const sorted = data
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 8);
+        const sorted = data.slice(0, 8);
         setListings(sorted);
       })
       .catch(() => setListings([]))
