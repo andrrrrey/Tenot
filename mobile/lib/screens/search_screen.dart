@@ -83,7 +83,9 @@ class _SearchScreenState extends State<SearchScreen> {
       builder: (_) => FiltersSheet(filter: _f.copy()),
     );
     if (result != null) {
-      setState(() => _f = result..search = _q.text);
+      setState(() => _f = result
+        ..search = _q.text
+        ..sort = _f.sort);
       _load();
     }
   }
@@ -185,17 +187,43 @@ class _SearchScreenState extends State<SearchScreen> {
       add('${_f.carMakeName}${_f.carModelName != null ? ' ${_f.carModelName}' : ''}',
           () => _f..carMakeId = null..carMakeName = null..carModelId = null..carModelName = null);
     }
+    if (_f.only360) add('Обзор 360°', () => _f.only360 = false);
     final total = _items == null ? '' : 'Найдено: ${_items!.length}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (chips.isNotEmpty) Wrap(spacing: 6, runSpacing: 6, children: chips),
         if (chips.isNotEmpty) const SizedBox(height: 10),
-        Text(total, style: T.mutedText),
-        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: Text(total, style: T.mutedText)),
+          _sortMenu(),
+        ]),
+        const SizedBox(height: 6),
       ],
     );
   }
+
+  /// Порядок выдачи (п. 2.13): по умолчанию — ранжирование с приоритетом 360°.
+  Widget _sortMenu() => PopupMenuButton<ListingSort>(
+        initialValue: _f.sort,
+        tooltip: 'Сортировка',
+        onSelected: (s) {
+          if (s == _f.sort) return;
+          setState(() => _f.sort = s);
+          _load();
+        },
+        itemBuilder: (_) => [
+          for (final s in ListingSort.values) CheckedPopupMenuItem(value: s, checked: s == _f.sort, child: Text(s.label)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.sort_rounded, size: 18, color: T.brand),
+            const SizedBox(width: 4),
+            Text(_f.sort.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: T.brand)),
+          ]),
+        ),
+      );
 
   List<Widget> _results() {
     Widget pad(Widget sliver) => SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 14), sliver: sliver);
@@ -266,7 +294,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
               Row(children: [
                 const Expanded(child: Text('Фильтры', style: T.h2)),
                 TextButton(
-                  onPressed: () => Navigator.pop(context, ListingFilter()),
+                  onPressed: () => Navigator.pop(context, ListingFilter(sort: f.sort)),
                   child: const Text('Сбросить'),
                 ),
               ]),
@@ -402,6 +430,14 @@ class _FiltersSheetState extends State<FiltersSheet> {
                   ]),
                 ),
               ],
+              SwitchListTile.adaptive(
+                value: f.only360,
+                onChanged: (v) => setState(() => f.only360 = v),
+                contentPadding: EdgeInsets.zero,
+                activeThumbColor: T.brand,
+                title: const Text('Только с обзором 360°', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Вращение автомобиля или панорама салона', style: T.mutedText),
+              ),
               const SizedBox(height: 6),
               FilledButton(
                 onPressed: () {

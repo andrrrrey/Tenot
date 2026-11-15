@@ -318,6 +318,19 @@ class UserProfile {
   String get displayName => (name != null && name!.trim().isNotEmpty) ? name! : (email.isNotEmpty ? email : (phone ?? ''));
 }
 
+/// Порядок выдачи (п. 2.13). relevance — серверное ранжирование
+/// с приоритетом объявлений с 360°-контентом.
+enum ListingSort {
+  relevance('relevance', 'По релевантности'),
+  newest('new', 'Сначала новые'),
+  cheap('cheap', 'Сначала дешевле'),
+  expensive('expensive', 'Сначала дороже');
+
+  const ListingSort(this.query, this.label);
+  final String query;
+  final String label;
+}
+
 /// Фильтры поиска — те же параметры, что у getListings на сайте.
 class ListingFilter {
   String search;
@@ -335,6 +348,10 @@ class ListingFilter {
   int? carYearFrom;
   int? carYearTo;
 
+  /// Только объявления с 360°-вращением или панорамой салона.
+  bool only360;
+  ListingSort sort;
+
   ListingFilter({
     this.search = '',
     this.categoryId,
@@ -350,6 +367,8 @@ class ListingFilter {
     this.carModelName,
     this.carYearFrom,
     this.carYearTo,
+    this.only360 = false,
+    this.sort = ListingSort.relevance,
   });
 
   ListingFilter copy() => ListingFilter(
@@ -367,6 +386,8 @@ class ListingFilter {
         carModelName: carModelName,
         carYearFrom: carYearFrom,
         carYearTo: carYearTo,
+        only360: only360,
+        sort: sort,
       );
 
   Map<String, String> toQuery() => {
@@ -379,6 +400,8 @@ class ListingFilter {
         if (carModelId != null) 'carModelId': '$carModelId',
         if (carYearFrom != null) 'carYearFrom': '$carYearFrom',
         if (carYearTo != null) 'carYearTo': '$carYearTo',
+        if (only360) 'has360': 'true',
+        if (sort != ListingSort.relevance) 'sort': sort.query,
       };
 
   int get activeCount => [
@@ -390,7 +413,8 @@ class ListingFilter {
         carModelId,
         carYearFrom,
         carYearTo,
-      ].where((e) => e != null).length;
+      ].where((e) => e != null).length +
+      (only360 ? 1 : 0);
 }
 
 // ── Чаты (frontend/services/chat.ts) ─────────────────────────────────────────

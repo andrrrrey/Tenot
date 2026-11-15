@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _error = null);
     try {
       final cats = await api.categories();
-      final fresh = await api.listings(ListingFilter(cityId: _cityId));
+      final fresh = await api.listings(ListingFilter(cityId: _cityId, sort: ListingSort.newest));
       if (!mounted) return;
       setState(() {
         _categories = cats;
