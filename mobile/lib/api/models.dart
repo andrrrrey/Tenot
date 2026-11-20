@@ -202,10 +202,7 @@ class Listing {
   }
 
   /// Раздел «Транспорт» — там доступна панорама салона (как isTransportCategory на сервере).
-  bool get isTransport {
-    final k = categoryTemplateKey;
-    return k != null && (k == 'root:TRANSPORT' || k.startsWith('transport:'));
-  }
+  bool get isTransport => isTransportTemplateKey(categoryTemplateKey);
 
   bool get isDraft => status == 'DRAFT';
 
@@ -225,6 +222,7 @@ class Category {
   final String? imageUrl;
   final int? parentId;
   final bool hasCarFilter;
+  final String? templateKey;
   final List<Category> children;
 
   Category.fromJson(Map<String, dynamic> j)
@@ -233,11 +231,18 @@ class Category {
         imageUrl = j['imageUrl'] as String?,
         parentId = _intN(j['parentId']),
         hasCarFilter = j['hasCarFilter'] == true,
+        templateKey = j['templateKey'] as String?,
         children = (j['children'] as List? ?? [])
             .whereType<Map<String, dynamic>>()
             .map(Category.fromJson)
             .toList();
+
+  /// Раздел «Транспорт» — доступна панорама салона (как isTransportCategory на сервере).
+  bool get isTransport => isTransportTemplateKey(templateKey);
 }
+
+/// Как isTransportCategory в backend/api/src/listings/media360.service.ts.
+bool isTransportTemplateKey(String? k) => k != null && (k == 'root:TRANSPORT' || k.startsWith('transport:'));
 
 class CategoryField {
   final int id;

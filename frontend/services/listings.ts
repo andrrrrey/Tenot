@@ -160,6 +160,7 @@ export const updateListing = (
     carModelId?: number | null;
     carYear?: number | null;
     attributes?: Record<string, ListingAttributeValue>;
+    status?: 'PUBLISHED' | 'DRAFT';
   },
 ) => api.patch<Listing>(`/listings/${id}`, payload);
 

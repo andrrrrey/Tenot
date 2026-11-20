@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getListing, getFavoritesCount, registerListingView, type Listing } from '@/services/listings';
+import { getListing, getFavoritesCount, registerListingView, updateListing, type Listing } from '@/services/listings';
 import { useMe } from '@/hooks/useMe';
 import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 import { MediaGallery } from '@/components/MediaGallery';
@@ -37,6 +37,7 @@ export default function ListingPage() {
   const [fav, setFav] = useState(false);
   const [favCount, setFavCount] = useState(0);
   const [showPhone, setShowPhone] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     getListing(Number(id)).then((l) => {
@@ -434,6 +435,27 @@ export default function ListingPage() {
               >
                 <IconMessage size={16} strokeWidth={1.8} />
                 Написать в чат
+              </button>
+            )}
+
+            {user && user.id === listingOwnerId && listing.status === 'DRAFT' && (
+              <button
+                className="btn primary"
+                disabled={publishing}
+                onClick={async () => {
+                  if (!confirm('Опубликовать этот черновик?')) return;
+                  setPublishing(true);
+                  try {
+                    const updated = await updateListing(listing.id, { status: 'PUBLISHED' });
+                    setListing((prev) => (prev ? { ...prev, ...updated } : prev));
+                  } catch (e: any) {
+                    alert(e?.message || 'Ошибка при публикации');
+                  } finally {
+                    setPublishing(false);
+                  }
+                }}
+              >
+                {publishing ? 'Публикация...' : 'Опубликовать черновик'}
               </button>
             )}
 

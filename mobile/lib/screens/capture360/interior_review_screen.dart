@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,15 +7,17 @@ import 'package:provider/provider.dart';
 import '../../state/session.dart';
 import '../../widgets/common.dart';
 import 'interior_capture_screen.dart';
-import 'orientation_tracker.dart';
 import 'spin_review_screen.dart' show SpinReviewResult;
+import 'upload360.dart';
 
 /// Проверка снимков салона и отправка на склейку.
 ///
 /// Возвращает [SpinReviewResult.uploaded] (склейка запущена/готова), [SpinReviewResult.retake] или null.
+/// Без [listingId] (объявление ещё не создано) снимки не отправляются — возвращается
+/// [SpinReviewResult.accepted], а загрузку делает форма объявления после сохранения.
 class InteriorReviewScreen extends StatefulWidget {
-  const InteriorReviewScreen({super.key, required this.listingId, required this.shots});
-  final int listingId;
+  const InteriorReviewScreen({super.key, this.listingId, required this.shots});
+  final int? listingId;
   final List<InteriorShot> shots;
 
   @override
@@ -26,7 +27,6 @@ class InteriorReviewScreen extends StatefulWidget {
 enum _Stage { review, uploading, stitching, done, failed }
 
 class _InteriorReviewScreenState extends State<InteriorReviewScreen> {
-  static const _batch = 4; // снимки ~1 МБ — запрос до ~5 МБ
   static const _pollEvery = Duration(seconds: 4);
   static const _pollFor = Duration(minutes: 6);
 
@@ -42,22 +42,20 @@ class _InteriorReviewScreenState extends State<InteriorReviewScreen> {
   }
 
   Future<void> _send() async {
+    final listingId = widget.listingId;
+    if (listingId == null) {
+      Navigator.of(context).pop(SpinReviewResult.accepted);
+      return;
+    }
     final api = context.read<Session>().api;
-    final shots = widget.shots;
-    final uploadId = '${DateTime.now().millisecondsSinceEpoch}-${math.Random().nextInt(1 << 32)}';
     setState(() {
       _stage = _Stage.uploading;
       _sent = 0;
     });
     try {
-      for (var i = 0; i < shots.length; i += _batch) {
-        final part = shots.sublist(i, math.min(i + _batch, shots.length));
-        await api.uploadInteriorShots(widget.listingId, uploadId, i, [for (final s in part) s.path]);
-        if (mounted) setState(() => _sent = i + part.length);
-      }
-      await api.commitInterior(widget.listingId, uploadId, [
-        for (final s in shots) CameraPose(wrap180(s.pose.yaw), s.pose.pitch, s.pose.roll).toJson(),
-      ]);
+      await uploadInterior(api, listingId, widget.shots, onProgress: (n) {
+        if (mounted) setState(() => _sent = n);
+      });
       if (!mounted) return;
       setState(() => _stage = _Stage.stitching);
       _startPolling();
@@ -73,7 +71,7 @@ class _InteriorReviewScreenState extends State<InteriorReviewScreen> {
     final api = context.read<Session>().api;
     _poll = Timer.periodic(_pollEvery, (t) async {
       try {
-        final interior = (await api.media360(widget.listingId)).interior;
+        final interior = (await api.media360(widget.listingId!)).interior;
         if (!mounted) return;
         if (interior == null || interior.isFailed) {
           t.cancel();
@@ -127,8 +125,8 @@ class _InteriorReviewScreenState extends State<InteriorReviewScreen> {
               _Stage.review => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   FilledButton.icon(
                     onPressed: _send,
-                    icon: const Icon(Icons.cloud_upload_outlined),
-                    label: const Text('Отправить на склейку'),
+                    icon: Icon(widget.listingId == null ? Icons.check : Icons.cloud_upload_outlined),
+                    label: Text(widget.listingId == null ? 'Добавить в объявление' : 'Отправить на склейку'),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(

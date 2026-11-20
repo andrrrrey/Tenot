@@ -56,6 +56,7 @@ export default function EditPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDraft, setIsDraft] = useState(false);
 
   useEffect(() => {
     getCategories()
@@ -76,9 +77,10 @@ export default function EditPage() {
           setError("Вы не являетесь владельцем этого объявления");
           return;
         }
-        setTitle(listing.title);
-        setPrice(String(listing.price));
-        setDescription(listing.description);
+        setIsDraft(listing.status === "DRAFT");
+        setTitle(listing.title === "Черновик" && listing.status === "DRAFT" ? "" : listing.title);
+        setPrice(listing.price > 0 ? String(listing.price) : "");
+        setDescription(listing.description.trim());
         setCategoryId(String(listing.category.id));
         setCityId(listing.cityId ? String(listing.cityId) : "");
         setCityName(listing.city?.name || "");
@@ -216,7 +218,7 @@ export default function EditPage() {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (publish = false) => {
     if (!canSave) return;
 
     setSubmitting(true);
@@ -235,6 +237,7 @@ export default function EditPage() {
         carModelId: selectedCategoryHasCarFilter && carModelId ? Number(carModelId) : null,
         carYear: selectedCategoryHasCarFilter && carYear ? Number(carYear) : null,
         attributes,
+        ...(publish ? { status: "PUBLISHED" as const } : {}),
       });
 
       // 2. Delete removed media
@@ -256,7 +259,7 @@ export default function EditPage() {
         await setListingCover(Number(id), pendingCoverId);
       }
 
-      router.push("/me/items");
+      router.push(isDraft && !publish ? "/me/drafts" : "/me/items");
     } catch (e: any) {
       setError(e.message || "Ошибка при сохранении объявления");
     } finally {
@@ -288,7 +291,7 @@ export default function EditPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 className="h2" style={{ marginBottom: 4 }}>
-          Редактирование объявления
+          {isDraft ? "Редактирование черновика" : "Редактирование объявления"}
         </h1>
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>
           Измените информацию о товаре
@@ -576,10 +579,25 @@ export default function EditPage() {
 
           {/* Submit */}
           <div style={{ display: "flex", gap: 10 }}>
+            {isDraft && (
+              <button
+                className="btn primary"
+                disabled={!canSave || submitting}
+                onClick={() => handleSubmit(true)}
+                style={{
+                  padding: "14px 20px",
+                  fontSize: 16,
+                  flex: 1,
+                  opacity: !canSave || submitting ? 0.6 : 1,
+                }}
+              >
+                {submitting ? "Публикация..." : "Опубликовать"}
+              </button>
+            )}
             <button
-              className="btn primary"
+              className={isDraft ? "btn" : "btn primary"}
               disabled={!canSave || submitting}
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               style={{
                 padding: "14px 20px",
                 fontSize: 16,
@@ -587,11 +605,11 @@ export default function EditPage() {
                 opacity: !canSave || submitting ? 0.6 : 1,
               }}
             >
-              {submitting ? "Сохранение..." : "Сохранить изменения"}
+              {submitting ? "Сохранение..." : isDraft ? "Сохранить черновик" : "Сохранить изменения"}
             </button>
             <button
               className="btn"
-              onClick={() => router.push("/me/items")}
+              onClick={() => router.push(isDraft ? "/me/drafts" : "/me/items")}
               style={{ padding: "14px 20px", fontSize: 16 }}
             >
               Отмена
