@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/api.dart';
 import '../api/models.dart';
 import '../state/session.dart';
 import '../theme.dart';
@@ -34,6 +35,7 @@ class _ListingScreenState extends State<ListingScreen> {
   bool _favAtLoad = false;
   /// Статус панорамы салона (склеивается / ошибка) — только для владельца.
   Interior360? _interior;
+  bool _publishing = false;
 
   @override
   void initState() {
@@ -71,6 +73,40 @@ class _ListingScreenState extends State<ListingScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _error = e);
+    }
+  }
+
+  /// Публикация своего черновика. Незаполненный черновик сервер не опубликует — откроем форму.
+  Future<void> _publish(Listing l) async {
+    setState(() => _publishing = true);
+    try {
+      await context.read<Session>().api.updateListing(l.id, {'status': 'PUBLISHED'});
+      if (!mounted) return;
+      showInfo(context, 'Объявление опубликовано');
+      await _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      final edit = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Не удалось опубликовать'),
+          content: Text(e.message),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Закрыть')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Дописать')),
+          ],
+        ),
+      );
+      if (edit == true && mounted) {
+        final changed = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder: (_) => AddListingScreen(editing: l)),
+        );
+        if (changed == true) _load();
+      }
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _publishing = false);
     }
   }
 
@@ -455,6 +491,15 @@ class _ListingScreenState extends State<ListingScreen> {
             ),
           ]),
           const SizedBox(height: 14),
+          if (isOwner && l.isDraft) ...[
+            const _StatusNote(icon: Icons.edit_note, text: 'Это черновик — покупатели его пока не видят'),
+            FilledButton.icon(
+              onPressed: _publishing ? null : () => _publish(l),
+              icon: const Icon(Icons.publish_rounded, size: 18),
+              label: Text(_publishing ? 'Публикуем…' : 'Опубликовать'),
+            ),
+            const SizedBox(height: 8),
+          ],
           if (isOwner)
             FilledButton.icon(
               onPressed: () async {

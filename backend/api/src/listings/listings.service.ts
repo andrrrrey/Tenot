@@ -245,6 +245,15 @@ export class ListingsService {
       else if (listingData.allCities) (listingData as Prisma.ListingUncheckedUpdateInput).cityId = null;
     }
     const categoryId = dto.categoryId || listing.categoryId;
+    // Публикация черновика: черновик мог сохраниться почти пустым — проверяем итоговые значения.
+    if (listing.status === 'DRAFT' && dto.status === 'PUBLISHED') {
+      await this.assertPublishable(id, categoryId, {
+        title: dto.title ?? listing.title,
+        description: dto.description ?? listing.description,
+        price: dto.price ?? listing.price,
+        checkStoredAttributes: attributes === undefined,
+      });
+    }
     const attributeData = attributes !== undefined
       ? await this.normalizeAttributes(categoryId, attributes, (dto.status || listing.status) !== 'DRAFT')
       : null;
@@ -520,6 +529,29 @@ export class ListingsService {
       }
     }
     return result;
+  }
+
+  private async assertPublishable(
+    listingId: number,
+    categoryId: number,
+    v: { title: string; description: string; price: number; checkStoredAttributes: boolean },
+  ) {
+    const missing: string[] = [];
+    if ((v.title || '').trim().length < 3) missing.push('название (от 3 символов)');
+    if ((v.description || '').trim().length < 10) missing.push('описание (от 10 символов)');
+    if (!(Number(v.price) > 0)) missing.push('цену');
+    if (missing.length) {
+      throw new BadRequestException(`Чтобы опубликовать черновик, заполните ${missing.join(', ')}`);
+    }
+    if (!v.checkStoredAttributes) return; // новые атрибуты проверит normalizeAttributes
+    const fields = await this.categories.getEffectiveFields(categoryId);
+    const stored = await this.prisma.listingAttribute.findMany({
+      where: { listingId },
+      select: { categoryFieldId: true },
+    });
+    const have = new Set(stored.map((a) => a.categoryFieldId));
+    const field = fields.find((f) => f.required && f.showInForm && !have.has(f.id));
+    if (field) throw new BadRequestException(`Field «${field.label}» is required`);
   }
 
   private async normalizeAttributes(

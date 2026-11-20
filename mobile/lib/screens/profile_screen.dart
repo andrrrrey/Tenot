@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api.dart';
 import '../api/models.dart';
 import '../state/session.dart';
 import '../theme.dart';
@@ -98,6 +99,33 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       await context.read<Session>().api.deleteListing(l.id);
       reload();
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
+  }
+
+  /// Публикация черновика. Если черновик заполнен не полностью — предлагаем дописать его в форме.
+  Future<void> _publish(Listing l) async {
+    try {
+      await context.read<Session>().api.updateListing(l.id, {'status': 'PUBLISHED'});
+      if (!mounted) return;
+      showInfo(context, 'Объявление опубликовано');
+      setState(() => _tab = _Tab.active);
+      reload();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      final edit = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Не удалось опубликовать'),
+          content: Text(e.message),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Закрыть')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Дописать')),
+          ],
+        ),
+      );
+      if (edit == true && mounted) _edit(l);
     } catch (e) {
       if (mounted) showError(context, e);
     }
@@ -291,6 +319,7 @@ class ProfileScreenState extends State<ProfileScreen> {
             listing: l,
             onEdit: () => _edit(l),
             onToggle: l.isDraft ? null : () => _toggle(l),
+            onPublish: l.isDraft ? () => _publish(l) : null,
             onDelete: () => _delete(l),
           ),
         ),
@@ -299,10 +328,17 @@ class ProfileScreenState extends State<ProfileScreen> {
 }
 
 class _MyListingTile extends StatelessWidget {
-  const _MyListingTile({required this.listing, required this.onEdit, this.onToggle, required this.onDelete});
+  const _MyListingTile({
+    required this.listing,
+    required this.onEdit,
+    this.onToggle,
+    this.onPublish,
+    required this.onDelete,
+  });
   final Listing listing;
   final VoidCallback onEdit;
   final VoidCallback? onToggle;
+  final VoidCallback? onPublish;
   final VoidCallback onDelete;
 
   @override
@@ -338,9 +374,11 @@ class _MyListingTile extends StatelessWidget {
               onSelected: (v) => switch (v) {
                 'edit' => onEdit(),
                 'toggle' => onToggle?.call(),
+                'publish' => onPublish?.call(),
                 _ => onDelete(),
               },
               itemBuilder: (_) => [
+                if (onPublish != null) const PopupMenuItem(value: 'publish', child: Text('Опубликовать')),
                 const PopupMenuItem(value: 'edit', child: Text('Редактировать')),
                 if (onToggle != null)
                   PopupMenuItem(value: 'toggle', child: Text(l.isActive ? 'Снять с публикации' : 'Опубликовать снова')),

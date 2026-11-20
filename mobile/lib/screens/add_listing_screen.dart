@@ -11,6 +11,11 @@ import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/pickers.dart';
+import 'capture360/interior_capture_screen.dart';
+import 'capture360/interior_review_screen.dart';
+import 'capture360/spin_capture_screen.dart';
+import 'capture360/spin_review_screen.dart';
+import 'capture360/upload360.dart';
 
 /// Создание/редактирование объявления — как app/add и app/edit.
 /// Возвращает `true` через Navigator.pop, если объявление сохранено.
@@ -26,7 +31,11 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late final Api api = context.read<Session>().api;
   Listing? get _e => widget.editing;
 
-  late final _title = TextEditingController(text: _e?.title ?? '');
+  /// Редактируется черновик — доступны «Опубликовать» и «Сохранить черновик».
+  bool get _editingDraft => _e?.isDraft == true;
+
+  // Пустой черновик сохраняется с названием-заглушкой «Черновик» — в форме его не показываем.
+  late final _title = TextEditingController(text: _editingDraft && _e!.title == 'Черновик' ? '' : _e?.title ?? '');
   late final _description = TextEditingController(text: _e?.description.trim() ?? '');
   late final _price = TextEditingController(text: _e == null || _e!.price == 0 ? '' : _e!.price.round().toString());
   late final _carYear = TextEditingController(text: _e?.carYear?.toString() ?? '');
@@ -34,6 +43,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late int? _categoryId = _e?.category?.id;
   late String? _categoryName = _e?.category?.name;
   late bool _hasCarFilter = _e?.categoryHasCarFilter ?? false;
+  late bool _isTransport = _e?.isTransport ?? false;
   late int? _cityId = _e?.city?.id ?? context.read<Session>().user?.city?.id;
   late String? _cityName = _e?.city?.name ?? context.read<Session>().user?.city?.name;
   late int? _carMakeId = _e?.carMakeId;
@@ -49,6 +59,14 @@ class _AddListingScreenState extends State<AddListingScreen> {
 
   late final List<ListingImage> _existing = [...?_e?.images];
   final List<XFile> _newFiles = [];
+
+  /// Снятые, но ещё не отправленные 360°-обзор и салон: загружаются после сохранения объявления.
+  List<String>? _spinFrames;
+  List<InteriorShot>? _interiorShots;
+
+  /// Объявление уже создано, но загрузка медиа прервалась: повторное нажатие не создаёт дубль.
+  int? _createdId;
+  bool _coverUploaded = false;
 
   bool _busy = false;
   String? _progress;
@@ -98,6 +116,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     };
   }
 
+  /// [draft] — сохранить как черновик (мягкая проверка). Иначе — опубликовать / сохранить изменения.
   Future<void> _submit({bool draft = false}) async {
     if (_busy) return;
     if (!draft && !_canPublish) {
@@ -120,25 +139,54 @@ class _AddListingScreenState extends State<AddListingScreen> {
       _error = null;
       _progress = 'Сохраняем объявление...';
     });
+    final publishing = !draft && (_e == null || _editingDraft);
     try {
       final payload = _payload();
       final int id;
-      if (_e == null) {
+      final existingId = _e?.id ?? _createdId;
+      if (existingId == null) {
         // Как на сайте: без категории черновик падает в категорию 1.
         payload['categoryId'] ??= 1;
         final created = await api.createListing({...payload, 'status': draft ? 'DRAFT' : 'PUBLISHED'});
-        id = created.id;
+        id = _createdId = created.id;
       } else {
-        await api.updateListing(_e!.id, payload);
-        id = _e!.id;
+        await api.updateListing(existingId, {
+          ...payload,
+          if (_editingDraft || _createdId != null) 'status': draft ? 'DRAFT' : 'PUBLISHED',
+        });
+        id = existingId;
       }
-      final hasCover = _existing.any((i) => i.isImage);
-      for (var i = 0; i < _newFiles.length; i++) {
-        setState(() => _progress = 'Загружаем фото ${i + 1} из ${_newFiles.length}...');
-        await api.uploadListingMedia(id, _newFiles[i].path, cover: !hasCover && i == 0);
+      final hasCover = _coverUploaded || _existing.any((i) => i.isImage);
+      final total = _newFiles.length;
+      for (var i = 0; _newFiles.isNotEmpty; i++) {
+        setState(() => _progress = 'Загружаем фото ${i + 1} из $total...');
+        await api.uploadListingMedia(id, _newFiles.first.path, cover: !hasCover && i == 0);
+        _coverUploaded = true;
+        setState(() => _newFiles.removeAt(0));
+      }
+      final spin = _spinFrames;
+      if (spin != null) {
+        setState(() => _progress = 'Загружаем 360°-обзор...');
+        await uploadSpin(api, id, spin, onProgress: (n) {
+          if (mounted) setState(() => _progress = 'Загружаем 360°-обзор: $n из ${spin.length}...');
+        });
+        setState(() => _spinFrames = null);
+      }
+      final interior = _interiorShots;
+      if (interior != null) {
+        setState(() => _progress = 'Загружаем салон 360°...');
+        await uploadInterior(api, id, interior, onProgress: (n) {
+          if (mounted) setState(() => _progress = 'Загружаем салон 360°: $n из ${interior.length}...');
+        });
+        setState(() => _interiorShots = null);
       }
       if (!mounted) return;
-      showInfo(context, _e != null ? 'Изменения сохранены' : (draft ? 'Черновик сохранён' : 'Объявление опубликовано'));
+      final msg = draft
+          ? 'Черновик сохранён'
+          : publishing
+              ? 'Объявление опубликовано'
+              : 'Изменения сохранены';
+      showInfo(context, interior != null ? '$msg. Панорама салона склеивается — обычно 1–3 минуты' : msg);
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _error = e is ApiException ? e.message : '$e');
@@ -170,6 +218,44 @@ class _AddListingScreenState extends State<AddListingScreen> {
     setState(() => _newFiles.addAll(picked.take(10 - total)));
   }
 
+  /// Съёмка 360°-обзора до сохранения: кадры остаются на телефоне и уйдут вместе с объявлением.
+  Future<void> _captureSpin() async {
+    final nav = Navigator.of(context);
+    while (true) {
+      final frames = await nav.push<List<String>>(
+        MaterialPageRoute(builder: (_) => const SpinCaptureScreen(), fullscreenDialog: true),
+      );
+      if (frames == null || frames.isEmpty || !mounted) return;
+      final result = await nav.push<SpinReviewResult>(
+        MaterialPageRoute(builder: (_) => SpinReviewScreen(frames: frames)),
+      );
+      if (result == SpinReviewResult.accepted) {
+        if (mounted) setState(() => _spinFrames = frames);
+        return;
+      }
+      if (result != SpinReviewResult.retake) return;
+    }
+  }
+
+  /// Съёмка салона 360° до сохранения: склейка запустится после сохранения объявления.
+  Future<void> _captureInterior() async {
+    final nav = Navigator.of(context);
+    while (true) {
+      final shots = await nav.push<List<InteriorShot>>(
+        MaterialPageRoute(builder: (_) => const InteriorCaptureScreen(), fullscreenDialog: true),
+      );
+      if (shots == null || shots.isEmpty || !mounted) return;
+      final result = await nav.push<SpinReviewResult>(
+        MaterialPageRoute(builder: (_) => InteriorReviewScreen(shots: shots)),
+      );
+      if (result == SpinReviewResult.accepted) {
+        if (mounted) setState(() => _interiorShots = shots);
+        return;
+      }
+      if (result != SpinReviewResult.retake) return;
+    }
+  }
+
   Future<void> _removeExisting(ListingImage img) async {
     try {
       await api.deleteListingMedia(_e!.id, img.id);
@@ -186,7 +272,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
       appBar: AppBar(title: Text(editing ? 'Редактирование' : 'Новое объявление')),
       body: AbsorbPointer(
         absorbing: _busy,
-        child: ListView(
+        child: SafeArea(
+          top: false,
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
           children: [
             _section('Основное', [
@@ -202,6 +290,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
                       _categoryId = o.category.id;
                       _categoryName = o.category.name;
                       _hasCarFilter = o.category.hasCarFilter;
+                      _isTransport = o.category.isTransport;
+                      if (!_isTransport) _interiorShots = null;
                       _fields = [];
                       _attrs.clear();
                       _attrControllers.clear();
@@ -259,6 +349,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
             if (_hasCarFilter) _carSection(),
             if (_fields.isNotEmpty) _section('Характеристики', [for (final f in _fields) _attrField(f)]),
             _photosSection(),
+            _media360Section(),
             if (_error != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 14),
@@ -279,9 +370,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
                       const SizedBox(width: 10),
                       Text(_progress ?? ''),
                     ])
-                  : Text(editing ? 'Сохранить изменения' : 'Опубликовать'),
+                  : Text(editing && !_editingDraft ? 'Сохранить изменения' : 'Опубликовать'),
             ),
-            if (!editing) ...[
+            if (!editing || _editingDraft) ...[
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: _busy ? null : () => _submit(draft: true),
@@ -289,6 +380,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
@@ -471,6 +563,93 @@ class _AddListingScreenState extends State<AddListingScreen> {
       Text('До 10 фото. Первое фото станет обложкой.', style: T.mutedText.copyWith(fontSize: 12)),
       const SizedBox(height: 12),
     ]);
+  }
+
+  Widget _media360Section() {
+    final e = _e;
+    final spinFrames = _spinFrames;
+    final interiorShots = _interiorShots;
+    return _section('360°-обзор', [
+      Text(
+        _isTransport
+            ? 'Обойдите автомобиль по кругу с камерой и снимите салон изнутри — покупатели смогут осмотреть его со всех сторон.'
+            : 'Обойдите предмет по кругу с камерой — покупатели смогут покрутить его и осмотреть со всех сторон.',
+        style: T.mutedText.copyWith(fontSize: 12.5, height: 1.35),
+      ),
+      const SizedBox(height: 12),
+      _media360Row(
+        icon: Icons.threesixty_rounded,
+        title: '360°-обзор',
+        status: spinFrames != null
+            ? 'Снято кадров: ${spinFrames.length} — загрузится при сохранении'
+            : (e?.has360 == true ? 'Уже есть в объявлении' : null),
+        actionLabel: spinFrames != null || e?.has360 == true ? 'Переснять' : 'Снять 360°-обзор',
+        onAction: _captureSpin,
+        onRemove: spinFrames == null ? null : () => setState(() => _spinFrames = null),
+      ),
+      if (_isTransport) ...[
+        const SizedBox(height: 10),
+        _media360Row(
+          icon: Icons.panorama_photosphere,
+          title: 'Салон 360°',
+          status: interiorShots != null
+              ? 'Снимков: ${interiorShots.length} — склеим после сохранения'
+              : (e?.hasInterior == true ? 'Уже есть в объявлении' : null),
+          actionLabel: interiorShots != null || e?.hasInterior == true ? 'Переснять' : 'Снять салон 360°',
+          onAction: _captureInterior,
+          onRemove: interiorShots == null ? null : () => setState(() => _interiorShots = null),
+        ),
+      ],
+      const SizedBox(height: 12),
+    ]);
+  }
+
+  Widget _media360Row({
+    required IconData icon,
+    required String title,
+    required String? status,
+    required String actionLabel,
+    required VoidCallback onAction,
+    VoidCallback? onRemove,
+  }) {
+    final done = status != null;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: done ? T.brandLight : T.bg,
+        borderRadius: BorderRadius.circular(T.rSm),
+        border: Border.all(color: done ? const Color(0x332563EB) : T.line),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(done ? Icons.check_circle : icon, color: T.brand),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            if (status != null) ...[
+              const SizedBox(height: 2),
+              Text(status, style: T.mutedText.copyWith(fontSize: 12)),
+            ],
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.photo_camera_outlined, size: 18),
+              label: Text(actionLabel),
+            ),
+          ]),
+        ),
+        if (onRemove != null)
+          IconButton(
+            onPressed: onRemove,
+            tooltip: 'Убрать',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.close, size: 18, color: T.muted),
+          ),
+      ]),
+    );
   }
 
   Widget _addTile(IconData icon, String label, VoidCallback onTap) => InkWell(
