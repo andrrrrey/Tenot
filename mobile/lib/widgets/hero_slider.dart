@@ -71,10 +71,11 @@ class _HeroSliderState extends State<HeroSlider> {
         clipBehavior: Clip.none,
         children: [
           for (var i = 0; i < _count; i++)
-            TickerMode(
-              enabled: i == _index,
-              child: IgnorePointer(
-                ignoring: i != _index,
+            IgnorePointer(
+              key: ValueKey('hero-slide-$i'),
+              ignoring: i != _index,
+              child: ExcludeSemantics(
+                excluding: i != _index,
                 child: AnimatedOpacity(
                   opacity: i == _index ? 1 : 0,
                   duration: const Duration(milliseconds: 500),
@@ -83,7 +84,14 @@ class _HeroSliderState extends State<HeroSlider> {
                     offset: i == _index ? Offset.zero : const Offset(0.05, 0),
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.easeOut,
-                    child: widget.slides[i],
+                    // TickerMode — только вокруг содержимого слайда (останавливает
+                    // анимацию иллюстрации на скрытом слайде). Если обернуть им и
+                    // AnimatedOpacity, затухание уходящего слайда замирает на
+                    // полпути и он остаётся поверх нового.
+                    child: TickerMode(
+                      enabled: i == _index,
+                      child: widget.slides[i],
+                    ),
                   ),
                 ),
               ),
