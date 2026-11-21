@@ -2,49 +2,15 @@ import Link from "next/link";
 import { CategoriesGrid } from "@/components/CategoriesGrid";
 import { FreshList } from "@/components/FreshList";
 import { RecommendedList } from "@/components/RecommendedList";
+import { HeroSlider } from "@/components/HeroSlider";
+import { Hero360Slide } from "@/components/Hero360Slide";
 
 export default function HomePage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
 
-      {/* Hero section */}
-      <section
-        style={{
-          background: "var(--card-solid)",
-          border: "1px solid var(--line-solid)",
-          borderRadius: "var(--radius-xl)",
-          padding: "40px 40px 36px",
-          boxShadow: "var(--shadow)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Background decoration */}
-        <div
-          style={{
-            position: "absolute",
-            top: -60,
-            right: -60,
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -40,
-            left: -40,
-            width: 200,
-            height: 200,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(120,100,255,0.06) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-
+      {/* Hero: слайдер с автопрокруткой */}
+      <HeroSlider>
         <div className="grid" style={{ alignItems: "center", position: "relative" }}>
           <div className="hero-main" style={{ gridColumn: "span 7" }}>
             <div className="badge" style={{ marginBottom: 16 }}>
@@ -104,7 +70,9 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+
+        <Hero360Slide />
+      </HeroSlider>
 
       {/* Categories section */}
       <section>

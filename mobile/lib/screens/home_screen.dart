@@ -5,7 +5,9 @@ import '../api/models.dart';
 import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/hero_slider.dart';
 import '../widgets/pickers.dart';
+import 'add_listing_screen.dart';
 import 'categories_screen.dart';
 import 'search_screen.dart';
 
@@ -208,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _hero() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
       decoration: T.cardDecoration(radius: T.rXl),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -226,28 +228,105 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Badge2('объявления без лишнего'),
-              const SizedBox(height: 14),
-              const Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: 'Найди или продай\n'),
-                  TextSpan(text: 'быстро', style: TextStyle(color: T.brand)),
-                  TextSpan(text: ' и просто'),
-                ]),
-                style: T.h1,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Размести объявление за минуту или найди нужное — без перегруза и лишних шагов.',
-                style: T.mutedText.copyWith(fontSize: 14, height: 1.6),
-              ),
-            ],
-          ),
+          HeroSlider(slides: [_heroMainSlide(), _hero360Slide()]),
         ],
       ),
+    );
+  }
+
+  Widget _heroMainSlide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Badge2('объявления без лишнего'),
+        const SizedBox(height: 14),
+        const Text.rich(
+          TextSpan(children: [
+            TextSpan(text: 'Найди или продай\n'),
+            TextSpan(text: 'быстро', style: TextStyle(color: T.brand)),
+            TextSpan(text: ' и просто'),
+          ]),
+          style: T.h1,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Размести объявление за минуту или найди нужное — без перегруза и лишних шагов.',
+          style: T.mutedText.copyWith(fontSize: 14, height: 1.6),
+        ),
+      ],
+    );
+  }
+
+  /// Второй слайд: реклама объявлений с панорамой 360°.
+  Widget _hero360Slide() {
+    const benefits = [
+      ('Продаются быстрее', 'покупатель видит авто со всех сторон'),
+      ('Больше доверия', 'меньше сомнений и лишних вопросов'),
+      ('Снять — пара минут', 'обойдите машину с камерой прямо в приложении'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 260),
+            child: const Car360Illustration(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Badge2('новинка · обзор 360°'),
+        const SizedBox(height: 10),
+        const Text.rich(
+          TextSpan(children: [
+            TextSpan(text: 'Объявления с '),
+            TextSpan(text: '360°', style: TextStyle(color: T.brand)),
+            TextSpan(text: '\nпродаются быстрее'),
+          ]),
+          style: T.h1,
+        ),
+        const SizedBox(height: 10),
+        for (final b in benefits)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.only(top: 1, right: 8),
+                  decoration: const BoxDecoration(color: T.brandLight, shape: BoxShape.circle),
+                  child: const Icon(Icons.check, size: 13, color: T.brand),
+                ),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(text: b.$1, style: const TextStyle(color: T.text, fontWeight: FontWeight.w600)),
+                      TextSpan(text: ' — ${b.$2}'),
+                    ]),
+                    style: T.mutedText.copyWith(fontSize: 13.5, height: 1.45),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+          onPressed: _addWith360,
+          icon: const Icon(Icons.threesixty, size: 20),
+          label: const Text('Разместить с 360°'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addWith360() async {
+    if (!await requireLogin(context)) return;
+    if (!mounted) return;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AddListingScreen()),
     );
   }
 
