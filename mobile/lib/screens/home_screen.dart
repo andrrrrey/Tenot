@@ -5,6 +5,7 @@ import '../api/models.dart';
 import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/hero_slider.dart';
 import '../widgets/pickers.dart';
 import 'categories_screen.dart';
 import 'search_screen.dart';
@@ -208,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _hero() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
       decoration: T.cardDecoration(radius: T.rXl),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -226,28 +227,83 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Badge2('объявления без лишнего'),
-              const SizedBox(height: 14),
-              const Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: 'Найди или продай\n'),
-                  TextSpan(text: 'быстро', style: TextStyle(color: T.brand)),
-                  TextSpan(text: ' и просто'),
-                ]),
-                style: T.h1,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Размести объявление за минуту или найди нужное — без перегруза и лишних шагов.',
-                style: T.mutedText.copyWith(fontSize: 14, height: 1.6),
-              ),
-            ],
-          ),
+          HeroSlider(slides: [_heroMainSlide(), _hero360Slide()]),
         ],
       ),
+    );
+  }
+
+  Widget _heroMainSlide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Badge2('объявления без лишнего'),
+        const SizedBox(height: 14),
+        const Text.rich(
+          TextSpan(children: [
+            TextSpan(text: 'Найди или продай\n'),
+            TextSpan(text: 'быстро', style: TextStyle(color: T.brand)),
+            TextSpan(text: ' и просто'),
+          ]),
+          style: T.h1,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Размести объявление за минуту или найди нужное — без перегруза и лишних шагов.',
+          style: T.mutedText.copyWith(fontSize: 14, height: 1.6),
+        ),
+      ],
+    );
+  }
+
+  /// Второй слайд: реклама объявлений с панорамой 360°.
+  Widget _hero360Slide() {
+    const benefits = [
+      'Продаются быстрее — авто видно со всех сторон',
+      'Снять — пара минут прямо в приложении',
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 230),
+            child: Car360Illustration(
+              carUrl: context.read<Session>().api.media(findTransportImage(_categories)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text.rich(
+          const TextSpan(children: [
+            TextSpan(text: 'Объявления с '),
+            TextSpan(text: '360°', style: TextStyle(color: T.brand)),
+            TextSpan(text: '\nпродаются быстрее'),
+          ]),
+          style: T.h1.copyWith(fontSize: 22),
+        ),
+        const SizedBox(height: 8),
+        for (final b in benefits)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, size: 16, color: T.brand),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    b,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: T.mutedText.copyWith(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
