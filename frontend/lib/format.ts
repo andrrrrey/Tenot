@@ -29,3 +29,25 @@ export function formatTimeShort(value: string | number): string {
     month: "2-digit",
   });
 }
+
+const RU_MONTHS_GENITIVE = [
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+
+/** Ключ календарного дня в локальном времени — для группировки сообщений. */
+export function dayKey(value: string | number | Date): string {
+  const d = value instanceof Date ? value : new Date(value);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+/** Заголовок дня в чате: «Сегодня», «Вчера», «18 ноября», «18 ноября 2025». */
+export function formatChatDay(value: string | number | Date): string {
+  const d = value instanceof Date ? value : new Date(value);
+  const now = new Date();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (dayKey(d) === dayKey(now)) return "Сегодня";
+  if (dayKey(d) === dayKey(yesterday)) return "Вчера";
+  const base = `${d.getDate()} ${RU_MONTHS_GENITIVE[d.getMonth()]}`;
+  return d.getFullYear() === now.getFullYear() ? base : `${base} ${d.getFullYear()}`;
+}

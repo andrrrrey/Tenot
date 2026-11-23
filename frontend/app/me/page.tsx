@@ -73,6 +73,7 @@ export default function MeHome() {
   };
 
   const handleCropConfirm = async (blob: Blob) => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
     setCropSrc(null);
     setAvatarUploading(true);
     try {

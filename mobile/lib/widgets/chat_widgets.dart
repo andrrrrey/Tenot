@@ -21,6 +21,47 @@ String formatChatTime(DateTime d) {
   return today ? formatClock(d) : formatDate(d);
 }
 
+const _monthsGenitive = [
+  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+];
+
+bool isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Заголовок дня в переписке: «Сегодня», «Вчера», «18 ноября», «18 ноября 2025».
+String formatChatDay(DateTime d, {DateTime? now}) {
+  final n = now ?? DateTime.now();
+  if (isSameDay(d, n)) return 'Сегодня';
+  if (isSameDay(d, DateTime(n.year, n.month, n.day - 1))) return 'Вчера';
+  final base = '${d.day} ${_monthsGenitive[d.month - 1]}';
+  return d.year == n.year ? base : '$base ${d.year}';
+}
+
+/// Плашка с датой между сообщениями разных дней.
+class ChatDayDivider extends StatelessWidget {
+  const ChatDayDivider({super.key, required this.date});
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: T.line),
+          ),
+          child: Text(formatChatDay(date),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: T.muted)),
+        ),
+      ),
+    );
+  }
+}
+
 String formatSeconds(double s) {
   if (!s.isFinite || s <= 0) return '0:00';
   final total = s.floor();
