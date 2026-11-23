@@ -50,6 +50,7 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
   double _zoom = 1;
   Offset _offset = Offset.zero; // центр фото относительно центра круга, в логических px
   double _diameter = 0;
+  int _rotation = 0; // четверти оборота по часовой стрелке (0..3)
 
   // Начало жеста.
   double _startZoom = 1;
@@ -88,6 +89,7 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
         _image = frame.image;
         _zoom = 1;
         _offset = Offset.zero;
+        _rotation = 0;
       });
     } catch (e) {
       if (mounted) setState(() => _error = e);
@@ -100,19 +102,33 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
     return _diameter / math.min(img.width, img.height);
   }
 
-  Size get _displaySize {
+  /// Размеры фото с учётом поворота (при 90°/270° стороны меняются местами).
+  Size _rotatedSize(int rotation) {
     final img = _image!;
-    final s = _baseScale * _zoom;
-    return Size(img.width * s, img.height * s);
+    final w = img.width.toDouble(), h = img.height.toDouble();
+    return rotation.isOdd ? Size(h, w) : Size(w, h);
   }
 
-  Offset _clampOffset(Offset o, double zoom) {
-    final img = _image;
-    if (img == null) return Offset.zero;
-    final s = _baseScale * zoom;
-    final mx = math.max(0.0, (img.width * s - _diameter) / 2);
-    final my = math.max(0.0, (img.height * s - _diameter) / 2);
+  /// Размер повёрнутого фото на экране.
+  Size get _displaySize => _rotatedSize(_rotation) * (_baseScale * _zoom);
+
+  Offset _clampOffset(Offset o, double zoom, [int? rotation]) {
+    if (_image == null) return Offset.zero;
+    final r = _rotatedSize(rotation ?? _rotation) * (_baseScale * zoom);
+    final mx = math.max(0.0, (r.width - _diameter) / 2);
+    final my = math.max(0.0, (r.height - _diameter) / 2);
     return Offset(o.dx.clamp(-mx, mx), o.dy.clamp(-my, my));
+  }
+
+  /// Поворот на 90° по часовой; точка фото в центре круга остаётся в центре.
+  void _rotate() {
+    if (_image == null) return;
+    final next = (_rotation + 1) % 4;
+    setState(() {
+      // Вектор «центр круга → центр фото» поворачивается вместе с фото: (x, y) → (−y, x).
+      _offset = _clampOffset(Offset(-_offset.dy, _offset.dx), _zoom, next);
+      _rotation = next;
+    });
   }
 
   /// Масштаб вокруг точки focal (относительно центра круга).
@@ -166,18 +182,22 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
     try {
       final scale = _baseScale * _zoom;
       final size = _diameter / scale; // сторона квадрата вокруг круга, в px исходника
-      final disp = _displaySize;
-      final left = (disp.width / 2 - _offset.dx - _diameter / 2) / scale;
-      final top = (disp.height / 2 - _offset.dy - _diameter / 2) / scale;
       final out = math.min(_outputSize, size.round()).clamp(1, _outputSize);
 
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
       canvas.drawRect(Rect.fromLTWH(0, 0, out.toDouble(), out.toDouble()), Paint()..color = Colors.white);
-      canvas.drawImageRect(
+      // Повторяем то, что на экране: начало координат — центр круга, единица —
+      // экранный пиксель; затем сдвиг к центру фото, поворот и масштаб.
+      canvas
+        ..translate(out / 2, out / 2)
+        ..scale(out / _diameter)
+        ..translate(_offset.dx, _offset.dy)
+        ..rotate(_rotation * math.pi / 2)
+        ..scale(scale);
+      canvas.drawImage(
         img,
-        Rect.fromLTWH(left, top, size, size),
-        Rect.fromLTWH(0, 0, out.toDouble(), out.toDouble()),
+        Offset(-img.width / 2, -img.height / 2),
         Paint()
           ..filterQuality = FilterQuality.high
           ..isAntiAlias = true,
@@ -261,7 +281,10 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
               top: viewport.height / 2 + _offset.dy - disp.height / 2,
               width: disp.width,
               height: disp.height,
-              child: RawImage(image: img, fit: BoxFit.fill, filterQuality: FilterQuality.medium),
+              child: RotatedBox(
+                quarterTurns: _rotation,
+                child: RawImage(image: img, fit: BoxFit.fill, filterQuality: FilterQuality.medium),
+              ),
             ),
             Positioned.fill(
               child: IgnorePointer(child: CustomPaint(painter: _CircleMaskPainter(diameter))),
@@ -280,6 +303,13 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(children: [
+            IconButton(
+              onPressed: ready ? _rotate : null,
+              icon: const Icon(Icons.rotate_right),
+              color: Colors.white,
+              disabledColor: Colors.white24,
+              tooltip: 'Повернуть',
+            ),
             IconButton(
               onPressed: ready && _zoom > _minZoom ? () => _zoomTo(_zoom / 1.2) : null,
               icon: const Icon(Icons.remove),
@@ -307,7 +337,7 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
           ]),
           const Padding(
             padding: EdgeInsets.only(bottom: 12),
-            child: Text('Перемещайте и масштабируйте фото',
+            child: Text('Перемещайте, масштабируйте и поворачивайте фото',
                 style: TextStyle(color: Colors.white60, fontSize: 13)),
           ),
           Row(children: [

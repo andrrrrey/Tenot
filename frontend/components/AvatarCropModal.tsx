@@ -36,6 +36,8 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
   const [loadError, setLoadError] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+  /** Поворот в четвертях оборота по часовой стрелке (0..3). */
+  const [rotation, setRotation] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // Актуальные значения для обработчиков жестов без пересоздания слушателей.
@@ -44,18 +46,22 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
 
   const diameter = viewport * CIRCLE_RATIO;
   const baseScale = natural ? diameter / Math.min(natural.w, natural.h) : 1;
+  // Размеры фото с учётом поворота: при 90°/270° ширина и высота меняются местами.
+  const turned = rotation % 2 === 1;
+  const rotW = natural ? (turned ? natural.h : natural.w) : 0;
+  const rotH = natural ? (turned ? natural.w : natural.h) : 0;
 
   /** Ограничивает сдвиг так, чтобы фото не открывало края круга. */
   const clampOffset = useCallback(
     (o: Point, z: number): Point => {
       if (!natural) return { x: 0, y: 0 };
-      const w = natural.w * baseScale * z;
-      const h = natural.h * baseScale * z;
+      const w = rotW * baseScale * z;
+      const h = rotH * baseScale * z;
       const mx = Math.max(0, (w - diameter) / 2);
       const my = Math.max(0, (h - diameter) / 2);
       return { x: clamp(o.x, -mx, mx), y: clamp(o.y, -my, my) };
     },
-    [natural, baseScale, diameter]
+    [natural, rotW, rotH, baseScale, diameter]
   );
 
   /** Меняет масштаб, удерживая точку focal (от центра круга) на месте. */
@@ -113,6 +119,22 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
     setLoadError(false);
     setZoom(1);
     setOffset({ x: 0, y: 0 });
+    setRotation(0);
+  };
+
+  /** Поворот на 90° по часовой; точка фото в центре круга остаётся в центре. */
+  const rotate = () => {
+    if (!natural) return;
+    const next = (rotation + 1) % 4;
+    const { zoom: z, offset: o } = stateRef.current;
+    // Вектор «центр круга → центр фото» поворачивается вместе с фото: (x, y) → (−y, x).
+    const nextTurned = next % 2 === 1;
+    const w = (nextTurned ? natural.h : natural.w) * baseScale * z;
+    const h = (nextTurned ? natural.w : natural.h) * baseScale * z;
+    const mx = Math.max(0, (w - diameter) / 2);
+    const my = Math.max(0, (h - diameter) / 2);
+    setRotation(next);
+    setOffset({ x: clamp(-o.y, -mx, mx), y: clamp(o.x, -my, my) });
   };
 
   // Картинка могла загрузиться раньше, чем React повесил onLoad (кеш, data:/blob: URL).
@@ -205,11 +227,9 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
     const img = imgRef.current;
     if (!img || !natural || saving) return;
     const scale = baseScale * zoom;
-    // Квадрат, описанный вокруг круга, в координатах исходного фото.
+    // Сторона квадрата вокруг круга в пикселях исходного фото.
     const size = diameter / scale;
-    const sx = (natural.w * scale) / 2 - offset.x - diameter / 2;
-    const sy = (natural.h * scale) / 2 - offset.y - diameter / 2;
-    const out = Math.round(Math.min(OUTPUT_SIZE, size));
+    const out = Math.max(1, Math.round(Math.min(OUTPUT_SIZE, size)));
     const canvas = document.createElement("canvas");
     canvas.width = out;
     canvas.height = out;
@@ -219,7 +239,14 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
     ctx.imageSmoothingQuality = "high";
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, out, out);
-    ctx.drawImage(img, sx / scale, sy / scale, size, size, 0, 0, out, out);
+    // Повторяем то, что видно на экране: начало координат — центр круга,
+    // единица — экранный пиксель; затем сдвиг к центру фото, поворот и масштаб.
+    ctx.translate(out / 2, out / 2);
+    ctx.scale(out / diameter, out / diameter);
+    ctx.translate(offset.x, offset.y);
+    ctx.rotate((rotation * Math.PI) / 2);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, -natural.w / 2, -natural.h / 2);
     setSaving(true);
     canvas.toBlob(
       (blob) => {
@@ -333,7 +360,7 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
               width: imgW || undefined,
               height: imgH || undefined,
               maxWidth: "none",
-              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) rotate(${rotation * 90}deg)`,
               visibility: natural ? "visible" : "hidden",
               pointerEvents: "none",
             }}
@@ -363,8 +390,14 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
           )}
         </div>
 
-        {/* Масштаб */}
+        {/* Поворот и масштаб */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button type="button" style={roundBtn} onClick={rotate} disabled={!natural} aria-label="Повернуть" title="Повернуть на 90°">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-3-6.7" />
+              <polyline points="21 3 21 9 15 9" />
+            </svg>
+          </button>
           <button type="button" style={roundBtn} onClick={() => zoomTo(zoom / 1.2)} disabled={!natural || zoom <= MIN_ZOOM} aria-label="Уменьшить">
             −
           </button>
@@ -385,7 +418,7 @@ export function AvatarCropModal({ imageSrc, onConfirm, onCancel }: Props) {
         </div>
 
         <div className="muted" style={{ fontSize: 13, textAlign: "center", marginTop: -6 }}>
-          Перетащите фото и измените масштаб, чтобы выбрать область
+          Перетащите фото, измените масштаб или поверните его
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

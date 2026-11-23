@@ -21,6 +21,17 @@ Future<File> _makeImage(Directory dir) async {
 
 void main() {
   testWidgets('редактор аватара: перемещение и сохранение квадратного фото', (tester) async {
+    await _scenario(tester, rotations: 0, expectBlue: true);
+  });
+
+  testWidgets('редактор аватара: поворот учитывается при сохранении', (tester) async {
+    // После поворота на 180° правая часть кадра — бывшая левая (красная) половина.
+    await _scenario(tester, rotations: 2, expectBlue: false);
+  });
+}
+
+Future<void> _scenario(WidgetTester tester, {required int rotations, required bool expectBlue}) async {
+  {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     final dir = Directory.systemTemp.createTempSync('avatar_test');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -30,22 +41,24 @@ void main() {
     final src = await tester.runAsync(() => _makeImage(dir));
 
     String? result;
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (ctx) => Scaffold(
-          body: Center(
-            child: TextButton(
-              onPressed: () async {
-                result = await Navigator.of(ctx).push<String>(
-                  MaterialPageRoute(builder: (_) => AvatarEditorScreen(path: src!.path)),
-                );
-              },
-              child: const Text('open'),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async {
+                  result = await Navigator.of(
+                    ctx,
+                  ).push<String>(MaterialPageRoute(builder: (_) => AvatarEditorScreen(path: src!.path)));
+                },
+                child: const Text('open'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400)); // анимация перехода
@@ -58,7 +71,11 @@ void main() {
     expect(find.text('Сохранить'), findsOneWidget);
     expect(find.text('Выбрать другое'), findsOneWidget);
 
-    // Тащим фото влево до упора — в круг попадает правая (синяя) часть.
+    for (var i = 0; i < rotations; i++) {
+      await tester.tap(find.byTooltip('Повернуть'));
+      await tester.pump();
+    }
+    // Тащим фото влево до упора — в круг попадает правая часть кадра.
     await tester.drag(find.byType(RawImage), const Offset(-400, 0));
     await tester.pump();
 
@@ -82,9 +99,14 @@ void main() {
     final (w, h, px) = decoded!;
     expect(w, h, reason: 'аватар квадратный');
     expect(w, 200, reason: 'не больше исходного разрешения в круге');
-    // Центр результата — синий.
     final o = ((h ~/ 2) * w + w ~/ 2) * 4;
-    expect(px.getUint8(o), lessThan(40));
-    expect(px.getUint8(o + 2), greaterThan(200));
-  });
+    final red = px.getUint8(o), blue = px.getUint8(o + 2);
+    if (expectBlue) {
+      expect(red, lessThan(40));
+      expect(blue, greaterThan(200));
+    } else {
+      expect(red, greaterThan(200));
+      expect(blue, lessThan(40));
+    }
+  }
 }
