@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
+import { ChatDayDivider } from "@/components/ChatDayDivider";
+import { dayKey } from "@/lib/format";
 import {
   getMyChats,
   getMessages,
@@ -544,10 +546,13 @@ export default function ChatClient() {
                     <div style={{ marginBottom: 12, opacity: 0.25 }}><IconMessage size={48} strokeWidth={1} /></div>
                     Нет сообщений. Напишите первым!
                   </div>
-                ) : messages.map((m) => {
+                ) : messages.map((m, i) => {
                   const isMine = user.id === m.senderId;
+                  const newDay = i === 0 || dayKey(messages[i - 1].createdAt) !== dayKey(m.createdAt);
                   return (
-                    <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                    <Fragment key={m.id}>
+                    {newDay && <ChatDayDivider date={m.createdAt} />}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
                       <div style={{
                         padding: "10px 14px",
                         borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
@@ -569,6 +574,7 @@ export default function ChatClient() {
                         </div>
                       </div>
                     </div>
+                    </Fragment>
                   );
                 })}
                 <div ref={messagesEndRef} />

@@ -258,8 +258,17 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       itemCount: msgs.length,
       itemBuilder: (_, i) {
-        final m = msgs[msgs.length - 1 - i];
-        return MessageBubble(key: ValueKey(m.id), message: m, isMine: m.senderId == myId);
+        final idx = msgs.length - 1 - i;
+        final m = msgs[idx];
+        final bubble = MessageBubble(key: ValueKey(m.id), message: m, isMine: m.senderId == myId);
+        // Список перевёрнут: плашку дня ставим над первым сообщением каждого дня.
+        final newDay = idx == 0 || !isSameDay(msgs[idx - 1].createdAt, m.createdAt);
+        if (!newDay) return bubble;
+        return Column(
+          key: ValueKey('day-${m.id}'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [ChatDayDivider(date: m.createdAt), bubble],
+        );
       },
     );
   }

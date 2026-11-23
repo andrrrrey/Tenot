@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api.dart';
@@ -10,6 +9,7 @@ import '../widgets/common.dart';
 import '../widgets/pickers.dart';
 import 'add_listing_screen.dart';
 import 'auth_screen.dart';
+import 'avatar_editor_screen.dart';
 
 /// Личный кабинет — как app/me: профиль, аватар, мои объявления.
 class ProfileScreen extends StatefulWidget {
@@ -46,12 +46,13 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changeAvatar() async {
-    final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 85);
-    if (file == null || !mounted) return;
+    // Фото сначала проходит через редактор: пользователь сам выбирает область в круге.
+    final path = await pickAndEditAvatar(context);
+    if (path == null || !mounted) return;
     final session = context.read<Session>();
     setState(() => _avatarBusy = true);
     try {
-      session.setUser(await session.api.uploadAvatar(file.path));
+      session.setUser(await session.api.uploadAvatar(path));
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -202,7 +203,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                 child: _avatarBusy
                     ? const CircularProgressIndicator(strokeWidth: 2)
                     : user.avatarUrl != null
-                        ? NetImage(user.avatarUrl, iconSize: 20)
+                        ? SizedBox.expand(child: ClipOval(child: NetImage(user.avatarUrl, iconSize: 20)))
                         : Text(user.displayName.characters.first.toUpperCase(),
                             style: const TextStyle(color: T.brand, fontSize: 24, fontWeight: FontWeight.w700)),
               ),

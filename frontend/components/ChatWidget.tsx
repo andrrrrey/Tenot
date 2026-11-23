@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useMe } from "@/hooks/useMe";
+import { ChatDayDivider } from "@/components/ChatDayDivider";
+import { dayKey } from "@/lib/format";
 import {
   getMyChats,
   getMessages,
@@ -616,11 +618,13 @@ export default function ChatWidget() {
                       Нет сообщений. Напишите первым!
                     </div>
                   ) : (
-                    messages.map((m) => {
+                    messages.map((m, i) => {
                       const isMine = user.id === m.senderId;
+                      const newDay = i === 0 || dayKey(messages[i - 1].createdAt) !== dayKey(m.createdAt);
                       return (
+                        <Fragment key={m.id}>
+                        {newDay && <ChatDayDivider date={m.createdAt} />}
                         <div
-                          key={m.id}
                           style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}
                         >
                           <div
@@ -656,6 +660,7 @@ export default function ChatWidget() {
                             </div>
                           </div>
                         </div>
+                        </Fragment>
                       );
                     })
                   )}

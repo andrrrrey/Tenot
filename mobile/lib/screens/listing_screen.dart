@@ -475,7 +475,7 @@ class _ListingScreenState extends State<ListingScreen> {
               clipBehavior: Clip.antiAlias,
               alignment: Alignment.center,
               child: u?.avatarUrl != null
-                  ? NetImage(u!.avatarUrl, iconSize: 18)
+                  ? SizedBox.expand(child: NetImage(u!.avatarUrl, iconSize: 18))
                   : Text(
                       (u?.displayName ?? '?').characters.first.toUpperCase(),
                       style: const TextStyle(color: T.brand, fontWeight: FontWeight.w700, fontSize: 16),
